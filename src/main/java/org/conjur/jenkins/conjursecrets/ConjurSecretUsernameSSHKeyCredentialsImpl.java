@@ -79,7 +79,7 @@ implements ConjurSecretUsernameSSHKeyCredentials {
 	}
 
 	@Extension
-	public static class DescriptorImpl extends CredentialsDescriptor {
+	public static class DescriptorImpl extends ConjurSecretCredentialsDescriptor {
 
 		@Override
 		public String getDisplayName() {
