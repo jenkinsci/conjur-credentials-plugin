@@ -44,7 +44,6 @@ public class ConjurAPIUtils {
 		Channel channel = Channel.current();
 
 		CertificateCredentials certificate = null;
-
 		if (channel == null) {
 			if (configuration.getCertificateCredentialID() == null ) { return null;}
 			certificate = CredentialsMatchers.firstOrNull(
