@@ -98,6 +98,26 @@ node {
 }
 ```
 
+###  conjurDirectCredential - Usage from a Jenkins pipeline script without the need to use a Jenkins secret
+
+To reference Conjur direct secrets in a Jenkins script, use `withCredentials` and the symbol `conjurDirectCredential`.  
+Here is an example showing how to fetch the secret from a Jenkins job pipeline definition.
+
+```yml
+node {
+   stage('Work') {
+      
+      withCredentials([conjurDirectCredential(credentialsId: 'db/path', 
+                                              variable: 'SECRET')]) {
+         echo "Hello World $SECRET"
+      }
+   }
+   stage('Results') {
+      echo "Finished!"
+   }
+}
+```
+
 ### Usage from a Jenkins Freestyle Project
 
 To bind to Conjur secrets, use the option "Use secret text(s) or file(s)" in the "Build Environment" section of a Freestyle project.
