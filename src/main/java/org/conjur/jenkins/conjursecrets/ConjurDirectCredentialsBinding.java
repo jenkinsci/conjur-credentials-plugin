@@ -30,14 +30,14 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ConjurDirectCredentialsBinding extends MultiBinding<ConjurDirectCredentials> {
+public class ConjurDirectCredentialsBinding extends MultiBinding<ConjurSecretCredentials> {
 
     private ConjurConfiguration conjurConfiguration;
     private Run<?, ?> context;
 
     @Symbol("conjurDirectCredential")
     @Extension
-    public static class DescriptorImpl extends BindingDescriptor<ConjurDirectCredentials> {
+    public static class DescriptorImpl extends BindingDescriptor<ConjurSecretCredentials> {
 
         @Override
         public String getDisplayName() {
@@ -50,8 +50,8 @@ public class ConjurDirectCredentialsBinding extends MultiBinding<ConjurDirectCre
         }
 
         @Override
-        protected Class<ConjurDirectCredentials> type() {
-            return ConjurDirectCredentials.class;
+        protected Class<ConjurSecretCredentials> type() {
+            return ConjurSecretCredentials.class;
         }
     }
 
@@ -84,8 +84,8 @@ public class ConjurDirectCredentialsBinding extends MultiBinding<ConjurDirectCre
     }
 
     @Override
-    protected Class<ConjurDirectCredentials> type() {
-        return ConjurDirectCredentials.class;
+    protected Class<ConjurSecretCredentials> type() {
+        return ConjurSecretCredentials.class;
     }
 
     @Override

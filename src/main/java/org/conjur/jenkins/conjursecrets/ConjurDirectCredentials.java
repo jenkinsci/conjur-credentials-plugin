@@ -18,7 +18,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-public interface ConjurDirectCredentials extends Credentials, StandardCredentials {
+public interface ConjurDirectCredentials extends StandardCredentials {
 
     static Logger getLogger() {
         return Logger.getLogger(ConjurDirectCredentials.class.getName());
