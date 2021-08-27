@@ -19,3 +19,4 @@ bin/
 .factorypath
 release.properties
 release.properties
+/.idea/
