@@ -112,13 +112,6 @@ public class ConjurDirectCredentialsBinding extends MultiBinding<ConjurSecretCre
     }
 
     static Secret secretFromString(String secretString) {
-        Channel channel = Channel.current();
-
-        if (channel != null) {
-            return (Secret) ConjurAPIUtils.objectFromMaster(channel,
-                    new ConjurAPIUtils.NewSecretFromString(secretString));
-        }
-
         return Secret.fromString(secretString);
     }
 
