@@ -75,8 +75,8 @@ public class ConjurCredentialProvider extends CredentialsProvider {
                                                                         ModelObject context,
                                                                         Authentication authentication) {
 
-        LOGGER.log(Level.FINE, "Type: " + type.getName() + 
-            " authentication: " + authentication + " context: " + context.getDisplayName());        
+        LOGGER.log(Level.FINE, () -> "Type: " + type.getName() +
+            " authentication: " + authentication + " context: " + context.toString());
 
         if (!type.isInstance(CertificateCredentials.class) && (
              (type.isInstance(ConjurSecretCredentials.class) || type == ConjurSecretUsernameCredentials.class) ||
