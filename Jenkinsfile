@@ -1,4 +1,19 @@
-buildPlugin(platforms: ['linux'],
-        jdkVersions: [11,],
-        checkstyle: [qualityGates: [[threshold: 1, type: 'NEW', unstable: true]]],
-        pmd: [trendChartType: 'TOOLS_ONLY', qualityGates: [[threshold: 1, type: 'NEW', unstable: true]]])
+pipeline{
+
+  agent any
+
+  stages{
+
+    stage("clone"){
+
+      steps{
+
+          echo "Hello Team"
+
+       }
+
+    }
+
+  }
+
+}
