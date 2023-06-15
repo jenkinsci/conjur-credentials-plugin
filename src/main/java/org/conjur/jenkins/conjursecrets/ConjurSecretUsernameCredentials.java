@@ -1,13 +1,15 @@
 package org.conjur.jenkins.conjursecrets;
 
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-
 import org.conjur.jenkins.configuration.ConjurConfiguration;
+
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 
 import hudson.model.ModelObject;
 import hudson.util.Secret;
 
-// @NameWith(value = ConjurSecretUsernameCredentials.NameProvider.class, priority = 1)
+/**
+ *Interface to get the DispalyName,Context, secret
+ */
 
 public interface ConjurSecretUsernameCredentials extends StandardUsernamePasswordCredentials, ConjurSecretCredentials {
 

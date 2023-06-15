@@ -28,6 +28,10 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
 
+/**
+ * ConjurSecretCredentialsBinding entry level class to when build is invoked to
+ * authorize and retrieve secrets
+ */
 public class ConjurSecretCredentialsBinding extends MultiBinding<ConjurSecretCredentials> {
 
 	@Symbol("conjurSecretCredential")
@@ -56,8 +60,6 @@ public class ConjurSecretCredentialsBinding extends MultiBinding<ConjurSecretCre
 
 	private String credentialsId;
 
-	// private ModelObject context;
-
 	private boolean isParent;
 
 	public boolean isParent() {
@@ -74,58 +76,39 @@ public class ConjurSecretCredentialsBinding extends MultiBinding<ConjurSecretCre
 		this.credentialsId = credentialsId;
 	}
 
+	/**
+	 * Bind method invoked on Jenkins build process
+	 */
 	// @Override
 	public MultiEnvironment bind(Run<?, ?> build, FilePath workSpace, Launcher launcher, TaskListener listener)
 			throws IOException, InterruptedException {
-		LOGGER.log(Level.FINE, "**** binding **** : " + build);
+
+		LOGGER.log(Level.FINE, "**** binding **** : {0}", build);
 		ConjurCredentialStore store = ConjurCredentialStore.getAllStores()
 				.get(String.valueOf(build.getParent().hashCode()));
 
 		if (store != null) {
-			LOGGER.log(Level.FINE, "Store details" + store);
+			LOGGER.log(Level.FINE, "Store details >> {0}", store);
 			store.getProvider().getStore(build);
 		}
 
-		// ConjurSecretCredentials conjurSecretCredential = getCredentials(build);
-		ConjurSecretCredentials conjurSecretCredential = getCredentialsFor(build);
-		// LOGGER.log(Level.FINE, "Context Setin binding class" +
-		// conjurSecretCredential.getDisplayName());
+		ConjurSecretCredentials conjurSecretCredential = getCredentialsForBind(build);
 
-		LOGGER.log(Level.FINE, "Get Parent flage status", isParent);
+		LOGGER.log(Level.FINE, "Get Parent flage status >> {0}", isParent);
 		if (!isParent) {
 			LOGGER.log(Level.FINE, "Context Set");
 			conjurSecretCredential.setContext(build);
 
 		} else {
-			LOGGER.log(Level.FINE, "Context Set not for parent" + conjurSecretCredential.getDescription());
+			LOGGER.log(Level.FINE, "Context Set not for parent >> {0}", conjurSecretCredential.getDescription());
 			if (conjurSecretCredential != null) {
-				Item item = Jenkins.get().getItemByFullName(conjurSecretCredential.getDescription());// build.getParent();
+				Item item = Jenkins.get().getItemByFullName(conjurSecretCredential.getDescription());
 				if (item != null) {
 					conjurSecretCredential.setContext(item);
 
-					LOGGER.log(Level.FINE, "Context Set not for parent" + item.getDisplayName());
+					LOGGER.log(Level.FINE, "Context Set not for parent >> {0}", item.getDisplayName());
 				}
 			}
-
-			/*
-			 * Item item = build.getParent();
-			 * 
-			 * if(item !=null) { String parentName =
-			 * ((AbstractItem)(build.getParent()).getParent()).getParent().getDisplayName();
-			 * LOGGER.log(Level.FINE, "Context Set not for parent 1"+parentName);
-			 * if(!parentName.isEmpty() && !parentName.equalsIgnoreCase("Jenkins")) {
-			 * LOGGER.log(Level.FINE,
-			 * "Context Set not for parent 2"+build.getParent().getDisplayName());
-			 * 
-			 * conjurSecretCredential.setContext(((AbstractItem)(build.getParent()).
-			 * getParent()).getParent());
-			 * 
-			 * 
-			 * 
-			 * } else { LOGGER.log(Level.FINE,
-			 * "Context Set not for parent 3"+build.getParent().getParent().getDisplayName()
-			 * ); conjurSecretCredential.setContext(build.getParent().getParent()); } }
-			 */
 
 		}
 
@@ -133,36 +116,30 @@ public class ConjurSecretCredentialsBinding extends MultiBinding<ConjurSecretCre
 				Collections.singletonMap(variable, conjurSecretCredential.getSecret().getPlainText()));
 	}
 
-	private final @Nonnull <C> C getCredentialsFor(@Nonnull Run<?, ?> build) throws IOException {
+	private final @Nonnull <C> C getCredentialsForBind(@Nonnull Run<?, ?> build) throws IOException {
 
 		IdCredentials cred = CredentialsProvider.findCredentialById(credentialsId, IdCredentials.class, build);
-		LOGGER.log(Level.FINE, "Calling getCredential For1" + build.getFullDisplayName());
+		LOGGER.log(Level.FINE, "Calling getCredential >> {0}", build.getFullDisplayName());
 		String newCredentialId = "";
 
 		if (cred == null) {
 
 			setParent(true);
 
-			Item item = (Item) build.getParent(); // Item item =(Item) build;
+			Item item = (Item) build.getParent();
 
 			if (item != null) {
-				LOGGER.log(Level.FINE, "Item Name" + item.getParent().getDisplayName());
+				LOGGER.log(Level.FINE, "Item Name >> {0}", item.getParent().getDisplayName());
 				newCredentialId = credentialsId.replaceAll("([${}])", "");
-				LOGGER.log(Level.FINE, "CredentialId after removing ${}" + newCredentialId);
+				LOGGER.log(Level.FINE, "CredentialId after removing ${} >> {0}", newCredentialId);
 
 				ConjurSecretCredentials conjurSecretCredential = null;
 
-				// conjurSecretCredential =
-				// ConjurSecretCredentials.credentialWithID(newCredentialId, item);
 				conjurSecretCredential = ConjurSecretCredentials.credentialWithID(newCredentialId, build);
-				LOGGER.log(Level.FINE, "From Binding Credential" + conjurSecretCredential.getDisplayName());
+				LOGGER.log(Level.FINE, "From Binding Credential >> {0}", conjurSecretCredential.getDisplayName());
 
 				cred = conjurSecretCredential;
 
-				// CredentialsProvider.findCredentialById(credentialsId,
-				// IdCredentials.class,build);
-				// throw new CredentialNotFoundException("Could not find credentials entry with
-				// // ID '" + credentialsId + "'");
 			}
 		}
 
@@ -178,10 +155,12 @@ public class ConjurSecretCredentialsBinding extends MultiBinding<ConjurSecretCre
 
 	}
 
+	/** @return variable */
 	public String getVariable() {
 		return this.variable;
 	}
 
+	/** set the variable */
 	@DataBoundSetter
 	public void setVariable(String variable) {
 		LOGGER.log(Level.FINE, "Setting variable to {0}", variable);
