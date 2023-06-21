@@ -10,6 +10,7 @@ properties([
 
 // Performs release promotion.  No other stages will be run
 if (params.MODE == "PROMOTE") {
+  target_version = ""
   // This call will create non-draft github release once the closure has completed
   release.promote(params.VERSION_TO_PROMOTE) { infrapool, sourceVersion, targetVersion, assetDirectory ->
     // Any assets from sourceVersion Github release are available in assetDirectory
@@ -18,6 +19,8 @@ if (params.MODE == "PROMOTE") {
     // Anything added to assetDirectory will be attached to the Github Release
 
     // assetDirectory is on the infrapool node.
+
+    target_version = targetVersion
 
     // Build plugin with target version
     infrapool.agentSh "VERSION=\"${targetVersion}\" scripts/update-version.sh"
@@ -34,13 +37,16 @@ if (params.MODE == "PROMOTE") {
   // Github release has been created so now we can copy it
   //  from: github.cyberng.com/conjur-enterprise/conjur-credentials-plugin
   //  to:   github.com/jenkinsci/conjur-credentials-plugin
-  def tag = infrapool.agentSh(returnStdout: true, script: '''cat VERSION''')
+  // Note SOURCE_TAG is set to target_version as that version is created
+  // when the promote call completes. This is the final release version, but its
+  // created on internal github (github enterprise) so its the source for the
+  // copy to github.com.
   build(
       job: 'Conjur-Enterprise/conjur-enterprise-self-services/services/internal-github-release-publication/github-release-publication',
       parameters: [
         string(name: 'SOURCE_ORGANIZATION', value: 'conjur-enterprise'),
         string(name: 'SOURCE_REPOSITORY', value: 'conjur-credentials-plugin'),
-        string(name: 'SOURCE_TAG', value: tag),
+        string(name: 'SOURCE_TAG', value: target_version),
         string(name: 'DESTINATION_ORGANIZATION', value: 'jenkinsci'),
         string(name: 'DESTINATION_REPOSITORY', value: 'conjur-credentials-plugin'),
         string(name: 'DESTINATION_BRANCH', value: 'master')
