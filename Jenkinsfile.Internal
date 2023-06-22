@@ -32,7 +32,7 @@ if (params.MODE == "PROMOTE") {
 
     // Do upstream release. This pushes plugin to jenkinsci project maven
     // and the plugin index.
-    infrapool.agentSh(scripts/promote.sh)
+    infrapool.agentSh('scripts/promote.sh')
   }
   // Github release has been created so now we can copy it
   //  from: github.cyberng.com/conjur-enterprise/conjur-credentials-plugin
