@@ -1,6 +1,11 @@
 # VIM
 *~
 
+.infrapool/
+apache-maven*
+maven.*
+release-*
+
 # MVN target
 target/
 

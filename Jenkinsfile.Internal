@@ -30,11 +30,23 @@ if (params.MODE == "PROMOTE") {
     // Copy built plugin to assetDirectory, so it will be attached to the Github Release
     infrapool.agentSh("sudo cp target/*.hpi \"${assetDirectory}\"")
 
-    // Do upstream release. This pushes plugin to jenkinsci project maven
-    // and the plugin index.
-    // Maven release plugin will only release a snapshot version (and remove -SNAPSHOT in the process)
-    infrapool.agentSh "VERSION=\"${targetVersion}-SNAPSHOT\" scripts/update-version.sh"
-    infrapool.agentSh('scripts/promote.sh')
+    try {
+      // Do upstream release. This pushes plugin to jenkinsci project maven
+      // and the plugin index.
+      // Maven release plugin will only release a snapshot version (and remove -SNAPSHOT in the process)
+      infrapool.agentSh "VERSION=\"${targetVersion}-SNAPSHOT\" scripts/update-version.sh"
+
+      // Maven requires a clean repo, so stash to hide all modifications
+      infrapool.agentSh "git stash"
+
+      infrapool.agentSh('scripts/promote.sh')
+    } catch (Exception e){
+      println("❌ Error during maven release plugin execution: ${e}")
+    } finally {
+      // Its important that unstash always runs, otherwise releasing the infrapool
+      // agent will fail as its metdata file won't be found.
+      infrapool.agentSh('git stash pop ||:')
+    }
   }
   // Github release has been created so now we can copy it
   //  from: github.cyberng.com/conjur-enterprise/conjur-credentials-plugin
