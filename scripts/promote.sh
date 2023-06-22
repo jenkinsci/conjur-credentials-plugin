@@ -5,6 +5,7 @@ set -euo pipefail
 . "$(git rev-parse --show-toplevel)/scripts/utils.sh"
 
 ensure_mvn
+set -x
 
 git config --global user.email "conj_ops@cyberark.com"
 git config --global user.name "CyberArk Conjur Jenkins"
