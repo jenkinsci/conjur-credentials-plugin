@@ -32,6 +32,8 @@ if (params.MODE == "PROMOTE") {
 
     // Do upstream release. This pushes plugin to jenkinsci project maven
     // and the plugin index.
+    // Maven release plugin will only release a snapshot version (and remove -SNAPSHOT in the process)
+    infrapool.agentSh "VERSION=\"${targetVersion}-SNAPSHOT\" scripts/update-version.sh"
     infrapool.agentSh('scripts/promote.sh')
   }
   // Github release has been created so now we can copy it
