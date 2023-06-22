@@ -5,7 +5,6 @@
 apache-maven*
 maven.*
 release-*
-.factorypath/
 .project/
 
 # MVN target
@@ -15,15 +14,11 @@ target/
 
 .classpath
 
-.vscode/settings.json
-.vscode/tasks.json
+.vscode
 .factorypath
+.project
 .DS_Store
-.factorypath
 bin/
-.factorypath
-.factorypath
-.factorypath
 release.properties
-release.properties
+
 VERSION
