@@ -6,6 +6,9 @@ set -euo pipefail
 
 ensure_mvn
 
+git config --global user.email "conj_ops@cyberark.com"
+git config --global user.name "CyberArk Conjur Jenkins"
+
 echo "==== Preparing Release ===="
 mvn --batch-mode release:prepare
 

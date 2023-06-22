@@ -41,7 +41,7 @@ if (params.MODE == "PROMOTE") {
 
       infrapool.agentSh('scripts/promote.sh')
     } catch (Exception e){
-      println("❌ Error during maven release plugin execution: ${e}")
+      error("Error with scripts/promote.sh: ${e}")
     } finally {
       // Its important that unstash always runs, otherwise releasing the infrapool
       // agent will fail as its metdata file won't be found.
