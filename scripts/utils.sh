@@ -27,9 +27,7 @@ ensure_mvn(){
     # Get mvn creds from conjurops
     mkdir -p ~/.m2/
     if [[ -f ~/.m2/settings.xml ]]; then
-        echo "Warning ~/.m2/settings.xml already exists and will be overwritten. Current contents:"
-        cat ~/.m2/settings.xml
-        echo "----"
+        echo "Warning ~/.m2/settings.xml already exists and will be overwritten"
     fi
     /usr/local/lib/summon/summon-conjur ci/upstream-jenkins/maven-config |base64 -d > ~/.m2/settings.xml
 
