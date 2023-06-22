@@ -6,5 +6,6 @@ set -xeuo pipefail
 
 ensure_tool jdk openjdk-17-jdk
 ensure_mvn
+set -x
 
 mvn --batch-mode compile
