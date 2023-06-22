@@ -5,6 +5,8 @@
 apache-maven*
 maven.*
 release-*
+.factorypath/
+.project/
 
 # MVN target
 target/
