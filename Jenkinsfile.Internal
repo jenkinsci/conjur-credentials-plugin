@@ -28,7 +28,7 @@ if (params.MODE == "PROMOTE") {
     infrapool.agentSh('scripts/build.sh')
 
     // Copy built plugin to assetDirectory, so it will be attached to the Github Release
-    infrapool.agentSh("cp target/*.hpi \"${assetDirectory}\"")
+    infrapool.agentSh("sudo cp target/*.hpi \"${assetDirectory}\"")
 
     // Do upstream release. This pushes plugin to jenkinsci project maven
     // and the plugin index.
