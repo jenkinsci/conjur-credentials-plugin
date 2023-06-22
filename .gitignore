@@ -1,24 +1,18 @@
 # VIM
 *~
 
-.infrapool/
-apache-maven*
-maven.*
-release-*
-.project/
-
-# MVN target
-target/
-
-.settings/
-
 .classpath
-
-.vscode
-.factorypath
-.project
 .DS_Store
-bin/
-release.properties
+.factorypath
+.infrapool
+.project
+.settings
+.vscode
+apache-maven*
+bin
+maven.*
 pom.xml.*
+release-*
+release.properties
+target
 VERSION
