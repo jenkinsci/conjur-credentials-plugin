@@ -20,5 +20,5 @@ target/
 .DS_Store
 bin/
 release.properties
-
+pom.xml.*
 VERSION
