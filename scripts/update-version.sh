@@ -18,5 +18,4 @@ xmlstarlet edit \
            > pom.xml.tmp
 
 diff pom.xml pom.xml.tmp ||:
-
 mv pom.xml.tmp pom.xml
