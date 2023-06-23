@@ -42,8 +42,12 @@ if (params.MODE == "PROMOTE") {
   // when the promote call completes. This is the final release version, but its
   // created on internal github (github enterprise) so its the source for the
   // copy to github.com.
+
+  // TODO: Switch back to production release publication once PR merges. https://github.cyberng.com/Conjur-Enterprise/self-services/pull/5
+  //job="Conjur-Enterprise/conjur-enterprise-self-services/services/internal-github-release-publication/github-release-publication"
+  job="Conjur-Enterprise/conjur-enterprise-self-services/services/internal-github-release-publication/CNJR-1442_allow_upstream_cause"
   build(
-      job: 'Conjur-Enterprise/conjur-enterprise-self-services/services/internal-github-release-publication/github-release-publication',
+      job: job,
       parameters: [
         string(name: 'SOURCE_ORGANIZATION', value: 'conjur-enterprise'),
         string(name: 'SOURCE_REPOSITORY', value: 'conjur-credentials-plugin'),
