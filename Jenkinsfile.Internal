@@ -51,7 +51,7 @@ if (params.MODE == "PROMOTE") {
       parameters: [
         string(name: 'SOURCE_ORGANIZATION', value: 'conjur-enterprise'),
         string(name: 'SOURCE_REPOSITORY', value: 'conjur-credentials-plugin'),
-        string(name: 'SOURCE_TAG', value: target_version),
+        string(name: 'SOURCE_TAG', value: "v${target_version}"),
         string(name: 'DESTINATION_ORGANIZATION', value: 'jenkinsci'),
         string(name: 'DESTINATION_REPOSITORY', value: 'conjur-credentials-plugin'),
         string(name: 'DESTINATION_BRANCH', value: 'master')
