@@ -2,8 +2,6 @@ package org.conjur.jenkins.conjursecrets;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.configuration.ConjurConfiguration;
@@ -30,18 +28,11 @@ import jenkins.model.Jenkins;
  * ConjurSecretUsernameSSHKeyCredentialsImpl sets the passphrase and private key
  * details based on SSHKeyCredential
  * 
- * @author Jaleela.FaizurRahman
- *
  */
 public class ConjurSecretUsernameSSHKeyCredentialsImpl extends BaseSSHUser
-implements ConjurSecretUsernameSSHKeyCredentials {
+		implements ConjurSecretUsernameSSHKeyCredentials {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
-
-	private static final Logger LOGGER = Logger.getLogger(ConjurSecretUsernameSSHKeyCredentialsImpl.class.getName());
 
 	private String credentialID;
 	private ConjurConfiguration conjurConfiguration;
@@ -51,16 +42,14 @@ implements ConjurSecretUsernameSSHKeyCredentials {
 	transient ModelObject storeContext;
 
 	/**
-	 * Constructor to set the
-	 * scope,id,username,credentialID,ConjurConfiguration,Secret,description
-	 * 
-	 * @param CredentialsScope
-	 * @param String              id
-	 * @param String              username
-	 * @param cString             redentialID
-	 * @param ConjurConfiguration
-	 * @param Secret              passphrase
-	 * @param String              description
+	 * Constructor to set the credentialScope,id,username,credentialID,conjurConfiguration ,passphrase and description
+	 * @param scope provides the Credential Scope
+	 * @param id  provides the job id
+	 * @param username provides the username
+	 * @param credentialID provides the CredentialID
+	 * @param conjurConfiguration provides the conjur configuration
+	 * @param passphrase provides the passphrase
+	 * @param description provides the description
 	 */
 	@DataBoundConstructor
 	public ConjurSecretUsernameSSHKeyCredentialsImpl(final CredentialsScope scope, final String id,
@@ -73,7 +62,7 @@ implements ConjurSecretUsernameSSHKeyCredentials {
 	}
 
 	/**
-	 * 
+	 * Returns the CredentialID
 	 * @return credentialID
 	 */
 
@@ -83,7 +72,6 @@ implements ConjurSecretUsernameSSHKeyCredentials {
 
 	/**
 	 * set the credentialID
-	 * 
 	 * @param credentialID
 	 */
 
@@ -93,7 +81,7 @@ implements ConjurSecretUsernameSSHKeyCredentials {
 	}
 
 	/**
-	 * 
+	 * Returns the ConjurConfiguration object
 	 * @return ConjurConfiguration
 	 */
 
@@ -103,6 +91,7 @@ implements ConjurSecretUsernameSSHKeyCredentials {
 
 	/**
 	 * set the ConjurConfiguration params
+	 * @param conjurConfiguration set the ConjurConfiguration object
 	 */
 
 	@DataBoundSetter
@@ -118,6 +107,7 @@ implements ConjurSecretUsernameSSHKeyCredentials {
 	}
 
 	/**
+	 * Return this passphrase
 	 * @return Secret
 	 */
 
@@ -127,7 +117,6 @@ implements ConjurSecretUsernameSSHKeyCredentials {
 
 	/**
 	 * set the secret
-	 * 
 	 * @param passphrase
 	 */
 	@DataBoundSetter
@@ -138,10 +127,7 @@ implements ConjurSecretUsernameSSHKeyCredentials {
 	/**
 	 * To fill the Jenkins listbox with CredentialItems for
 	 * ConjurSecretUsernameSSHKeyCredentials
-	 * 
-	 * @author Jaleela.FaizurRahman
-	 *
-	 */
+     */
 	@Extension
 	public static class DescriptorImpl extends CredentialsDescriptor {
 
@@ -159,7 +145,7 @@ implements ConjurSecretUsernameSSHKeyCredentials {
 	}
 
 	/**
-	 * 
+	 * Returns the credential type description
 	 * @return DescriptorDisplayName
 	 */
 
@@ -168,6 +154,7 @@ implements ConjurSecretUsernameSSHKeyCredentials {
 	}
 
 	/**
+	 * Returns the display name
 	 * @return DisplayName
 	 */
 
@@ -177,38 +164,39 @@ implements ConjurSecretUsernameSSHKeyCredentials {
 	}
 
 	/**
-	 * set the Context for ModelObject
+	 * Sets this ModelObject context
+	 * @param context ModelObject for the context
 	 */
 
 	@Override
 	public void setContext(final ModelObject context) {
-		LOGGER.log(Level.FINE, "Set Context");
 		if (context != null)
 			this.context = context;
 	}
 
 	/**
-	 * set the store context for ModelObject
+	 * Sets the ModelObject storeContext
+	 * @param storeContext ModelObject for the storeContext
 	 */
 
 	@Override
 	public void setStoreContext(ModelObject storeContext) {
-		LOGGER.log(Level.FINE, "Setting store context");
 		this.storeContext = storeContext;
 	}
 
 	/**
+	 * Return the PrivateKey
 	 * @return the SSHKey secret
 	 */
 	@Override
 	public String getPrivateKey() {
-		LOGGER.log(Level.FINE, "Getting SSH Key secret from Conjur");
 		final Secret secret = ConjurSecretCredentials.getSecretFromCredentialIDWithConfigAndContext(
 				this.getCredentialID(), this.conjurConfiguration, this.context, this.storeContext);
 		return secret.getPlainText();
 	}
 
 	/**
+	 * Return the list of PrivateKey
 	 * @return List of PrivateKey
 	 */
 	@Override

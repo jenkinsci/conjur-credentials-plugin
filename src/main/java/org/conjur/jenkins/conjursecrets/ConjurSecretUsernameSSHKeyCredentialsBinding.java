@@ -47,6 +47,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsBinding extends MultiBinding<C
 			return ConjurSecretUsernameSSHKeyCredentials.class;
 		}
 	}
+
 	private static final Logger LOGGER = Logger.getLogger(ConjurSecretUsernameSSHKeyCredentialsBinding.class.getName());
 
 	private String usernameVariable;
@@ -68,7 +69,6 @@ public class ConjurSecretUsernameSSHKeyCredentialsBinding extends MultiBinding<C
 			throws IOException, InterruptedException {
 
 		LOGGER.log(Level.FINE, "Start of bind()");
-		LOGGER.log(Level.FINE, "Binding UserName and SSHKey");
 
 		ConjurCredentialStore store = ConjurCredentialStore.getAllStores().get(String.valueOf(build.getParent().hashCode()));
 		if (store != null) {
@@ -81,7 +81,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsBinding extends MultiBinding<C
 		Map<String, String> m = new HashMap<>();
 		String usernameValue = conjurSecretCredential.getUsername();
 		String secretValue = conjurSecretCredential.getPrivateKey();
-		
+
 		m.put(usernameVariable, usernameValue);
 		m.put(secretVariable, secretValue);
 		LOGGER.log(Level.FINE, "End of bind()");
@@ -90,15 +90,15 @@ public class ConjurSecretUsernameSSHKeyCredentialsBinding extends MultiBinding<C
 	}
 
 	/**
-	 * 
-	 * @return secretVaraible
+	 * Return the secretVarialbe
+	 * @return secretVaraible f
 	 */
 	public String getSecretVariable() {
 		return this.secretVariable;
 	}
 
 	/**
-	 * 
+	 * Return the UserNameVariable
 	 * @return userNameVaraible
 	 */
 
@@ -107,24 +107,20 @@ public class ConjurSecretUsernameSSHKeyCredentialsBinding extends MultiBinding<C
 	}
 
 	/**
-	 * set secretvariable
-	 * 
+	 * Sets secretvariable
 	 * @param secretVariable
 	 */
 	@DataBoundSetter
 	public void setSecretVariable(String secretVariable) {
-		LOGGER.log(Level.FINE, "Setting Secret variable to {0}", secretVariable);
 		this.secretVariable = secretVariable;
 	}
 
 	/**
-	 * set userNamevariable
-	 * 
+	 * Sets userNamevariable
 	 * @param usernameVariable
 	 */
 	@DataBoundSetter
 	public void setUsernameVariable(String usernameVariable) {
-		LOGGER.log(Level.FINE, "Setting Username variable to {0}", usernameVariable);
 		this.usernameVariable = usernameVariable;
 	}
 

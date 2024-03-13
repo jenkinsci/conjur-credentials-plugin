@@ -56,7 +56,7 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
 				return FormValidation.ok();
 			}
 		} catch (NumberFormatException e) {
-			LOGGER.log(Level.WARNING, "Key lifetime and token duration must be numbers");
+			LOGGER.log(Level.SEVERE, "Key lifetime and token duration must be numbers "+e.getMessage());
 			return FormValidation.error("Key lifetime and token duration must be numbers");
 		}
 	}
@@ -74,7 +74,7 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
 				throw new IllegalStateException();
 			}
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			LOGGER.log(Level.SEVERE, "Failed in GlobalConjurConfiguration get() :" + ex.getMessage());
 		}
 		return result;
 	}

@@ -14,9 +14,7 @@ import jenkins.model.Jenkins;
 
 /**
  * ConjurSecretCredentialDescriptior to populate the listbox with the
- * credentialss
- * 
- * @author Jaleela.FaizurRahman
+ * credentials
  *
  */
 //@Extension

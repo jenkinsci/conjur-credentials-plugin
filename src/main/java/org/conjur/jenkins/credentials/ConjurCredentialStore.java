@@ -3,6 +3,7 @@ package org.conjur.jenkins.credentials;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -42,7 +43,7 @@ public class ConjurCredentialStore extends CredentialsStore {
         this.action = new ConjurCredentialStoreAction(this, context);
     }
 
-    public static ConcurrentHashMap<String, ConjurCredentialStore> getAllStores() {
+    public static ConcurrentMap<String, ConjurCredentialStore> getAllStores() {
         return allStores;
     }
 

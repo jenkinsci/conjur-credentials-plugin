@@ -19,7 +19,9 @@ if (params.MODE == "PROMOTE") {
     // Anything added to assetDirectory will be attached to the Github Release
 
     // assetDirectory is on the infrapool node.
-
+	
+    env.ASSET_DIR=assetDirectory
+	
     target_version = targetVersion
 
     // Build plugin with target version
@@ -28,7 +30,10 @@ if (params.MODE == "PROMOTE") {
     infrapool.agentSh('scripts/build.sh')
 
     // Copy built plugin to assetDirectory, so it will be attached to the Github Release
-    infrapool.agentSh("sudo cp target/*.hpi \"${assetDirectory}\"")
+    //infrapool.agentSh("sudo cp target/*.hpi \"${assetDirectory}\"")
+    
+    infrapool.agentSh "ASSET_DIR=\"${assetDirectory}\" summon ./publish.sh"
+    
 
     // Do upstream release. This pushes plugin to jenkinsci project maven
     // and the plugin index.
@@ -134,6 +139,13 @@ pipeline {
       steps {
         script {
           infrapool.agentSh 'scripts/build.sh'
+        }
+      }
+      post {
+        always {
+          script {
+            infrapool.agentArchiveArtifacts artifacts: 'target/*.hpi'
+          }
         }
       }
     }

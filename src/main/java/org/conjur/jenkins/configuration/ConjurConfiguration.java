@@ -42,7 +42,6 @@ import jenkins.model.Jenkins;
  * implements Serializable Retrieves the Conjur configuration details and assign
  * to Configuration parameters
  * 
- * @author Jaleela.FaizurRahman
  *
  */
 
@@ -53,7 +52,6 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 	/**
 	 * Inner static class to retrieve the configuration details from Jenkins
 	 * 
-	 * @author Jaleela.FaizurRahman
 	 *
 	 */
 	@Extension
