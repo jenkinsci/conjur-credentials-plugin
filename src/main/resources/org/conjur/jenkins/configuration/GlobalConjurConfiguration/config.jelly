@@ -87,13 +87,9 @@
       function getIdentityFormatToken() {
        var selectIdentityFormatTokenValue ='${instance.selectIdentityFormatToken}';
        selectIdentityFormatTokenValue =selectIdentityFormatTokenValue ? selectIdentityFormatTokenValue : 'aud,jenkins_name';
-
        var selectIdentityFieldsSeparatorValue = '${instance.selectIdentityFieldsSeparator}';
-        console.log("param.selectIdentityFieldsSeparatorValue:" +selectIdentityFieldsSeparatorValue);
         // Set default value if selectIdentityFieldsSeparator is empty
         selectIdentityFieldsSeparatorValue = selectIdentityFieldsSeparatorValue ? selectIdentityFieldsSeparatorValue : '-';
-        console.log("After param.selectIdentityFieldsSeparatorValue:" +selectIdentityFieldsSeparatorValue);
-
 
           var inputEnableIdentityCheckedToken = document.getElementById('enableIdentityFormatFieldsFromToken');
           var divTxtIdentityFieldName =document.getElementById('divIdentityFieldName');
@@ -131,6 +127,26 @@
       }
       // Call the function initially to set the initial state based on checkbox
       getIdentityFormatToken();
+
+      document.addEventListener("input", disableSubmitButton);
+
+       function disableSubmitButton(){
+        var inputAuthWebServiceId = document.getElementsByName('authWebServiceId')[0];
+        var inputIdentityFieldName= document.getElementsByName('identityFieldName')[0];
+
+         var applyBtn = document.querySelector('button[name="Apply"]');
+         var submitBtn = document.querySelector('button[name="Submit"]');
+         if (inputAuthWebServiceId.value.trim() === '' || inputIdentityFieldName.value.trim() === '') {
+            applyBtn.disabled = true;
+            submitBtn.disabled = true;
+         }else{
+             applyBtn.disabled = false;
+             submitBtn.disabled = false;
+         }
+         }
+         disableSubmitButton();
+
+
   </script>
 
        <style type="text/css">
