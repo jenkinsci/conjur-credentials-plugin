@@ -119,13 +119,13 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
     public FormValidation doCheckIdentityFieldName(@AncestorInPath AbstractItem anc,
                                                    @QueryParameter("identityFieldName") String identityFieldName) {
         // Regular expression to allow only alphanumeric characters
-        String alphanumericRegex = "^[a-zA-Z0-9]*$";
+        String alphanumericRegex = "^[a-zA-Z0-9\\-_\"]*$";
 		if (StringUtils.isEmpty(identityFieldName) || StringUtils.isBlank(identityFieldName)) {
 			LOGGER.log(Level.FINE, "Identity Field Name should not be empty");
 			return FormValidation.error("Identity Field Name should not be empty");
 		}if (!identityFieldName.matches(alphanumericRegex)) {
-            LOGGER.log(Level.FINE, "Identity Field Name should contain only alphanumeric characters");
-            return FormValidation.error("Identity Field Name should contain only alphanumeric characters");
+            LOGGER.log(Level.FINE, "Identity Field Name should contain only alphanumeric characters including \"-\", \"_\", and \" \"");
+            return FormValidation.error("Identity Field Name should contain only alphanumeric characters including \"-\", \"_\", and \" \"");
         }
 		return FormValidation.ok();
     }
@@ -154,29 +154,7 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
         return validateIdentityFormatFields(identityFields);
     }
 
-    /**
-     * check the Identity Format Fields Seperator
-     *
-     * @param Jenkins AbstractItem anc
-     * @param JWT     IdentityFieldsSeparator
-     * @return
-     */
-   /* public FormValidation doCheckIdentityFieldsSeparator(@AncestorInPath AbstractItem anc,
-                                                         @QueryParameter("identityFieldsSeparator") String identityFieldsSeparators) {
-        LOGGER.log(Level.FINE, "Inside of doCheckIdentityFieldsSeparator()");
-
-        if (StringUtils.isEmpty(identityFieldsSeparators) || StringUtils.isBlank(identityFieldsSeparators)) {
-            LOGGER.log(Level.FINE, "Identity Fields Separator should not be empty");
-            return FormValidation.error("Identity Fields Separator should not be empty");
-
-        } else if (!identityFieldsSeparators.equals(identityFieldsSeparator)) {
-            LOGGER.log(Level.FINE, "Identity Fields Separator should contain only single - ");
-            return FormValidation.error("Identity Fields Separator should contain only single - ");
-        } else {
-            return FormValidation.ok();
-        }
-    }*/
-
+  
     private FormValidation validateIdentityFormatFields(List<String> identityFields) {
         // Check for valid tokens
         Set<String> identityTokenSet = new HashSet<>(Arrays.asList("aud", "jenkins_parent_full_name", "jenkins_name",
@@ -187,7 +165,7 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
                 "jenkins_parent_name");
 
         if (!identityFields.stream().allMatch(identityTokenSet::contains)) {
-            String errorMsg = "IdentityFormatFieldsFromToken should contain any combination of the following fields with no space : aud,jenkins_parent_full_name,jenkins_name,userId,fullName,jenkins_full_name,jenkins_parent_name";
+            String errorMsg = "IdentityFormatFieldsFromToken should contain any combination of the following fields with no space : aud,jenkins_parent_full_name,jenkins_name,userId,fullName,jenkins_full_name,jenkins_parent_name.";
             LOGGER.log(Level.FINE, errorMsg);
             return FormValidation.error(errorMsg);
         }
@@ -288,7 +266,17 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
      */
     @DataBoundSetter
     public void setIdentityFieldName(String identityFieldName) {
-        this.identityFieldName = identityFieldName;
+    	
+    	if(!getEnableIdentityFormatFieldsFromToken())
+    	{
+    		
+    	       this.identityFieldName = identityFieldName;
+    	}
+    	else
+    	{
+    		this.identityFieldName="sub";
+    	}
+ 
         save();
     }
 
@@ -310,21 +298,7 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
     }
 
 
-    /**
-     * @return IdentityFieldsSeparator
-     */
-   /* public String getIdentityFieldsSeparator() {
-        return identityFieldsSeparator;
-    }*/
-
-    /**
-     * set the IdentityFieldsSeparator
-     */
-   /* @DataBoundSetter
-    public void setIdentityFieldsSeparator(String identityFieldsSeparator) {
-        this.identityFieldsSeparator = identityFieldsSeparator;
-        save();
-    }*/
+  
 
     /**
      * @return the JWT Audience
@@ -339,7 +313,7 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
 
     @DataBoundSetter
     public void setJwtAudience(String jwtAudience) {
-        this.jwtAudience = jwtAudience;
+        this.jwtAudience = (!jwtAudience.isEmpty()) ? jwtAudience : "cyberark-conjur";
         save();
     }
 
