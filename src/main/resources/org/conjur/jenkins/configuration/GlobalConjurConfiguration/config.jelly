@@ -86,7 +86,7 @@
 
       function getIdentityFormatToken() {
        var selectIdentityFormatTokenValue ='${instance.selectIdentityFormatToken}';
-       selectIdentityFormatTokenValue =selectIdentityFormatTokenValue ? selectIdentityFormatTokenValue : 'jenkins_name';
+       selectIdentityFormatTokenValue =selectIdentityFormatTokenValue ? selectIdentityFormatTokenValue : 'aud,jenkins_name';
 
        var selectIdentityFieldsSeparatorValue = '${instance.selectIdentityFieldsSeparator}';
         console.log("param.selectIdentityFieldsSeparatorValue:" +selectIdentityFieldsSeparatorValue);
