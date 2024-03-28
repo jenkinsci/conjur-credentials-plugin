@@ -46,7 +46,7 @@
         <div id="divListIdentityFormatFieldsFromToken" style="display: none;">
         <f:entry title="${%Identity Format Fields}" name="selectIdentityFormatToken" field="selectIdentityFormatToken">
            <select id="listIdentityFormatFieldsFromToken" name="selectIdentityFormatToken" class="jenkins-select_input">
-                <option value="aud,jenkins_name">${%aud,jenkins_name}</option>
+                <option value="jenkins_name">${%jenkins_name}</option>
                  <option value="jenkins_full_name">${%jenkins_full_name}</option>
                  <option value="jenkins_parent_full_name,jenkins_name">${%jenkins_parent_full_name,jenkins_name}</option>
            </select>
@@ -122,11 +122,9 @@
               selectedIdentityFormatFiledToken.value=selectIdentityFormatTokenValue;
               divWarningMsg.style.display = "none";
               divWarningSeparatorMsg.style.display = "none";
-              if(jwtAudienceDefault.value.trim() === ''){
                 jwtAudienceDefault.value = "cyberark-conjur";
                 jwtAudienceDefault.style.color = "#666666"; // Set color to gray
                 jwtAudienceDefault.readOnly = true;
-              }
           } else {
               divTxtIdentityFieldName.style.display = "block";
               txtIdentityFieldName.style.display = "block";
@@ -149,12 +147,11 @@
         function disableJwtAudienceInput(){
             var inputEnableIdentityCheckedToken = document.getElementById('enableIdentityFormatFieldsFromToken');
             var jwtAudienceDefault = document.getElementsByName('jwtAudience')[0];
-            if (jwtAudienceDefault.value.trim() === '') {
                 if(inputEnableIdentityCheckedToken.checked){
                 jwtAudienceDefault.value = "cyberark-conjur";
                 jwtAudienceDefault.style.color = "#666666"; // Set color to gray
                 jwtAudienceDefault.readOnly = true;
-                }
+
             }else{
                 jwtAudienceDefault.readOnly = false;
                 jwtAudienceDefault.style.color = ""; // reset

@@ -260,7 +260,7 @@ public class GlobalConjurConfigurationTest {
 	public void doCheckIdentityFormatFieldsFromTokenUserIdMissingReqToken() {
 		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
 				GlobalConjurConfiguration.class)) {
-			String identityFormatFieldsFromToken = "userId";
+			String identityFormatFieldsFromToken = "jenkins_name";
 			String errorMsg = "IdentityFormatFieldsFromToken must contain at least one or more of jenkins_name, jenkins_parent_full_name, or jenkins_parent_name";
 			getConfigMockStatic.when(
 					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
@@ -276,7 +276,7 @@ public class GlobalConjurConfigurationTest {
 	public void doCheckIdentityFormatFieldsFromTokenFullNameMissingReqToken() {
 		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
 				GlobalConjurConfiguration.class)) {
-			String identityFormatFieldsFromToken = "fullName";
+			String identityFormatFieldsFromToken = "jenkins_name";
 			String errorMsg = "IdentityFormatFieldsFromToken must contain at least one or more of jenkins_name, jenkins_parent_full_name, or jenkins_parent_name";
 			getConfigMockStatic.when(
 					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
@@ -303,34 +303,4 @@ public class GlobalConjurConfigurationTest {
 			assertEquals(errorMsg, actualErrorMessage.replace("ERROR: ", ""));
 		}
 	}
-
-	//@Test
-	/*public void doCheckIdentityFieldsSeparatorNotEmpty() {
-		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
-				GlobalConjurConfiguration.class)) {
-			String identityFieldsSeparator = "-";
-			getConfigMockStatic.when(() -> config.doCheckIdentityFieldsSeparator(abstractItem, identityFieldsSeparator))
-					.thenReturn(FormValidation.ok());
-			// Assert the result
-			assertEquals(FormValidation.ok(),
-					config.doCheckIdentityFieldsSeparator(abstractItem, identityFieldsSeparator));
-		}
-	}*/
-
-	//@Test
-	/*public void doCheckIdentityFieldsSeparatorEmpty() {
-		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
-				GlobalConjurConfiguration.class)) {
-			String identityFieldsSeparator = "";
-			String errorMsg = "Identity Fields Separator should not be empty";
-			getConfigMockStatic.when(() -> config.doCheckIdentityFieldsSeparator(abstractItem, identityFieldsSeparator))
-					.thenReturn(FormValidation.error(errorMsg));
-
-			String actualErrorMessage = config.doCheckIdentityFieldsSeparator(abstractItem, identityFieldsSeparator)
-					.getMessage();
-			// Assert the result after removing the prefix "ERROR: "
-			assertEquals(errorMsg, actualErrorMessage.replace("ERROR: ", ""));
-		}
-	}*/
-
 }

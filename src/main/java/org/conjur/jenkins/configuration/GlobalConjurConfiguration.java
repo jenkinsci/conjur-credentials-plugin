@@ -157,15 +157,14 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
   
     private FormValidation validateIdentityFormatFields(List<String> identityFields) {
         // Check for valid tokens
-        Set<String> identityTokenSet = new HashSet<>(Arrays.asList("aud", "jenkins_parent_full_name", "jenkins_name",
-                "userId", "fullName", "jenkins_full_name", "jenkins_parent_name"));
+        Set<String> identityTokenSet = new HashSet<>(Arrays.asList("aud", "jenkins_parent_full_name", "jenkins_name", "jenkins_full_name", "jenkins_parent_name"));
 
-        List<String> identityFieldsList = Arrays.asList("aud", "userId", "fullName", "jenkins_full_name");
+        List<String> identityFieldsList = Arrays.asList("aud", "jenkins_full_name");
         List<String> commonFieldsList = Arrays.asList("jenkins_name", "jenkins_parent_full_name",
                 "jenkins_parent_name");
 
         if (!identityFields.stream().allMatch(identityTokenSet::contains)) {
-            String errorMsg = "IdentityFormatFieldsFromToken should contain any combination of the following fields with no space : aud,jenkins_parent_full_name,jenkins_name,userId,fullName,jenkins_full_name,jenkins_parent_name.";
+            String errorMsg = "Identity Format Fields can only contain these comma-delimited values (without space characters): aud,jenkins_name,jenkins_full_name,jenkins_parent_full_name.";
             LOGGER.log(Level.FINE, errorMsg);
             return FormValidation.error(errorMsg);
         }
