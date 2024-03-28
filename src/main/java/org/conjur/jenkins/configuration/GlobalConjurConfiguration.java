@@ -102,8 +102,8 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
                                              @QueryParameter("jwtAudience") String jwtAudience) {
         LOGGER.log(Level.FINE, "Inside of doCheckJwtAudience()");
         if (StringUtils.isEmpty(jwtAudience) || StringUtils.isBlank(jwtAudience)) {
-            LOGGER.log(Level.FINE, "JWT Audience field will default to cyberark-conjur If left blank ");
-            return FormValidation.warning("JWT Audience field will default to cyberark-conjur If left blank ");
+            LOGGER.log(Level.FINE, "JWT Audience field will default to cyberark-conjur ");
+            return FormValidation.warning("JWT Audience field will default to cyberark-conjur ");
         } else {
             return FormValidation.ok();
 
