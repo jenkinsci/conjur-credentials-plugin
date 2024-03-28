@@ -31,7 +31,7 @@
         <f:entry title="${%Enable Context Aware Credential Stores?}" description="If checked, Conjur Credential Provider will populate stores with secret variables available from the current context">
             <f:checkbox name="enableContextAwareCredentialStore" field="enableContextAwareCredentialStore" default="false" checked="${enableContextAwareCredentialStore}"/>
         </f:entry>
-        <f:entry title="${%Enable Identity Format Fields From Token?}" description="If checked,populate variables available from the current context">
+        <f:entry title="${%Enable Simplifed JWT Configuration?}" description="If checked,populate variables available from the current context">
             <f:checkbox id="enableIdentityFormatFieldsFromToken" name="enableIdentityFormatFieldsFromToken" field="enableIdentityFormatFieldsFromToken" default="false"/>
         </f:entry>
         <div id="divIdentityFieldName">
@@ -88,8 +88,11 @@
        var selectIdentityFormatTokenValue ='${instance.selectIdentityFormatToken}';
        selectIdentityFormatTokenValue =selectIdentityFormatTokenValue ? selectIdentityFormatTokenValue : 'aud,jenkins_name';
        var selectIdentityFieldsSeparatorValue = '${instance.selectIdentityFieldsSeparator}';
+        console.log("param.selectIdentityFieldsSeparatorValue:" +selectIdentityFieldsSeparatorValue);
         // Set default value if selectIdentityFieldsSeparator is empty
         selectIdentityFieldsSeparatorValue = selectIdentityFieldsSeparatorValue ? selectIdentityFieldsSeparatorValue : '-';
+        console.log("After param.selectIdentityFieldsSeparatorValue:" +selectIdentityFieldsSeparatorValue);
+
 
           var inputEnableIdentityCheckedToken = document.getElementById('enableIdentityFormatFieldsFromToken');
           var divTxtIdentityFieldName =document.getElementById('divIdentityFieldName');
