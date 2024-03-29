@@ -180,7 +180,7 @@ public class GlobalConjurConfigurationTest {
 	public void doCheckIdentityFormatFieldsFromToken() {
 		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
 				GlobalConjurConfiguration.class)) {
-			String identityFormatFieldsFromToken = "aud,jenkins_name";
+			String identityFormatFieldsFromToken = "aud,jenkins_full_name";
 			getConfigMockStatic.when(
 					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
 					.thenReturn(FormValidation.ok());
@@ -194,8 +194,8 @@ public class GlobalConjurConfigurationTest {
 	public void doCheckIdentityFormatFieldsFromTokenWithSpace() {
 		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
 				GlobalConjurConfiguration.class)) {
-			String identityFormatFieldsFromToken = "aud, jenkins_name";
-			String errorMsg = "IdentityFormatFieldsFromToken should contain any combination of the following fields with no space : aud,jenkins_parent_full_name,jenkins_name,userId,fullName,jenkins_full_name,jenkins_parent_name";
+			String identityFormatFieldsFromToken = "aud, jenkins_full_name";
+			String errorMsg = "IdentityFormatFieldsFromToken must contain at least one of the jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name";
 			getConfigMockStatic.when(
 					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
 					.thenReturn(FormValidation.error(errorMsg));
@@ -227,7 +227,7 @@ public class GlobalConjurConfigurationTest {
 	public void doCheckIdentityFormatFieldsFromTokenDuplicate() {
 		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
 				GlobalConjurConfiguration.class)) {
-			String identityFormatFieldsFromToken = "aud,aud";
+			String identityFormatFieldsFromToken = "jenkins_full_name,jenkins_full_name";
 			String errorMsg = "Duplicate tokens found in IdentityFormatFieldsFromToken";
 			getConfigMockStatic.when(
 					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
@@ -241,11 +241,11 @@ public class GlobalConjurConfigurationTest {
 	}
 
 	@Test
-	public void doCheckIdentityFormatFieldsFromTokenAudMissingReqToken() {
+	public void doCheckIdentityFormatFieldsFromTokenJenkinsNameMissing() {
 		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
 				GlobalConjurConfiguration.class)) {
-			String identityFormatFieldsFromToken = "aud";
-			String errorMsg = "IdentityFormatFieldsFromToken must contain at least one or more of jenkins_name, jenkins_parent_full_name, or jenkins_parent_name";
+			String identityFormatFieldsFromToken = "jenkins_nam,aud,jenkins_parent_full_nam";
+			String errorMsg = "IdentityFormatFieldsFromToken must contain at least one of the jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name";
 			getConfigMockStatic.when(
 					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
 					.thenReturn(FormValidation.error(errorMsg));
@@ -257,27 +257,11 @@ public class GlobalConjurConfigurationTest {
 	}
 
 	@Test
-	public void doCheckIdentityFormatFieldsFromTokenUserIdMissingReqToken() {
+	public void doCheckIdentityFormatFieldsFromTokenJenkinsParentNameMissing() {
 		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
 				GlobalConjurConfiguration.class)) {
-			String identityFormatFieldsFromToken = "jenkins_name";
-			String errorMsg = "IdentityFormatFieldsFromToken must contain at least one or more of jenkins_name, jenkins_parent_full_name, or jenkins_parent_name";
-			getConfigMockStatic.when(
-					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
-					.thenReturn(FormValidation.error(errorMsg));
-			String actualErrorMessage = config
-					.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken).getMessage();
-			// Assert the result after removing the prefix "ERROR: "
-			assertEquals(errorMsg, actualErrorMessage.replace("ERROR: ", ""));
-		}
-	}
-
-	@Test
-	public void doCheckIdentityFormatFieldsFromTokenFullNameMissingReqToken() {
-		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
-				GlobalConjurConfiguration.class)) {
-			String identityFormatFieldsFromToken = "jenkins_name";
-			String errorMsg = "IdentityFormatFieldsFromToken must contain at least one or more of jenkins_name, jenkins_parent_full_name, or jenkins_parent_name";
+			String identityFormatFieldsFromToken = "jenkins_parent_full_nam,jenkins_name";
+			String errorMsg = "IdentityFormatFieldsFromToken must contain at least one of the jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name";
 			getConfigMockStatic.when(
 					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
 					.thenReturn(FormValidation.error(errorMsg));
@@ -292,8 +276,8 @@ public class GlobalConjurConfigurationTest {
 	public void doCheckIdentityFormatFieldsFromTokenJenkinsFullNameMissingReqToken() {
 		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
 				GlobalConjurConfiguration.class)) {
-			String identityFormatFieldsFromToken = "jenkins_full_name";
-			String errorMsg = "IdentityFormatFieldsFromToken must contain at least one or more of jenkins_name, jenkins_parent_full_name, or jenkins_parent_name";
+			String identityFormatFieldsFromToken = "jenkins_full_nam,aud";
+			String errorMsg = "IdentityFormatFieldsFromToken must contain at least one of the jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name";
 			getConfigMockStatic.when(
 					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
 					.thenReturn(FormValidation.error(errorMsg));

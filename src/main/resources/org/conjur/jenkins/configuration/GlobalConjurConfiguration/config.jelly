@@ -16,23 +16,23 @@
         <f:entry title="${%Auth WebService ID}">
             <f:textbox field="authWebServiceId" name="authWebServiceId"/>
         </f:entry>
-        <f:entry title="${%JWT Audience}">
-        <!-- Deprecation warning -->
-        <!-- <f:warning>Warning Deprecation: From Next Major version, this field will be deprecated and field is defualt to "cyberark-conjur".</f:warning>-->
-            <f:textbox field="jwtAudience" name="jwtAudience" id="jwtAudience"/>
-        </f:entry>
-        <div class="warning" style="margin-top: -1.25rem;opacity: 1;">In the next major version,the JWT Audience this field will be deprecated and the value will be set to "cyberark-conjur". </div>
-        <f:entry title="${%Signing Key Lifetime In Minutes}">
-            <f:textbox field="keyLifetimeInMinutes" name="keyLifetimeInMinutes"/>
-        </f:entry>
-        <f:entry title="${%JWT Token Duration In Seconds}">
-            <f:textbox field="tokenDurarionInSeconds" name="tokenDurarionInSeconds"/>
-        </f:entry>
         <f:entry title="${%Enable Context Aware Credential Stores?}" description="If checked, Conjur Credential Provider will populate stores with secret variables available from the current context">
             <f:checkbox name="enableContextAwareCredentialStore" field="enableContextAwareCredentialStore" default="false" checked="${enableContextAwareCredentialStore}"/>
         </f:entry>
         <f:entry title="${%Enable Simplified JWT Configuration?}" description="Enable this option to use default identity field values. This is recommended because the next major release introduces breaking changes that affects these fields and their allowed values.">
             <f:checkbox id="enableIdentityFormatFieldsFromToken" name="enableIdentityFormatFieldsFromToken" field="enableIdentityFormatFieldsFromToken" default="false"/>
+        </f:entry>
+        <f:entry title="${%JWT Audience}">
+        <!-- Deprecation warning -->
+        <!-- <f:warning>Warning Deprecation: From Next Major version, this field will be deprecated and field is defualt to "cyberark-conjur".</f:warning>-->
+            <f:textbox field="jwtAudience" name="jwtAudience" id="jwtAudience"/>
+        </f:entry>
+        <div class="warning" style="margin-top: -1.25rem;opacity: 1;" id="divJwtAudWarning">In the next major version,the JWT Audience this field will be deprecated and the value will be set to "cyberark-conjur". </div>
+        <f:entry title="${%Signing Key Lifetime In Minutes}">
+            <f:textbox field="keyLifetimeInMinutes" name="keyLifetimeInMinutes"/>
+        </f:entry>
+        <f:entry title="${%JWT Token Duration In Seconds}">
+            <f:textbox field="tokenDurarionInSeconds" name="tokenDurarionInSeconds"/>
         </f:entry>
         <div id="divIdentityFieldName">
         <f:entry title="${%Identity Field Name}">
@@ -46,9 +46,12 @@
         <div id="divListIdentityFormatFieldsFromToken" style="display: none;">
         <f:entry title="${%Identity Format Fields}" name="selectIdentityFormatToken" field="selectIdentityFormatToken">
            <select id="listIdentityFormatFieldsFromToken" name="selectIdentityFormatToken" class="jenkins-select_input">
-                <option value="jenkins_name">${%jenkins_name}</option>
                  <option value="jenkins_full_name">${%jenkins_full_name}</option>
-                 <option value="jenkins_parent_full_name,jenkins_name">${%jenkins_parent_full_name,jenkins_name}</option>
+                 <option value="jenkins_parent_full_name-jenkins_name">${%jenkins_parent_full_name-jenkins_name}</option>
+                 <option value="jenkins_parent_full_name:jenkins_name">${%jenkins_parent_full_name:jenkins_name}</option>
+                 <option value="jenkins_parent_full_name+jenkins_name">${%jenkins_parent_full_name+jenkins_name}</option>
+                 <option value="jenkins_parent_full_name.jenkins_name">${%jenkins_parent_full_name.jenkins_name}</option>
+                 <option value="jenkins_parent_full_name|jenkins_name">${%jenkins_parent_full_name|jenkins_name}</option>
            </select>
         </f:entry>
         </div>
@@ -83,11 +86,14 @@
       document.getElementById('enableIdentityFormatFieldsFromToken').addEventListener('change', getIdentityFormatToken);
       document.getElementById('listIdentityFieldsSeparator').addEventListener('change', selectedFieldSeparator);
 
-      var selectJwtAudienceValue ='${instance.jwtAudience}';
+
 
       function getIdentityFormatToken() {
+          var selectJwtAudienceValue ='${instance.jwtAudience}';
+          var identityFieldNameDefault ='${instance.identityFieldName}';
           var selectIdentityFormatTokenValue ='${instance.selectIdentityFormatToken}';
-          selectIdentityFormatTokenValue =selectIdentityFormatTokenValue ? selectIdentityFormatTokenValue : 'aud,jenkins_name';
+          identityFieldNameDefault =identityFieldNameDefault ? identityFieldNameDefault : 'sub';
+          selectIdentityFormatTokenValue =selectIdentityFormatTokenValue ? selectIdentityFormatTokenValue : 'jenkins_full_name';
           var selectIdentityFieldsSeparatorValue = '${instance.selectIdentityFieldsSeparator}';
             // Set default value if selectIdentityFieldsSeparator is empty
           selectIdentityFieldsSeparatorValue = selectIdentityFieldsSeparatorValue ? selectIdentityFieldsSeparatorValue : '-';
@@ -105,6 +111,8 @@
           var inputIdentityFieldsSeparator = document.getElementById("identityFieldsSeparator");
           var divWarningMsg = document.getElementById("dviWarning");
           var divWarningSeparatorMsg = document.getElementById("dviWarningSeperator");
+          var divJwtAudWarningMsg =document.getElementById("divJwtAudWarning");
+
 
           if(selectedIdentityFieldsSeparator.value =='-'){
                divWarningSeparatorMsg.style.display = "none";
@@ -125,6 +133,7 @@
                 jwtAudienceDefault.value = "cyberark-conjur";
                 jwtAudienceDefault.style.color = "#666666"; // Set color to gray
                 jwtAudienceDefault.readOnly = true;
+                divJwtAudWarningMsg.style.display = "none";
           } else {
               divTxtIdentityFieldName.style.display = "block";
               txtIdentityFieldName.style.display = "block";
@@ -136,7 +145,9 @@
               divWarningMsg.style.display = "block";
               jwtAudienceDefault.readOnly = false;
               jwtAudienceDefault.style.color = ""; // Set color to gray
+              divJwtAudWarningMsg.style.display = "block";
               jwtAudienceDefault.value =selectJwtAudienceValue;
+              txtIdentityFieldName.value =identityFieldNameDefault;
           }
       }
       // Call the function initially to set the initial state based on checkbox
@@ -147,14 +158,17 @@
         function disableJwtAudienceInput(){
             var inputEnableIdentityCheckedToken = document.getElementById('enableIdentityFormatFieldsFromToken');
             var jwtAudienceDefault = document.getElementsByName('jwtAudience')[0];
+            var divJwtAudWarningMsg =document.getElementById("divJwtAudWarning");
                 if(inputEnableIdentityCheckedToken.checked){
                 jwtAudienceDefault.value = "cyberark-conjur";
                 jwtAudienceDefault.style.color = "#666666"; // Set color to gray
                 jwtAudienceDefault.readOnly = true;
+                divJwtAudWarningMsg.style.display = "none";
 
             }else{
                 jwtAudienceDefault.readOnly = false;
                 jwtAudienceDefault.style.color = ""; // reset
+                divJwtAudWarningMsg.style.display = "block";
             }
         }
 
@@ -164,17 +178,15 @@
             var applyBtn = document.querySelector('button[name="Apply"]');
             var submitBtn = document.querySelector('button[name="Submit"]');
            if (inputAuthWebServiceId.value.trim() === '' || inputIdentityFieldName.value.trim() === '') {
-                applyBtn.disabled = true;
-                submitBtn.disabled = true;
+                //applyBtn.disabled = true;
+                //submitBtn.disabled = true;
              }else{
-                 applyBtn.disabled = false;
-                 submitBtn.disabled = false;
+                 //applyBtn.disabled = false;
+                 //submitBtn.disabled = false;
              }
          }
          disableSubmitButton();
-
          disableJwtAudienceInput();
-
          function selectedFieldSeparator(SelectedSeparatorValue){
              var onChangeWarningSeparatorMsg = document.getElementById("dviWarningSeperator");
                if(SelectedSeparatorValue.target.value=='-'){
@@ -183,6 +195,30 @@
                onChangeWarningSeparatorMsg.style.display = "block";
             }
          }
+         //New setUp Integration for JWT Auth Config
+       function enableIdentityFromToken(){
+           var inputEnableJWKS = '${instance.enableJWKS}';
+           var inputAuthWebServiceId = '${instance.authWebServiceId}';
+           var inputJwtAudience = '${instance.jwtAudience}';
+           var inputKeyLifetimeInMinutes = '${instance.keyLifetimeInMinutes}';
+           var inputTokenDurarionInSeconds = '${instance.tokenDurarionInSeconds}';
+           var inputEnableContextAwareCredentialStore = '${instance.enableContextAwareCredentialStore}';
+           var inputEnableIdentityFormatFieldsFromToken = '${instance.enableIdentityFormatFieldsFromToken}';
+           var inputIdentityFormatFieldsFromToken = '${instance.identityFormatFieldsFromToken}';
+           var inputIdentityFieldName = '${instance.identityFieldName}';
+           var allEmpty = areAllVariablesEmpty(inputAuthWebServiceId, inputIdentityFormatFieldsFromToken, inputIdentityFieldName);
+           function areAllVariablesEmpty(...variables) {
+             return variables.every(variable => !variable.trim());
+           }
+         if(allEmpty) { // Check the config inputs
+             document.getElementById("enableIdentityFormatFieldsFromToken").checked = true;
+         } else {
+             document.getElementById("enableIdentityFormatFieldsFromToken").checked = false;
+         }
+         getIdentityFormatToken();
+       }
+       //Initial call to config
+       enableIdentityFromToken();
   </script>
 
        <style type="text/css">

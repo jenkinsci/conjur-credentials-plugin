@@ -36,9 +36,9 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
 
     private Boolean enableIdentityFormatFieldsFromToken = false;
 
-    private String identityFormatFieldsFromToken = "jenkins_name";
+    private String identityFormatFieldsFromToken = "jenkins_full_name";
 
-    private  String  selectIdentityFormatToken = "jenkins_name";
+    private  String  selectIdentityFormatToken = "jenkins_full_name";
  //   private String identityFieldsSeparator = "-";
 
     private String selectIdentityFieldsSeparator = "-";
@@ -157,31 +157,55 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
   
     private FormValidation validateIdentityFormatFields(List<String> identityFields) {
         // Check for valid tokens
-        Set<String> identityTokenSet = new HashSet<>(Arrays.asList("aud", "jenkins_parent_full_name", "jenkins_name", "jenkins_full_name", "jenkins_parent_name"));
+        Set<String> identityTokenSet = new HashSet<>(Arrays.asList("jenkins_full_name","jenkins_parent_full_name","jenkins_name"));
+        // Check for the presence of either jenkins_full_name or the combination of jenkins_parent_full_name and jenkins_name
+        boolean jenkinsFullNameExists = identityFields.contains("jenkins_full_name");
+        boolean jenkinsParentFullNameExists = identityFields.contains("jenkins_parent_full_name");
+        boolean jenkinsNameExists = identityFields.contains("jenkins_name");
 
-        List<String> identityFieldsList = Arrays.asList("aud", "jenkins_full_name");
-        List<String> commonFieldsList = Arrays.asList("jenkins_name", "jenkins_parent_full_name",
-                "jenkins_parent_name");
-
+        // Additional fields can be added if needed
+        identityTokenSet.addAll(identityFields);
         if (!identityFields.stream().allMatch(identityTokenSet::contains)) {
-            String errorMsg = "Identity Format Fields can only contain these comma-delimited values (without space characters): aud,jenkins_name,jenkins_full_name,jenkins_parent_full_name.";
+            String errorMsg = "Identity Format Fields can add additional fields with comma-delimited values (without space characters):jenkins_full_name or a combination of jenkins_parent_full_name &  jenkins_name.";
             LOGGER.log(Level.FINE, errorMsg);
             return FormValidation.error(errorMsg);
         }
+        // Check if jenkins_name and jenkins_full_name are both present
+        if (identityFields.contains("jenkins_name") && identityFields.contains("jenkins_full_name")) {
+            return handleValidationError("jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name");
+        }
+        if (identityFields.contains("jenkins_parent_full_name") && identityFields.contains("jenkins_full_name")) {
+            return handleValidationError("jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name");
+        }
+        // Check if either jenkins_full_name exists or combination of jenkins_parent_full_name and jenkins_name exists
+        if (!identityFields.contains("jenkins_full_name") &&
+                !(identityFields.contains("jenkins_parent_full_name") && identityFields.contains("jenkins_name"))) {
+            return handleValidationError("jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name");
+        }
 
-        for (String field : identityFieldsList) {
-            if (identityFields.contains(field) && !commonFieldsList.stream().anyMatch(identityFields::contains)) {
-                return handleValidationError("jenkins_name, jenkins_parent_full_name, or jenkins_parent_name");
+        // Check if all fields are valid tokens without any space characters other than comma
+        for (String field : identityFields) {
+            if (!identityTokenSet.contains(field)) {
+                return handleValidationError("Identity Format Fields can add additional fields with comma-delimited values (without space characters):");
             }
         }
-        // No validation errors
-        return FormValidation.ok();
+
+        if (jenkinsParentFullNameExists && jenkinsNameExists) {
+            // No validation errors
+            return FormValidation.ok();
+        }else if (jenkinsFullNameExists && !(jenkinsParentFullNameExists && jenkinsNameExists)) {
+            // Only jenkins_full_name exists
+            return FormValidation.ok();
+        } else{
+            // Neither jenkins_full_name nor valid combination found
+            return handleValidationError("jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name");
+        }
 
     }
 
     private FormValidation handleValidationError(String tokens) {
-        LOGGER.log(Level.FINE, "IdentityFormatFieldsFromToken must contain at least one or more of " + tokens);
-        return FormValidation.error("IdentityFormatFieldsFromToken must contain at least one or more of " + tokens);
+        LOGGER.log(Level.FINE, "IdentityFormatFieldsFromToken must contain at least one of the  " + tokens);
+        return FormValidation.error("IdentityFormatFieldsFromToken must contain at least one of the " + tokens);
     }
 
     /**
@@ -265,17 +289,7 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
      */
     @DataBoundSetter
     public void setIdentityFieldName(String identityFieldName) {
-    	
-    	if(!getEnableIdentityFormatFieldsFromToken())
-    	{
-    		
-    	       this.identityFieldName = identityFieldName;
-    	}
-    	else
-    	{
-    		this.identityFieldName="sub";
-    	}
- 
+        this.identityFieldName = (!identityFieldName.isEmpty()) ? identityFieldName : "sub";
         save();
     }
 
