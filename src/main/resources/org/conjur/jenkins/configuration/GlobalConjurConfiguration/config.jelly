@@ -212,9 +212,7 @@
            }
          if(allEmpty) { // Check the config inputs
              document.getElementById("enableIdentityFormatFieldsFromToken").checked = true;
-         } else {
-             document.getElementById("enableIdentityFormatFieldsFromToken").checked = false;
-         }
+         } 
          getIdentityFormatToken();
        }
        //Initial call to config

@@ -195,49 +195,54 @@ public class JwtToken {
 					jwtToken.claim.put("jenkins_parent_pronoun", job.getPronoun());
 				}
 			}
-			
-			// based ont eh checkbox selection 
-			//if checkbox is enabled its "sub", "identityformatfields"
-			//if checkbox is disabled its 'identity' as old code hold good
-			
+
+			// based ont eh checkbox selection
+			// if checkbox is enabled its "sub", "identityformatfields"
+			// if checkbox is disabled its 'identity' as old code hold good
+
 			boolean isEnabled = globalConfig.getEnableIdentityFormatFieldsFromToken();
-			
-			if(!isEnabled)
-			{
+
+			if (!isEnabled) {
 				// Add identity field
 				List<String> identityFields = Arrays.asList(globalConfig.getIdentityFormatFieldsFromToken().split(","));
 				String fieldSeparator = globalConfig.getSelectIdentityFieldsSeparator();
 				List<String> identityValues = new ArrayList<>(identityFields.size());
 				for (String identityField : identityFields) {
-					String identityFieldValue = jwtToken.claim.has(identityField) ? jwtToken.claim.getString(identityField)
+					String identityFieldValue = jwtToken.claim.has(identityField)
+							? jwtToken.claim.getString(identityField)
 							: "";
 					identityValues.add(identityFieldValue);
-					LOGGER.log(Level.FINE, "getUnsignedToken() *** found identity field:" + identityField + " and value:"
-							+ identityFieldValue);
+					LOGGER.log(Level.FINE, "getUnsignedToken() *** found identity field:" + identityField
+							+ " and value:" + identityFieldValue);
 				}
-				jwtToken.claim.put(globalConfig.getidentityFieldName(), StringUtils.join(identityValues, fieldSeparator));
-				
-			}
-			else {
+				jwtToken.claim.put(globalConfig.getidentityFieldName(),
+						StringUtils.join(identityValues, fieldSeparator));
+
+			} else {
 				// Add identity field default to Sub
-				List<String> identityFields = Arrays.asList(globalConfig.getIdentityFormatFieldsFromToken().split(","));
-				String fieldSeparator = globalConfig.getSelectIdentityFieldsSeparator();
+
+				List<String> identityFields = Arrays
+						.asList(globalConfig.getSelectIdentityFormatToken().split("[-,+,|,:,.]"));
 				List<String> identityValues = new ArrayList<>(identityFields.size());
+
+				String token = globalConfig.getSelectIdentityFormatToken();
+				String parentField = identityFields.get(0);
+				String separator = token.substring(parentField.length(), parentField.length() + 1);
+
 				for (String identityField : identityFields) {
-					String identityFieldValue = jwtToken.claim.has(identityField) ? jwtToken.claim.getString(identityField)
+
+					String identityFieldValue = jwtToken.claim.has(identityField)
+							? jwtToken.claim.getString(identityField)
 							: "";
 					identityValues.add(identityFieldValue);
-					LOGGER.log(Level.FINE, "getUnsignedToken() *** found identity field:" + identityField + " and value:"
-							+ identityFieldValue);
+					LOGGER.log(Level.FINE, "getUnsignedToken() *** found identity field:" + identityField
+							+ " and value:" + identityFieldValue);
 				}
-				jwtToken.claim.put("sub", StringUtils.join(identityValues, fieldSeparator));
-				
+
+				jwtToken.claim.put("sub", StringUtils.join(identityValues, separator));
+
 			}
 
-
-			
-		
-			
 		}
 		LOGGER.log(Level.FINE, "End getUnsignedToken()");
 		return jwtToken;
