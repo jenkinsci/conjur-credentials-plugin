@@ -3,7 +3,9 @@ package org.conjur.jenkins.configuration;
 import java.io.IOException;
 import java.io.Serializable;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -35,6 +37,7 @@ import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 
 /**
@@ -107,6 +110,15 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 		@POST
 		public FormValidation doObtainJwtToken(@AncestorInPath Item item) {
 			LOGGER.log(Level.FINE, "Inside doObtainJwtToken()");
+			
+			String error = doValidateIdentityFormatField();
+			
+			if(error.length()!=0)
+			{
+				return FormValidation.error(error);
+			}
+				
+			
 			JwtToken token = JwtToken.getUnsignedToken("pluginAction", item);
 			return FormValidation.ok("JWT Token: \n" + token.claim.toString(4));
 		}
@@ -120,7 +132,13 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 
 		@POST
 		public FormValidation doRefreshCredentialSupplier(@AncestorInPath Item item) throws IOException, ServletException {
-						
+			
+			
+			String error = doValidateIdentityFormatField();
+			if(error.length()!=0)
+			{
+				return FormValidation.error(error);
+			}		
 			if (item != null) {
 				String key = String.valueOf(item.hashCode());            
 				Supplier<Collection<StandardCredentials>> supplier;
@@ -136,6 +154,30 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
  			} else {
 				 return FormValidation.ok();
 			 }
+		}
+		private  String doValidateIdentityFormatField()
+		{
+			GlobalConjurConfiguration globalConfig = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
+			String errorMsg="";
+			
+			if(globalConfig!=null && !globalConfig.getEnableIdentityFormatFieldsFromToken())//simplified JWT
+	        {
+	            LOGGER.log(Level.FINE, "Simplified JWT is disabled.");
+	            List<String> identityFields = Arrays.asList(globalConfig.getIdentityFormatFieldsFromToken().split(","));
+	            LOGGER.log(Level.FINE, "IdentityFields value >>"+identityFields.get(0));
+	            if(!identityFields.contains("jenkins_full_name"))
+	            {
+	                if(!(identityFields.contains("jenkins_parent_full_name") && identityFields.contains("jenkins_name")))
+	                {
+	                	errorMsg = "Error validating the configuration: Customer can add additional fields to above attribute names "+
+	    						"if needed but plugin must confirm there exists jenkins_full_name "+
+	    						"or a combination of jenkins_parent_full_name &  jenkins_name.";
+	                }
+	            }
+	        }
+			LOGGER.log(Level.FINE, "Returning error Msg"+errorMsg);
+			return errorMsg;
+			
 		}
 	}
 
@@ -284,5 +326,7 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 			.includeAs(ACL.SYSTEM, item, credentialClass, URIRequirementBuilder.fromUri(credentialsId).build())
 			.includeCurrentValue(credentialsId);
 	}
+	
+	
 
 }
