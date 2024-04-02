@@ -201,6 +201,8 @@ public class JwtToken {
 			//if checkbox is disabled its 'identity' as old code hold good
 			
 			boolean isEnabled = globalConfig.getEnableIdentityFormatFieldsFromToken();
+
+			String separator ="";
 			
 			if(!isEnabled)
 			{
@@ -220,24 +222,27 @@ public class JwtToken {
 			}
 			else {
 				// Add identity field default to Sub
-				List<String> identityFields = Arrays.asList(globalConfig.getIdentityFormatFieldsFromToken().split(","));
-				String fieldSeparator = globalConfig.getSelectIdentityFieldsSeparator();
+				List<String> identityFields = Arrays.asList(globalConfig.getSelectIdentityFormatToken().split("[-,+,|,:,.]"));
+				//String fieldSeparator = globalConfig.getSelectIdentityFieldsSeparator();
 				List<String> identityValues = new ArrayList<>(identityFields.size());
+				String token = globalConfig.getSelectIdentityFormatToken();
+				String parentField = identityFields.get(0);
+				if(token.length()>parentField.length()+1) {
+					 separator = token.substring(parentField.length(), parentField.length() + 1);
+				}else{
+					identityFields = Collections.singletonList(token);
+					separator = ""; // No separator if there's only one field
+				}
 				for (String identityField : identityFields) {
-					String identityFieldValue = jwtToken.claim.has(identityField) ? jwtToken.claim.getString(identityField)
-							: "";
+					String identityFieldValue = jwtToken.claim.has(identityField) ? jwtToken.claim.getString(identityField) : "";
 					identityValues.add(identityFieldValue);
 					LOGGER.log(Level.FINE, "getUnsignedToken() *** found identity field:" + identityField + " and value:"
 							+ identityFieldValue);
 				}
-				jwtToken.claim.put("sub", StringUtils.join(identityValues, fieldSeparator));
-				
+
+				jwtToken.claim.put("sub", StringUtils.join(identityValues, separator));
+
 			}
-
-
-			
-		
-			
 		}
 		LOGGER.log(Level.FINE, "End getUnsignedToken()");
 		return jwtToken;

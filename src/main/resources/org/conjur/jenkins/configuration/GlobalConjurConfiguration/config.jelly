@@ -206,14 +206,14 @@
            var inputEnableIdentityFormatFieldsFromToken = '${instance.enableIdentityFormatFieldsFromToken}';
            var inputIdentityFormatFieldsFromToken = '${instance.identityFormatFieldsFromToken}';
            var inputIdentityFieldName = '${instance.identityFieldName}';
-           var allEmpty = areAllVariablesEmpty(inputAuthWebServiceId, inputIdentityFormatFieldsFromToken, inputIdentityFieldName);
+           console.log("")
+           var allEmpty = areAllVariablesEmpty(inputAuthWebServiceId, inputIdentityFormatFieldsFromToken);
            function areAllVariablesEmpty(...variables) {
              return variables.every(variable => !variable.trim());
            }
-         if(allEmpty) { // Check the config inputs
+          // Check the config inputs
+        if (allEmpty) {
              document.getElementById("enableIdentityFormatFieldsFromToken").checked = true;
-         } else {
-             document.getElementById("enableIdentityFormatFieldsFromToken").checked = false;
          }
          getIdentityFormatToken();
        }

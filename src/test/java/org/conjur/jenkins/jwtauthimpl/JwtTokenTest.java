@@ -17,6 +17,7 @@ import org.acegisecurity.Authentication;
 import org.apache.commons.lang.StringUtils;
 import org.conjur.jenkins.configuration.GlobalConjurConfiguration;
 import org.conjur.jenkins.jwtauth.impl.JwtToken;
+import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -140,5 +141,48 @@ public class JwtTokenTest {
 		String identityKey = jwtToken.claim.getString("identity").toString();
 		// Assert that the identityValues list is not null
 		assertEquals("-main", identityKey.replace("[]", ""));
+	}
+
+
+	@Test
+	public void testGetSelectIdentityFormatFieldsTokenWithDelimiter() {
+		// Set up mock values
+		globalConfigMock.setSelectIdentityFormatToken("jenkins_parent_full_name-jenkins_name");
+		when(globalConfigMock.getSelectIdentityFormatToken()).thenReturn("jenkins_parent_full_name-jenkins_name");
+
+		JwtToken jwtToken = new JwtToken();
+		jwtToken.claim.put("jenkins_parent_full_name", "test-mbp-pipeline");
+		jwtToken.claim.put("jenkins_name", "main");
+
+		// Split the identity format fields
+		List<String> identityFields = Arrays.asList(globalConfigMock.getSelectIdentityFormatToken().split("[-,+,|,:,.]"));
+		List<String> identityValues = new ArrayList<>(identityFields.size());
+		String token = globalConfigMock.getSelectIdentityFormatToken();
+		String parentField = identityFields.get(0);
+		String separator =  token.substring(parentField.length(), parentField.length()+1);
+		for (String identityField : identityFields) {
+			String identityFieldValue = jwtToken.claim.has(identityField) ? jwtToken.claim.getString(identityField)
+					: "";
+			identityValues.add(identityFieldValue);
+		}
+		assertNotNull(identityValues);
+
+		jwtToken.claim.put("sub", StringUtils.join(identityValues, separator));
+		// Test if the split operation is successful
+		assertEquals("test-mbp-pipeline-main", jwtToken.claim.getString("sub"));
+	}
+
+	@Test
+	public void testGetSelectIdentityFormatFieldsTokenNoDelimiter() {
+		// Set up mock values
+		when(globalConfigMock.getSelectIdentityFormatToken()).thenReturn("jenkins_full_name");
+		JwtToken jwtToken = new JwtToken();
+		jwtToken.claim.put("jenkins_full_name", "test-mbp-pipeline");
+		// Split the identity format fields
+		String delimiter = "[-,+,|,:,.]";
+		List<String> identityFields = Arrays.asList(globalConfigMock.getSelectIdentityFormatToken().split(delimiter));
+		// Ensure that identityFields contains only one element, as there is no delimiter
+		assertEquals(1, identityFields.size());
+		assertEquals("jenkins_full_name", identityFields.get(0));
 	}
 }
