@@ -215,6 +215,7 @@
         if (allEmpty) {
              document.getElementById("enableIdentityFormatFieldsFromToken").checked = true;
          }
+         }
          getIdentityFormatToken();
        }
        //Initial call to config
