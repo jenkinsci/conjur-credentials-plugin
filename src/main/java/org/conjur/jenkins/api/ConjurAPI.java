@@ -113,7 +113,7 @@ public class ConjurAPI {
 					throw new RuntimeException(
 							"Error validating the configuration: Must add attribute jenkins_name "
 									+ "when using jenkins_parent_full_name");
-				} else if(!identityFields.contains("jenkins_full_name"))
+				} else if(!identityFields.contains("jenkins_parent_full_name") && !identityFields.contains("jenkins_full_name"))
 				{
 					throw new RuntimeException(
 							"Error validating the configuration: Must add attribute "
