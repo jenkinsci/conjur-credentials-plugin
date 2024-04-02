@@ -223,7 +223,6 @@ public class JwtToken {
 			else {
 				// Add identity field default to Sub
 				List<String> identityFields = Arrays.asList(globalConfig.getSelectIdentityFormatToken().split("[-,+,|,:,.]"));
-				//String fieldSeparator = globalConfig.getSelectIdentityFieldsSeparator();
 				List<String> identityValues = new ArrayList<>(identityFields.size());
 				String token = globalConfig.getSelectIdentityFormatToken();
 				String parentField = identityFields.get(0);
