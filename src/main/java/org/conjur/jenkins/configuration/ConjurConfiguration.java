@@ -165,14 +165,12 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 	            LOGGER.log(Level.FINE, "Simplified JWT is disabled.");
 	            List<String> identityFields = Arrays.asList(globalConfig.getIdentityFormatFieldsFromToken().split(","));
 	            LOGGER.log(Level.FINE, "IdentityFields value >>"+identityFields);
-				if(identityFields.contains("jenkins_parent_full_name") && !identityFields.contains("jenkins_name"))
+				if(!identityFields.contains("jenkins_full_name"))
 				{
-					errorMsg = "Error validating the configuration: Must add attribute jenkins_name "
-									+ "when using jenkins_parent_full_name";
-				} else if(!identityFields.contains("jenkins_parent_full_name") && !identityFields.contains("jenkins_full_name"))
-				{
-					errorMsg = "Error validating the configuration: Must add attribute "
-									+ "jenkins_full_name to make it unique";
+					if(identityFields.contains("jenkins_parent_full_name") && !identityFields.contains("jenkins_name"))
+					{
+						errorMsg = "Invalid configuration on conjur jenkins plugin. Ensure Identity format fields are configured correctly.";
+					}
 				}
 	        }
 			LOGGER.log(Level.FINE, "Returning error Msg"+errorMsg);

@@ -131,8 +131,6 @@ public class JwtToken {
 		String fullName = null;
 		if (user != null) {
 			fullName = user.getFullName();
-			userId = user.getId();
-
 		}
 		// Plugin plugin = Jenkins.get().getPlugin("blueocean-jwt");
 		String issuer = Jenkins.get().getRootUrl();
@@ -145,7 +143,6 @@ public class JwtToken {
 		jwtToken.claim.put("jti", UUID.randomUUID().toString().replace("-", ""));
 		jwtToken.claim.put("aud", globalConfig.getJwtAudience());
 		jwtToken.claim.put("iss", issuer);
-		jwtToken.claim.put("sub", userId);
 		jwtToken.claim.put("name", fullName);
 		long currentTime = System.currentTimeMillis() / 1000;
 		jwtToken.claim.put("iat", currentTime);
@@ -220,8 +217,9 @@ public class JwtToken {
 				}
 				identityFieldName =processIdentityFieldName(globalConfig.getidentityFieldName());
 				LOGGER.log(Level.FINE, "end of processIdentityFieldName()) identityFieldName : " +identityFieldName);
-				jwtToken.claim.put(identityFieldName,
-						StringUtils.join(identityValues, fieldSeparator));
+				final String identityFieldValue = StringUtils.join(identityValues, fieldSeparator);
+				jwtToken.claim.put(identityFieldName,identityFieldValue);
+				jwtToken.claim.put("sub", identityFieldValue);
 
 			} else {
 				LOGGER.log(Level.FINE, "Enable JWT Simplified");

@@ -176,10 +176,10 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
                 return handleValidationError("Identity Format Fields can add additional fields with comma-delimited values : aud,jenkins_name,jenkins_full_name,jenkins_parent_full_name,<others>");
             }
         }
-        if (jenkinsParentFullNameExists && jenkinsNameExists) {
+        if (jenkinsFullNameExists) {
             // No validation errors
             return FormValidation.ok();
-        }else if (!jenkinsParentFullNameExists && jenkinsFullNameExists)  {
+        }else if (jenkinsParentFullNameExists && jenkinsNameExists)  {
             // Only jenkins_full_name exists
             return FormValidation.ok();
         } else{
