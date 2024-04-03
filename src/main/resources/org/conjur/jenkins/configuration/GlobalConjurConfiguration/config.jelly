@@ -27,7 +27,7 @@
         <!-- <f:warning>Warning Deprecation: From Next Major version, this field will be deprecated and field is defualt to "cyberark-conjur".</f:warning>-->
             <f:textbox field="jwtAudience" name="jwtAudience" id="jwtAudience"/>
         </f:entry>
-        <div class="warning" style="margin-top: -1.25rem;opacity: 1;" id="divJwtAudWarning">In the next major version,the JWT Audience this field will be deprecated and the value will be set to "cyberark-conjur". </div>
+        <div class="warning" style="margin-top: -1.25rem;opacity: 1;" id="divJwtAudWarning">The option to configure the JWT Audience field is deprecated. From the next major release, its value will be set to: cyberark-conjur </div>
         <f:entry title="${%Signing Key Lifetime In Minutes}">
             <f:textbox field="keyLifetimeInMinutes" name="keyLifetimeInMinutes"/>
         </f:entry>
@@ -41,7 +41,7 @@
             <f:textbox id="identityFieldName" field="identityFieldName" name="identityFieldName" description="Name of the field to be added to JWT claim to possibly use it as identity"/>
         </f:entry>
         </div>
-        <div class="warning" style="margin-top: -1.25rem;opacity: 1;" id="dviWarning">In the next major version, this Identity Field Name  will be deprecated and the value will be set to "sub".</div>
+        <div class="warning" style="margin-top: -1.25rem;opacity: 1;" id="dviWarning">The option to configure the Identity Field Name is deprecated. From the next major release, its value will be set to: sub</div>
 
         <div id="divListIdentityFormatFieldsFromToken" style="display: none;">
         <f:entry title="${%Identity Format Fields}" name="selectIdentityFormatToken" field="selectIdentityFormatToken">
@@ -60,6 +60,7 @@
             <f:textbox id ="identityFormatFieldsFromToken" field="identityFormatFieldsFromToken" name="identityFormatFieldsFromToken" description="Comma separated fields from JWT Token to create identity field"/>
         </f:entry>
         </div>
+        <div class="warning" style="margin-top: -1.25rem;opacity: 1;" id="divTxtWarningIdentityFieldToken">From the next major release, Identity Format Fields will only accept predefined values from a drop-down list</div>
         <div id="divIdentityFieldsSeparator" style="display: none;">
        <f:entry title="${%Identity Fields Separator}" name="selectIdentityFieldsSeparator" field="selectIdentityFieldsSeparator">
            <!-- Deprecation warning -->
@@ -73,7 +74,7 @@
          </select>
        </f:entry>
         </div>
-         <div class="warning" style="margin-top: -1.25rem;opacity: 1;" id="dviWarningSeperator">In the next major version,Identity Fields Separator will be deprecated and its value set to: -</div>
+         <div class="warning" style="margin-top: -1.25rem;opacity: 1;" id="divWarningSeparator">The option to configure the Identity Fields Separator is deprecated.  From the next major release, its value will be sey to: -</div>
         <div id="identityFieldsSeparator">
         <f:entry title="${%Identity Fields Separator}">
             <f:textbox id="identityFieldsSeparator" field="identityFieldsSeparator" name="identityFieldsSeparator" description="Separator to place between format fields for identity"/>
@@ -110,7 +111,8 @@
           var selectedIdentityFieldsSeparator = document.getElementById("listIdentityFieldsSeparator");
           var inputIdentityFieldsSeparator = document.getElementById("identityFieldsSeparator");
           var divWarningMsg = document.getElementById("dviWarning");
-          var divWarningSeparatorMsg = document.getElementById("dviWarningSeperator");
+          var divWarningTxtIdentityTokenMsg = document.getElementById("divTxtWarningIdentityFieldToken");
+          var divWarningSeparatorMsg = document.getElementById("divWarningSeparator");
           var divJwtAudWarningMsg =document.getElementById("divJwtAudWarning");
 
 
@@ -130,10 +132,11 @@
               selectedIdentityFormatFiledToken.value=selectIdentityFormatTokenValue;
               divWarningMsg.style.display = "none";
               divWarningSeparatorMsg.style.display = "none";
-                jwtAudienceDefault.value = "cyberark-conjur";
-                jwtAudienceDefault.style.color = "#666666"; // Set color to gray
-                jwtAudienceDefault.readOnly = true;
-                divJwtAudWarningMsg.style.display = "none";
+              jwtAudienceDefault.value = "cyberark-conjur";
+              jwtAudienceDefault.style.color = "#666666"; // Set color to gray
+              jwtAudienceDefault.readOnly = true;
+              divJwtAudWarningMsg.style.display = "none";
+              divWarningTxtIdentityTokenMsg.style.display ="none";
           } else {
               divTxtIdentityFieldName.style.display = "block";
               txtIdentityFieldName.style.display = "block";
@@ -148,6 +151,7 @@
               divJwtAudWarningMsg.style.display = "block";
               jwtAudienceDefault.value =selectJwtAudienceValue;
               txtIdentityFieldName.value =identityFieldNameDefault;
+              divWarningTxtIdentityTokenMsg.style.display ="block";
           }
       }
       // Call the function initially to set the initial state based on checkbox
@@ -174,15 +178,22 @@
 
        function disableSubmitButton(){
             var inputAuthWebServiceId = document.getElementsByName('authWebServiceId')[0];
+            var inputJwtAudience = document.getElementsByName('jwtAudience')[0];
+
+            var inputKeyLifetimeInMinutes = document.getElementsByName('keyLifetimeInMinutes')[0];
+            var inputTokenDurarionInSeconds = document.getElementsByName('tokenDurarionInSeconds')[0];
+
             var inputIdentityFieldName= document.getElementsByName('identityFieldName')[0];
+            var inputIdentityFormatFieldsFromToken= document.getElementsByName('identityFormatFieldsFromToken')[0];
+
             var applyBtn = document.querySelector('button[name="Apply"]');
             var submitBtn = document.querySelector('button[name="Submit"]');
-           if (inputAuthWebServiceId.value.trim() === '' || inputIdentityFieldName.value.trim() === '') {
-                //applyBtn.disabled = true;
-                //submitBtn.disabled = true;
+           if (inputAuthWebServiceId.value.trim() === '' || inputJwtAudience.value.trim() === '' || inputIdentityFieldName.value.trim() === '' || inputIdentityFormatFieldsFromToken.value.trim() === '' || inputKeyLifetimeInMinutes.value.trim() === '' || inputTokenDurarionInSeconds.value.trim() === '') {
+                applyBtn.disabled = true;
+                submitBtn.disabled = true;
              }else{
-                 //applyBtn.disabled = false;
-                 //submitBtn.disabled = false;
+                 applyBtn.disabled = false;
+                 submitBtn.disabled = false;
              }
          }
          disableSubmitButton();
@@ -206,7 +217,6 @@
            var inputEnableIdentityFormatFieldsFromToken = '${instance.enableIdentityFormatFieldsFromToken}';
            var inputIdentityFormatFieldsFromToken = '${instance.identityFormatFieldsFromToken}';
            var inputIdentityFieldName = '${instance.identityFieldName}';
-           console.log("")
            var allEmpty = areAllVariablesEmpty(inputAuthWebServiceId, inputIdentityFormatFieldsFromToken);
            function areAllVariablesEmpty(...variables) {
              return variables.every(variable => !variable.trim());
@@ -214,7 +224,6 @@
           // Check the config inputs
         if (allEmpty) {
              document.getElementById("enableIdentityFormatFieldsFromToken").checked = true;
-         }
          }
          getIdentityFormatToken();
        }

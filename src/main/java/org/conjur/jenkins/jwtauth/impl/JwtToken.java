@@ -42,6 +42,8 @@ public class JwtToken {
 
 	private static int DEFAULT_NOT_BEFORE_IN_SEC = 30;
 
+	private static final String IDENTITY_FIELD_NAME_PATTERN = "^[a-zA-Z0-9\\-_\\\"]*$";
+
 	public static final DateTimeFormatter ID_FORMAT = DateTimeFormatter.ofPattern("MMddkkmmss")
 			.withZone(ZoneId.systemDefault());
 
@@ -201,8 +203,9 @@ public class JwtToken {
 			// if checkbox is disabled its 'identity' as old code hold good
 
 			boolean isEnabled = globalConfig.getEnableIdentityFormatFieldsFromToken();
-			String separator ="";
+			String identityFieldName,separator ="";
 			if (!isEnabled) {
+				LOGGER.log(Level.FINE, "Disable JWT Simplified");
 				// Add identity field
 				List<String> identityFields = Arrays.asList(globalConfig.getIdentityFormatFieldsFromToken().split(","));
 				String fieldSeparator = globalConfig.getSelectIdentityFieldsSeparator();
@@ -215,10 +218,13 @@ public class JwtToken {
 					LOGGER.log(Level.FINE, "getUnsignedToken() *** found identity field:" + identityField
 							+ " and value:" + identityFieldValue);
 				}
-				jwtToken.claim.put(globalConfig.getidentityFieldName(),
+				identityFieldName =processIdentityFieldName(globalConfig.getidentityFieldName());
+				LOGGER.log(Level.FINE, "end of processIdentityFieldName()) identityFieldName : " +identityFieldName);
+				jwtToken.claim.put(identityFieldName,
 						StringUtils.join(identityValues, fieldSeparator));
 
 			} else {
+				LOGGER.log(Level.FINE, "Enable JWT Simplified");
 				// Add identity field default to Sub
 				List<String> identityFields = Arrays.asList(globalConfig.getSelectIdentityFormatToken().split("[-,+,|,:,.]"));
 				List<String> identityValues = new ArrayList<>(identityFields.size());
@@ -227,8 +233,7 @@ public class JwtToken {
 				if(token.length()>parentField.length()+1) {
 					 separator = token.substring(parentField.length(), parentField.length() + 1);
 				}else{
-					identityFields = Collections.singletonList(token);
-					separator = ""; // No separator if there's only one field
+					identityFields = Collections.singletonList(token);  //containing a single element
 				}
 				for (String identityField : identityFields) {
 
@@ -245,6 +250,18 @@ public class JwtToken {
 		LOGGER.log(Level.FINE, "End getUnsignedToken()");
 		return jwtToken;
 	}
+
+	private static String processIdentityFieldName(String inputIdentityFiedName) {
+		LOGGER.log(Level.FINE, "Start of processIdentityFieldName())");
+		// Check if input matches the pattern
+		if (inputIdentityFiedName.matches(IDENTITY_FIELD_NAME_PATTERN)) {
+			// If input matches, return the input itself
+			return inputIdentityFiedName;
+		} else {
+			// If input does not match, replace special characters with an empty string
+			return inputIdentityFiedName.replaceAll("[^a-zA-Z0-9\\-_\\\"]", "");
+		}
+    }
 
 	/**
 	 * retrieves the CurrentSigningKey for the JWT Token

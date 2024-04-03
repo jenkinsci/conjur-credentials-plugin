@@ -112,13 +112,13 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 			LOGGER.log(Level.FINE, "Inside doObtainJwtToken()");
 			
 			String error = doValidateIdentityFormatField();
-			
+
 			if(error.length()!=0)
 			{
 				return FormValidation.error(error);
 			}
-				
-			
+
+
 			JwtToken token = JwtToken.getUnsignedToken("pluginAction", item);
 			return FormValidation.ok("JWT Token: \n" + token.claim.toString(4));
 		}
@@ -155,7 +155,7 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 				 return FormValidation.ok();
 			 }
 		}
-		private  String doValidateIdentityFormatField()
+		private String doValidateIdentityFormatField()
 		{
 			GlobalConjurConfiguration globalConfig = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
 			String errorMsg="";

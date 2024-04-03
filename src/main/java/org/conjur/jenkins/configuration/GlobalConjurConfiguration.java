@@ -102,8 +102,8 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
                                              @QueryParameter("jwtAudience") String jwtAudience) {
         LOGGER.log(Level.FINE, "Inside of doCheckJwtAudience()");
         if (StringUtils.isEmpty(jwtAudience) || StringUtils.isBlank(jwtAudience)) {
-            LOGGER.log(Level.FINE, "JWT Audience field will default to cyberark-conjur ");
-            return FormValidation.warning("JWT Audience field will default to cyberark-conjur ");
+            LOGGER.log(Level.FINE, "JWT Audience field value defaults to: cyberark-conjur");
+            return FormValidation.warning("JWT Audience field value defaults to: cyberark-conjur ");
         } else {
             return FormValidation.ok();
 
@@ -166,40 +166,16 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
         // Additional fields can be added if needed
         identityTokenSet.addAll(identityFields);
         if (!identityFields.stream().allMatch(identityTokenSet::contains)) {
-            String errorMsg = "Identity Format Fields can add additional fields with comma-delimited values (without space characters):jenkins_full_name or a combination of jenkins_parent_full_name &  jenkins_name.";
+            String errorMsg = "Identity Format Fields can only contain these comma-delimited values : aud,jenkins_name,jenkins_full_name,jenkins_parent_full_name,<others>";
             LOGGER.log(Level.FINE, errorMsg);
             return FormValidation.error(errorMsg);
         }
-        // Check if jenkins_name and jenkins_full_name are both present
-//        if (identityFields.contains("jenkins_name") && identityFields.contains("jenkins_full_name")) {
-//            return handleValidationError("jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name");
-//        }
-//        if (identityFields.contains("jenkins_parent_full_name") && identityFields.contains("jenkins_full_name")) {
-//            return handleValidationError("jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name");
-//        }
-//        // Check if either jenkins_full_name exists or combination of jenkins_parent_full_name and jenkins_name exists
-//        if (!identityFields.contains("jenkins_full_name") &&
-//                !(identityFields.contains("jenkins_parent_full_name") && identityFields.contains("jenkins_name"))) {
-//            return handleValidationError("jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name");
-//        }
-//
-//        if((identityFields.contains("jenkins_parent_full_name") && !identityFields.contains("jenkins_name")))
-//        {
-//            return handleValidationError("jenkins_parent_full_name and jenkins_name or jenkins_full_name");
-//        }
-//
-//        if(!identityFields.contains("jenkins_full_name") && !identityFields.contains("jenkins_parent_full_name"))
-//        {
-//            return handleValidationError("jenkins_full_name");
-//        }
-
         // Check if all fields are valid tokens without any space characters other than comma
         for (String field : identityFields) {
             if (!identityTokenSet.contains(field)) {
-                return handleValidationError("Identity Format Fields can add additional fields with comma-delimited values (without space characters):");
+                return handleValidationError("Identity Format Fields can add additional fields with comma-delimited values : aud,jenkins_name,jenkins_full_name,jenkins_parent_full_name,<others>");
             }
         }
-
         if (jenkinsParentFullNameExists && jenkinsNameExists) {
             // No validation errors
             return FormValidation.ok();
@@ -213,7 +189,7 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
     }
 
     private FormValidation handleValidationError(String tokens) {
-        LOGGER.log(Level.FINE, "Identity Format Fields must contain at least one of the  " + tokens);
+        LOGGER.log(Level.WARNING, "Identity Format Fields must contain at least one of the  " + tokens);
         return FormValidation.error("Identity Format Fields must contain at least one of the " + tokens);
     }
 
