@@ -2,6 +2,7 @@ package org.conjur.jenkins.api;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
@@ -100,6 +101,26 @@ public class ConjurAPI {
 		}
 
 		ConjurAuthnInfo conjurAuthn = getConjurAuthnInfo(configuration, availableCredentials, context);
+		GlobalConjurConfiguration globalConfig = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
+		if (globalConfig != null && globalConfig.getEnableJWKS()) {
+			LOGGER.log(Level.FINE, "JWT is enabled.");
+			if (!globalConfig.getEnableIdentityFormatFieldsFromToken())// Simplified JWT is disabled
+			{
+				LOGGER.log(Level.FINE, "Simplified JWT is disabled.");
+				List<String> identityFields = Arrays.asList(globalConfig.getIdentityFormatFieldsFromToken().split(","));
+				if(identityFields.contains("jenkins_parent_full_name") && !identityFields.contains("jenkins_name"))
+				{
+					throw new RuntimeException(
+							"Error validating the configuration: Must add attribute jenkins_name "
+									+ "when using jenkins_parent_full_name");
+				} else if(!identityFields.contains("jenkins_parent_full_name") && !identityFields.contains("jenkins_full_name"))
+				{
+					throw new RuntimeException(
+							"Error validating the configuration: Must add attribute "
+									+ "jenkins_full_name to make it unique");
+				}
+			}
+		}
 
 		Request request = null;
 		if (conjurAuthn.login != null && conjurAuthn.apiKey != null) {

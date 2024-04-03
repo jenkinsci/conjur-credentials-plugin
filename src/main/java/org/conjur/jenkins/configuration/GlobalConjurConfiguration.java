@@ -171,17 +171,27 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
             return FormValidation.error(errorMsg);
         }
         // Check if jenkins_name and jenkins_full_name are both present
-        if (identityFields.contains("jenkins_name") && identityFields.contains("jenkins_full_name")) {
-            return handleValidationError("jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name");
-        }
-        if (identityFields.contains("jenkins_parent_full_name") && identityFields.contains("jenkins_full_name")) {
-            return handleValidationError("jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name");
-        }
-        // Check if either jenkins_full_name exists or combination of jenkins_parent_full_name and jenkins_name exists
-        if (!identityFields.contains("jenkins_full_name") &&
-                !(identityFields.contains("jenkins_parent_full_name") && identityFields.contains("jenkins_name"))) {
-            return handleValidationError("jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name");
-        }
+//        if (identityFields.contains("jenkins_name") && identityFields.contains("jenkins_full_name")) {
+//            return handleValidationError("jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name");
+//        }
+//        if (identityFields.contains("jenkins_parent_full_name") && identityFields.contains("jenkins_full_name")) {
+//            return handleValidationError("jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name");
+//        }
+//        // Check if either jenkins_full_name exists or combination of jenkins_parent_full_name and jenkins_name exists
+//        if (!identityFields.contains("jenkins_full_name") &&
+//                !(identityFields.contains("jenkins_parent_full_name") && identityFields.contains("jenkins_name"))) {
+//            return handleValidationError("jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name");
+//        }
+//
+//        if((identityFields.contains("jenkins_parent_full_name") && !identityFields.contains("jenkins_name")))
+//        {
+//            return handleValidationError("jenkins_parent_full_name and jenkins_name or jenkins_full_name");
+//        }
+//
+//        if(!identityFields.contains("jenkins_full_name") && !identityFields.contains("jenkins_parent_full_name"))
+//        {
+//            return handleValidationError("jenkins_full_name");
+//        }
 
         // Check if all fields are valid tokens without any space characters other than comma
         for (String field : identityFields) {
@@ -193,19 +203,18 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
         if (jenkinsParentFullNameExists && jenkinsNameExists) {
             // No validation errors
             return FormValidation.ok();
-        }else if (jenkinsFullNameExists && !(jenkinsParentFullNameExists && jenkinsNameExists)) {
+        }else if (!jenkinsParentFullNameExists && jenkinsFullNameExists)  {
             // Only jenkins_full_name exists
             return FormValidation.ok();
         } else{
             // Neither jenkins_full_name nor valid combination found
             return handleValidationError("jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name");
         }
-
     }
 
     private FormValidation handleValidationError(String tokens) {
-        LOGGER.log(Level.FINE, "IdentityFormatFieldsFromToken must contain at least one of the  " + tokens);
-        return FormValidation.error("IdentityFormatFieldsFromToken must contain at least one of the " + tokens);
+        LOGGER.log(Level.FINE, "Identity Format Fields must contain at least one of the  " + tokens);
+        return FormValidation.error("Identity Format Fields must contain at least one of the " + tokens);
     }
 
     /**
