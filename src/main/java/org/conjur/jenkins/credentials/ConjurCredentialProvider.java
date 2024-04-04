@@ -119,27 +119,8 @@ public class ConjurCredentialProvider extends CredentialsProvider {
 							.collect(Collectors.toList());
 				}
 
-			} else {
-				LOGGER.log(Level.FINE,
-						"**** getCredentials ConjurCredentialProvider: else part" + this.getId() + " : " + this);
-				LOGGER.log(Level.FINE,
-						"Getting Credentials from ConjurCredentialProvider @ else part" + context.getClass().getName());
-				LOGGER.log(Level.FINE, "To Fetch credentials inside else part");
-
-				Collection<StandardCredentials> allCredentials = Collections.emptyList();
-
-				getStore((ModelObject) ((Run) context).getParent());
-
-				if (currentCredentialSupplier != null) {
-					LOGGER.log(Level.FINE, "Iniside current credentialsupplier");
-					allCredentials = currentCredentialSupplier.get();
-					LOGGER.log(Level.FINE, "Iniside current credentialsupplier" + allCredentials.toString());
-
-					return allCredentials.stream().filter(c -> type.isAssignableFrom(c.getClass()))
-							// cast to keep generics happy even though we are assignable
-							.map(type::cast).collect(Collectors.toList());
-				}
 			}
+			LOGGER.log(Level.FINE, "**** End of getCredentialsFromSupplier(): " + Collections.emptyList());
 
 		}
 		long endtime = System.nanoTime();

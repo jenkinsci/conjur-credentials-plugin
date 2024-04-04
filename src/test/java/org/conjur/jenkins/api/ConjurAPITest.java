@@ -1,23 +1,27 @@
 
 package org.conjur.jenkins.api;
 
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import jenkins.model.GlobalConfiguration;
 import org.conjur.jenkins.api.ConjurAPI.ConjurAuthnInfo;
 import org.conjur.jenkins.configuration.ConjurConfiguration;
+import org.conjur.jenkins.configuration.GlobalConjurConfiguration;
+import org.conjur.jenkins.configuration.GlobalConjurConfigurationTest;
 import org.conjur.jenkins.jwtauth.impl.JwtToken;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static org.junit.Assert.assertSame;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
+
 import org.mockito.*;
 
 
@@ -39,6 +43,9 @@ public class ConjurAPITest {
 	public Call remoteCall;
 	public ConjurAPI api;
 	public List<UsernamePasswordCredentials> availableCredential;
+
+	@Mock
+	private GlobalConjurConfiguration globalConfig;
 
 
 	@Before
@@ -89,7 +96,16 @@ public class ConjurAPITest {
 					"bhfbdbkfbkd-bvjdbfbjbv-bfjbdbjkb-bbfkbskb");
 
 		}
-
+	}
+	@Test
+	public void globalConfigAndSimplifiedJWTDisabled() {
+		globalConfig.setEnableJWKS(true);
+		globalConfig.setEnableIdentityFormatFieldsFromToken(false);
+		globalConfig.setIdentityFormatFieldsFromToken("jenkins_parent_full_name");
+		Exception exception = assertThrows(RuntimeException.class, () -> {
+			ConjurAPI.getAuthorizationToken(client,conjurConfiguration,context);
+		});
+		assertNotNull(exception.getMessage());
 	}
 
 }

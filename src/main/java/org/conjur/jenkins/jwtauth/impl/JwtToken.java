@@ -3,6 +3,7 @@ package org.conjur.jenkins.jwtauth.impl;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -15,6 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.acegisecurity.Authentication;
+import org.apache.commons.lang.StringUtils;
 import org.conjur.jenkins.configuration.GlobalConjurConfiguration;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
@@ -39,6 +41,8 @@ public class JwtToken {
 	private static final Logger LOGGER = Logger.getLogger(JwtToken.class.getName());
 
 	private static int DEFAULT_NOT_BEFORE_IN_SEC = 30;
+
+	private static final String IDENTITY_FIELD_NAME_PATTERN = "^[a-zA-Z0-9\\-_\\\"]*$";
 
 	public static final DateTimeFormatter ID_FORMAT = DateTimeFormatter.ofPattern("MMddkkmmss")
 			.withZone(ZoneId.systemDefault());
@@ -127,8 +131,6 @@ public class JwtToken {
 		String fullName = null;
 		if (user != null) {
 			fullName = user.getFullName();
-			userId = user.getId();
-
 		}
 		// Plugin plugin = Jenkins.get().getPlugin("blueocean-jwt");
 		String issuer = Jenkins.get().getRootUrl();
@@ -141,7 +143,6 @@ public class JwtToken {
 		jwtToken.claim.put("jti", UUID.randomUUID().toString().replace("-", ""));
 		jwtToken.claim.put("aud", globalConfig.getJwtAudience());
 		jwtToken.claim.put("iss", issuer);
-		jwtToken.claim.put("sub", userId);
 		jwtToken.claim.put("name", fullName);
 		long currentTime = System.currentTimeMillis() / 1000;
 		jwtToken.claim.put("iat", currentTime);
@@ -194,25 +195,71 @@ public class JwtToken {
 				}
 			}
 
-			// Add identity field
-			List<String> identityFields = Arrays.asList(globalConfig.getIdentityFormatFieldsFromToken().split(","));
-			String fieldSeparator = globalConfig.getIdentityFieldsSeparator();
-			StringBuffer identityValue = new StringBuffer();
-			for (String identityField : identityFields) {
-				if (jwtToken.claim.has(identityField)) {
-					String fieldValue = jwtToken.claim.getString(identityField);
-					if (identityValue.length() != 0)
-						identityValue.append(fieldSeparator);
-					identityValue.append(fieldValue);
-				}
-			}
-			if (identityValue.length() > 0)
-				jwtToken.claim.put(globalConfig.getidentityFieldName(), identityValue);
+			// based ont eh checkbox selection
+			// if checkbox is enabled its "sub", "identityformatfields"
+			// if checkbox is disabled its 'identity' as old code hold good
 
+			boolean isEnabled = globalConfig.getEnableIdentityFormatFieldsFromToken();
+			String identityFieldName,separator ="";
+			if (!isEnabled) {
+				LOGGER.log(Level.FINE, "Disable JWT Simplified");
+				// Add identity field
+				List<String> identityFields = Arrays.asList(globalConfig.getIdentityFormatFieldsFromToken().split(","));
+				String fieldSeparator = globalConfig.getSelectIdentityFieldsSeparator();
+				List<String> identityValues = new ArrayList<>(identityFields.size());
+				for (String identityField : identityFields) {
+					String identityFieldValue = jwtToken.claim.has(identityField)
+							? jwtToken.claim.getString(identityField)
+							: "";
+					identityValues.add(identityFieldValue);
+					LOGGER.log(Level.FINE, "getUnsignedToken() *** processed identity field:" + identityField
+							+ " and value:" + identityFieldValue);
+				}
+				identityFieldName =processIdentityFieldName(globalConfig.getidentityFieldName());
+				LOGGER.log(Level.FINE, "end of processIdentityFieldName()) identityFieldName : " +identityFieldName);
+				final String identityFieldValue = StringUtils.join(identityValues, fieldSeparator);
+				jwtToken.claim.put(identityFieldName,identityFieldValue);
+				jwtToken.claim.put("sub", identityFieldValue);
+
+			} else {
+				LOGGER.log(Level.FINE, "Enable JWT Simplified");
+				// Add identity field default to Sub
+				List<String> identityFields = Arrays.asList(globalConfig.getSelectIdentityFormatToken().split("[-,+,|,:,.]"));
+				List<String> identityValues = new ArrayList<>(identityFields.size());
+				String token = globalConfig.getSelectIdentityFormatToken();
+				String parentField = identityFields.get(0);
+				if(token.length()>parentField.length()+1) {
+					 separator = token.substring(parentField.length(), parentField.length() + 1);
+				}else{
+					identityFields = Collections.singletonList(token);  //containing a single element
+				}
+				for (String identityField : identityFields) {
+
+					String identityFieldValue = jwtToken.claim.has(identityField)
+							? jwtToken.claim.getString(identityField)
+							: "";
+					identityValues.add(identityFieldValue);
+					LOGGER.log(Level.FINE, "getUnsignedToken() *** processed identity field:" + identityField
+							+ " and value:" + identityFieldValue);
+				}
+				jwtToken.claim.put("sub", StringUtils.join(identityValues, separator));
+			}
 		}
 		LOGGER.log(Level.FINE, "End getUnsignedToken()");
 		return jwtToken;
 	}
+
+	private static String processIdentityFieldName(String inputIdentityFiedName) {
+		LOGGER.log(Level.FINE, "Start of processIdentityFieldName())");
+		// Check if input matches the pattern
+		if (inputIdentityFiedName.matches(IDENTITY_FIELD_NAME_PATTERN)) {
+			// If input matches, return the input itself
+			return inputIdentityFiedName;
+		} else {
+			// If input does not match, replace special characters with an empty string
+			return inputIdentityFiedName.replaceAll("[^a-zA-Z0-9\\-_\\\"]", "");
+		}
+    }
 
 	/**
 	 * retrieves the CurrentSigningKey for the JWT Token
