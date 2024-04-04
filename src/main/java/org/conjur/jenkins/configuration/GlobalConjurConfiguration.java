@@ -141,41 +141,20 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
                                                                @QueryParameter("identityFormatFieldsFromToken") String identityFormatFieldsFromToken) {
         LOGGER.log(Level.FINE, "Inside of doCheckIdentityFormatField()");
         List<String> identityFields = Arrays.asList(identityFormatFieldsFromToken.split(","));
-        // Check for duplicates in identityFields
-        Set<String> uniqueIdentityFields = new HashSet<>(identityFields);
         if (StringUtils.isEmpty(identityFormatFieldsFromToken) || StringUtils.isBlank(identityFormatFieldsFromToken)) {
-            LOGGER.log(Level.FINE, "IdentityFormatFieldsFromToken should not be empty");
-            return FormValidation.error("IdentityFormatFieldsFromToken field should not be empty");
-        }
-        if (uniqueIdentityFields.size() < identityFields.size()) {
-            LOGGER.log(Level.FINE, "Duplicate tokens found in IdentityFormatFieldsFromToken");
-            return FormValidation.error("Duplicate tokens found in IdentityFormatFieldsFromToken");
+            LOGGER.log(Level.FINE, "Identity Format Fields should not be empty");
+            return FormValidation.error("Identity Format Fields should not be empty");
         }
         return validateIdentityFormatFields(identityFields);
     }
 
   
     private FormValidation validateIdentityFormatFields(List<String> identityFields) {
-        // Check for valid tokens
-        Set<String> identityTokenSet = new HashSet<>(Arrays.asList("jenkins_full_name","jenkins_parent_full_name","jenkins_name"));
         // Check for the presence of either jenkins_full_name or the combination of jenkins_parent_full_name and jenkins_name
         boolean jenkinsFullNameExists = identityFields.contains("jenkins_full_name");
         boolean jenkinsParentFullNameExists = identityFields.contains("jenkins_parent_full_name");
         boolean jenkinsNameExists = identityFields.contains("jenkins_name");
-
-        // Additional fields can be added if needed
-        identityTokenSet.addAll(identityFields);
-        if (!identityFields.stream().allMatch(identityTokenSet::contains)) {
-            String errorMsg = "Identity Format Fields can only contain these comma-delimited values : aud,jenkins_name,jenkins_full_name,jenkins_parent_full_name,<others>";
-            LOGGER.log(Level.FINE, errorMsg);
-            return FormValidation.error(errorMsg);
-        }
-        // Check if all fields are valid tokens without any space characters other than comma
-        for (String field : identityFields) {
-            if (!identityTokenSet.contains(field)) {
-                return handleValidationError("Identity Format Fields can add additional fields with comma-delimited values : aud,jenkins_name,jenkins_full_name,jenkins_parent_full_name,<others>");
-            }
-        }
+        
         if (jenkinsFullNameExists) {
             // No validation errors
             return FormValidation.ok();

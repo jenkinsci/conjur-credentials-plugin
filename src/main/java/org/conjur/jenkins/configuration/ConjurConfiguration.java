@@ -167,7 +167,7 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 	            LOGGER.log(Level.FINE, "IdentityFields value >>"+identityFields);
 				if(!identityFields.contains("jenkins_full_name"))
 				{
-					if(identityFields.contains("jenkins_parent_full_name") && !identityFields.contains("jenkins_name"))
+					if(!identityFields.contains("jenkins_parent_full_name") || !identityFields.contains("jenkins_name"))
 					{
 						errorMsg = "Invalid configuration on conjur jenkins plugin. Ensure Identity format fields are configured correctly.";
 					}

@@ -212,7 +212,7 @@ public class JwtToken {
 							? jwtToken.claim.getString(identityField)
 							: "";
 					identityValues.add(identityFieldValue);
-					LOGGER.log(Level.FINE, "getUnsignedToken() *** found identity field:" + identityField
+					LOGGER.log(Level.FINE, "getUnsignedToken() *** processed identity field:" + identityField
 							+ " and value:" + identityFieldValue);
 				}
 				identityFieldName =processIdentityFieldName(globalConfig.getidentityFieldName());
@@ -239,7 +239,7 @@ public class JwtToken {
 							? jwtToken.claim.getString(identityField)
 							: "";
 					identityValues.add(identityFieldValue);
-					LOGGER.log(Level.FINE, "getUnsignedToken() *** found identity field:" + identityField
+					LOGGER.log(Level.FINE, "getUnsignedToken() *** processed identity field:" + identityField
 							+ " and value:" + identityFieldValue);
 				}
 				jwtToken.claim.put("sub", StringUtils.join(identityValues, separator));
