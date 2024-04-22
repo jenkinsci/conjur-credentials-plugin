@@ -38,8 +38,20 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
- * The ConjurAPI class authenticates the request based on the configuration and
- * retrieves secret from Conjur Vault
+ * The ConjurAPI class provides the service to authenticate and retrieve secrets
+ * based on API Key/JWT authentication using the Conjur Configuration details
+ * configured either through the Jenkins Global configuration form or as
+ * environment. The request to authenticate (API Key/JWT) will be processed in
+ * Conjur Server and return authorised(200-OK) or unauthorised code
+ * (401-UnAuthorized) code. The request to fetch the secrets based on the
+ * credetnialID will be processed only if the authentication is successful. Upon
+ * successful authentication , the request to fetch the secret is processed and
+ * returns secrets if available. The request to fetch secrets first checks if
+ * the credentialId is available and having grant permission based on identity
+ * If CredentialID is not found ,returns <b>Credential NotFound message</b>. If
+ * CredentialID does not have permission , returns <b>401 UnAuthorized
+ * message</b>. If secrets not available for the CredentialID ,returns
+ * <b>Credential ID is empty message</b>.
  */
 public class ConjurAPI {
 	/**
@@ -55,7 +67,15 @@ public class ConjurAPI {
 
 	private static final Logger LOGGER = Logger.getLogger(ConjurAPI.class.getName());
 
-	private static void defaultToEnvironment(ConjurAuthnInfo conjurAuthn) {
+	/**
+	 * Set the ConjurAuthnInfo with the environment variables
+	 * 
+	 * @param conjurAuthn
+	 */
+
+	private static  void defaultToEnvironment(ConjurAuthnInfo conjurAuthn) {
+		LOGGER.log(Level.FINE, "Start of defaultToEnvironment()");
+
 		Map<String, String> env = System.getenv();
 		if (conjurAuthn.applianceUrl == null && env.containsKey("CONJUR_APPLIANCE_URL"))
 			conjurAuthn.applianceUrl = env.get("CONJUR_APPLIANCE_URL");
@@ -65,21 +85,27 @@ public class ConjurAPI {
 			conjurAuthn.login = env.get("CONJUR_AUTHN_LOGIN");
 		if (conjurAuthn.apiKey == null && env.containsKey("CONJUR_AUTHN_API_KEY"))
 			conjurAuthn.apiKey = env.get("CONJUR_AUTHN_API_KEY");
+		LOGGER.log(Level.FINE, "End of defaultToEnvironment()");
 	}
 
 	/**
-	 * Retrieves the authorization token based on the Configuration.
+	 * Method to build the client authentication API Key/JWT request based on the
+	 * ConjurConfiguration.
 	 * 
-	 * @param OkHttpClient        client to process request
-	 * @param ConjurConfiguration with configuration info
-	 * @param Jenkins             ModelObject context
-	 * @return AuthorizationToken to authenticate the request
-	 * @throws IOException
+	 * @param client        OkHttp builds HTTP/HTTP/2 client that shares the same
+	 *                      connection,thread pool and configuration.
+	 * @param configuration ConjurConfiguration object containing
+	 *                      account,applianceUrl,credentialID,certificateCredentialID,ownerFullName.
+	 * @param context       current context in which Jenkins Job are running
+	 * @return status code to 200-OK if request is authenticated or 401 if
+	 *         Unauthorized
+	 * @throws IOException in case of error connecting to Conjur Server
 	 */
 	@SuppressFBWarnings
-	public static String getAuthorizationToken(OkHttpClient client, ConjurConfiguration configuration,
+	public static  String getAuthorizationToken(OkHttpClient client, ConjurConfiguration configuration,
 			ModelObject context) throws IOException {
-		LOGGER.log(Level.FINE,
+		LOGGER.log(Level.FINE, "Start of getAuthorizationToken()");
+		LOGGER.log(Level.INFO,
 				"getAuthorizationToken input params" + "Client:" + client + "Configuration:" + configuration);
 		String resultingToken = null;
 
@@ -121,12 +147,13 @@ public class ConjurAPI {
 
 		Request request = null;
 		if (conjurAuthn.login != null && conjurAuthn.apiKey != null) {
-			LOGGER.log(Level.FINE, "Authenticating with Conjur (authn)");
+			LOGGER.log(Level.FINE, "Creating authentication request for API Key authentication with Conjur");
 			request = new Request.Builder()
 					.url(String.format("%s/%s/%s/%s/authenticate", conjurAuthn.applianceUrl, conjurAuthn.authnPath,
 							conjurAuthn.account, URLEncoder.encode(conjurAuthn.login, "utf-8")))
 					.post(RequestBody.create(MediaType.parse("text/plain"), conjurAuthn.apiKey)).build();
 		} else if (conjurAuthn.authnPath != null && conjurAuthn.apiKey != null) {
+			LOGGER.log(Level.FINE, "Creating authentication request for JWT authentication with Conjur");
 			String authnPath = conjurAuthn.authnPath.indexOf("/") == -1 ? "authn-jwt/" + conjurAuthn.authnPath
 					: conjurAuthn.authnPath;
 			LOGGER.log(Level.FINE, "Authenticating with Conjur (JWT) authnPath={0}", authnPath);
@@ -144,11 +171,12 @@ public class ConjurAPI {
 			LOGGER.log(Level.FINEST,
 					() -> "Conjur Authenticate response " + response.code() + " - " + response.message());
 			if (response.code() != 200) {
+
 				throw new IOException("Error authenticating to Conjur [" + response.code() + " - " + response.message()
 						+ "\n" + resultingToken);
 			}
 		} else {
-			LOGGER.log(Level.FINE, "Failed to find credentials for conjur authentication");
+			LOGGER.log(Level.FINE, "Failed to authenticate with conjur server");
 		}
 		return resultingToken;
 	}
@@ -210,11 +238,12 @@ public class ConjurAPI {
 	}
 
 	/**
-	 * Retrieves the secret for the key
+	 * This method gets the {@link ConjurAuthIno} data and retrieve the secret for the valid authenticationToken,account
+	 * variablePath. The request to fetch the secret are build using the OkHttp client.
 	 * 
-	 * @param OkHttpClient  to process request
-	 * @param Jenkins       configuration contianing the Conjur Config details
-	 * @param Authorization token to authenticate the request
+	 * @param client   OkHttp builds HTTP/HTTP/2 client that shares the same connection,thread pool and configuration.
+	 * @param configuration  {@link ConjurConfiguration} containing the Conjur authentication parameters 
+	 * @param authToken	 token to authenticate the request.
 	 * @param variablePath  for which to retrieve the secrets
 	 * @return the secrets for the specified variablePath
 	 * @throws IOException
@@ -223,10 +252,10 @@ public class ConjurAPI {
 	public static String getSecret(OkHttpClient client, ConjurConfiguration configuration, String authToken,
 			String variablePath) throws IOException {
 		LOGGER.log(Level.FINE, "Start of getSecret()");
-		long start = System.nanoTime();
+		
 		ConjurAuthnInfo conjurAuthn = getConjurAuthnInfo(configuration, null, null);
 
-		LOGGER.log(Level.FINEST, "Fetching secret from Conjur");
+		LOGGER.log(Level.FINEST, "Fetching secret from Conjur Server");
 		Request request = new Request.Builder().url(
 				String.format("%s/secrets/%s/variable/%s", conjurAuthn.applianceUrl, conjurAuthn.account, variablePath))
 				.get().addHeader("Authorization", "Token token=\"" + authToken + "\"").build();
@@ -239,7 +268,7 @@ public class ConjurAPI {
 			throw new IOException("Error fetching secret from Conjur [" + response.code() + " - " + response.message()
 					+ "\n" + result);
 		}
-		long end = System.nanoTime();
+		
 		LOGGER.log(Level.FINE, "End of getSecret()");
 		return result;
 	}
@@ -247,8 +276,9 @@ public class ConjurAPI {
 	/**
 	 * Log the Conjur Configuration details
 	 * 
-	 * @param to log the ConjurConfiguration from Jenkins configuration
-	 * @return the Conjur Configuration parameters
+	 * @param conjurConfiguration log the ConjurConfiguration from Jenkins
+	 *                            configuration
+	 * @return ConjurConfiguration log the Conjur Configuration parameters
 	 */
 	public static ConjurConfiguration logConjurConfiguration(ConjurConfiguration conjurConfiguration) {
 		LOGGER.log(Level.FINE, "Start of logConjurConfiguration()");

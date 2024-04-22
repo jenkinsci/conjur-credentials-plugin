@@ -3,17 +3,10 @@ package org.conjur.jenkins.jwtauth.impl;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.acegisecurity.Authentication;
 import org.apache.commons.lang.StringUtils;
@@ -47,7 +40,7 @@ public class JwtToken {
 	public static final DateTimeFormatter ID_FORMAT = DateTimeFormatter.ofPattern("MMddkkmmss")
 			.withZone(ZoneId.systemDefault());
 
-	private static Queue<JwtRsaDigitalSignatureKey> keysQueue = new LinkedList<JwtRsaDigitalSignatureKey>();
+	private static ConcurrentLinkedQueue<JwtRsaDigitalSignatureKey> keysQueue = new ConcurrentLinkedQueue<JwtRsaDigitalSignatureKey>();
 
 	/**
 	 * JWT Claim
@@ -72,6 +65,7 @@ public class JwtToken {
 			jsonWebSignature.setKeyIdHeaderValue(key.getId());
 			jsonWebSignature.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
 			jsonWebSignature.setHeader(HeaderParameterNames.TYPE, "JWT");
+			LOGGER.log(Level.FINE, " End of sign()");
 			return jsonWebSignature.getCompactSerialization();
 		} catch (JoseException e) {
 			String msg = "Failed to sign JWT token: " + e.getMessage();
@@ -87,8 +81,10 @@ public class JwtToken {
 	 * @param context
 	 * @return JWT Token as string
 	 */
-	public static String getToken(Object context) {
+	public static synchronized String getToken(Object context) {
+		LOGGER.log(Level.FINE, "Start of  getToken()");
 		return getToken("SecretRetrieval", context);
+
 	}
 
 	/**
@@ -99,10 +95,10 @@ public class JwtToken {
 	 * @return JWT Token as String
 	 */
 
-	public static String getToken(String pluginAction, Object context) {
-		LOGGER.log(Level.FINE, "***** Getting Token");
+	public static synchronized String getToken(String pluginAction, Object context) {
+		LOGGER.log(Level.FINE, "Start of getToken");
 		JwtToken unsignedToken = getUnsignedToken(pluginAction, context);
-		LOGGER.log(Level.FINEST, "Claims:\n{0}", unsignedToken.claim.toString(4));
+		LOGGER.log(Level.INFO, "Claims:\n{0}", unsignedToken.claim.toString(4));
 		return unsignedToken.sign();
 	}
 
@@ -114,7 +110,7 @@ public class JwtToken {
 	 * @return JWTToken
 	 */
 
-	public static JwtToken getUnsignedToken(String pluginAction, Object context) {
+	public synchronized static JwtToken getUnsignedToken(String pluginAction, Object context) {
 		LOGGER.log(Level.FINE, "Start getUnsignedToken()");
 		GlobalConjurConfiguration globalConfig = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
 		if (globalConfig == null || !globalConfig.getEnableJWKS()) {
@@ -268,7 +264,7 @@ public class JwtToken {
 	 * @return key based on JwtRsaDigitalSignatureKey
 	 */
 
-	protected static JwtRsaDigitalSignatureKey getCurrentSigningKey(JwtToken jwtToken) {
+	protected static synchronized JwtRsaDigitalSignatureKey getCurrentSigningKey(JwtToken jwtToken) {
 		LOGGER.log(Level.FINE, "Start of getCurrentSigningKey())");
 
 		JwtRsaDigitalSignatureKey result = null;
@@ -318,7 +314,7 @@ public class JwtToken {
 	 * @return JwkSet as JSONObject
 	 */
 
-	protected static JSONObject getJwkset() {
+	protected static synchronized JSONObject getJwkset() {
 		LOGGER.log(Level.FINE, "Start of getJwkset() ");
 
 		JSONObject jwks = new JSONObject();
@@ -361,7 +357,7 @@ public class JwtToken {
 			jwks.put("keys", keys);
 			LOGGER.log(Level.FINE, "End of getJwkset() ");
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 		}
 		return jwks;
 	}

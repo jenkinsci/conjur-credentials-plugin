@@ -110,7 +110,6 @@ public interface ConjurSecretCredentials extends StandardCredentials {
 	 */
 
 	static ConjurSecretCredentials credentialWithID(String credentialID, ModelObject context) {
-		long starttime = System.nanoTime();
 		LOGGER.log(Level.FINE, "Start of credentialWithID()");
 		ConjurSecretCredentials credential = null;
 		if (context != null) {
@@ -169,11 +168,8 @@ public interface ConjurSecretCredentials extends StandardCredentials {
 			List<Item> allItems = Jenkins.get().getAllItems();
 			ConjurSecretCredentials conjurSecretCredential = null;
 
-			LOGGER.log(Level.FINE, "List the parent level" + allItems);
-
 			for (Item item : allItems) {
 				LOGGER.log(Level.FINE, "Items in jenkins : " + item);
-
 				if (item instanceof Job) {
 					LOGGER.log(Level.FINE, "Items in job : " + item);
 					conjurSecretCredential = credentialFromContextIfNeeded(credential, credentialID, item);
@@ -184,16 +180,10 @@ public interface ConjurSecretCredentials extends StandardCredentials {
 					LOGGER.log(Level.FINE, "Items in Folder : " + item);
 					conjurSecretCredential = credentialFromContextIfNeeded(credential, credentialID, item);
 				}
-
+				
 				credential = conjurSecretCredential;
-
 			}
-
 		}
-		long endtime = System.nanoTime();
-		long elapsedTime = endtime - starttime;
-		LOGGER.log(Level.FINE, "Execution of Class ConjurSecretCredentials -->Method credentialWithID() elapsedTime: "
-				+ elapsedTime / 1000000d + " milliseconds");
 		LOGGER.log(Level.FINE, "End of credentialWithID()");
 
 		return credential;
