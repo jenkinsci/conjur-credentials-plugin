@@ -3,7 +3,6 @@ package org.conjur.jenkins.exceptions;
 /**
  * Custom Exception if no secert is found or malformed authentication
  * 
- * @author Jaleela.FaizurRahman
  *
  */
 public class InvalidConjurSecretException extends RuntimeException {

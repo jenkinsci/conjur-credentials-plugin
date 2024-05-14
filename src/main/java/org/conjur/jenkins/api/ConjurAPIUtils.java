@@ -29,7 +29,6 @@ import okhttp3.OkHttpClient;
  * ConjurAPIUtils class used to build the OkHttp Client object and create
  * CertificateCredentials.
  * 
- * @author Jaleela.FaizurRahman
  *
  */
 public class ConjurAPIUtils {
@@ -42,7 +41,7 @@ public class ConjurAPIUtils {
 	 * @param ConjurConfiguration configuration
 	 * @return CertificateCredentials
 	 */
-	static CertificateCredentials certificateFromConfiguration(ConjurConfiguration configuration) {
+	static synchronized CertificateCredentials certificateFromConfiguration(ConjurConfiguration configuration) {
 		LOGGER.log(Level.FINE, "Start of certificateFromConfiguration()");
 
 		CertificateCredentials certificate = null;
@@ -67,7 +66,8 @@ public class ConjurAPIUtils {
 	 * @return OkHttpClient clientf
 	 */
 
-	static OkHttpClient httpClientWithCertificate(CertificateCredentials certificate) {
+	static synchronized OkHttpClient httpClientWithCertificate(CertificateCredentials certificate) {
+		LOGGER.log(Level.FINE, "Start of httpClientWithCertificate()");
 		OkHttpClient client = null;
 
 		try {
@@ -96,7 +96,7 @@ public class ConjurAPIUtils {
 		} catch (Exception e) {
 			throw new IllegalArgumentException("Error configuring server certificates.", e);
 		}
-
+		LOGGER.log(Level.FINE, "End of httpClientWithCertificate()");
 		return client;
 
 	}
@@ -107,14 +107,15 @@ public class ConjurAPIUtils {
 	 * @param ConjurConfiguration configuration
 	 * @return OkHttpClient client
 	 */
-	public static OkHttpClient getHttpClient(ConjurConfiguration configuration) {
+	public static synchronized OkHttpClient getHttpClient(ConjurConfiguration configuration) {
+		LOGGER.log(Level.FINE, "Start of getHttpClient()");
 
 		CertificateCredentials certificate = certificateFromConfiguration(configuration);
 
 		if (certificate != null) {
 			return httpClientWithCertificate(certificate);
 		}
-
+		LOGGER.log(Level.FINE, "End of getHttpClient()");
 		return new OkHttpClient.Builder().build();
 	}
 

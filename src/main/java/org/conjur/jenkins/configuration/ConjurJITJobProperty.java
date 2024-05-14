@@ -15,7 +15,6 @@ import jenkins.model.Jenkins;
 /**
  * ConjurJITJobProperty DTO class to set the ConjurConfiguration
  * 
- * @author Jaleela.FaizurRahman
  *
  * @param extends Jenkins JobProperty
  */

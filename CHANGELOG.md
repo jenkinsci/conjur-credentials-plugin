@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2024-05-07
+## What’s New
+Support for multithreading access.
+
 ## [2.0.0] - 2024-03-04
 ## What’s New
 Simplified JWT Configuration for Enhanced Security and User Experience
@@ -11,7 +15,8 @@ We're excited to announce a significant update to the Conjur Credentials plugin 
 ## Key Updates:
 - **Reduced Complexity:** We've reduced the number of custom fields in the JWT configuration. This approach not only simplifies the configuration process but also enhances the overall security by minimizing potential vulnerabilities.
 - **Deprecation of Some Fields:** Please note that some fields (claims) have been deprecated in this update. Fields are restricted to pre-selected values, please ensure your existing configuration is compatible. This means that certain custom user inputs will no longer be supported. This change is critical for maintaining a secure and efficient configuration environment.
-- **Simplified Configuration:** This functionality allows you to temporarily use some "grandfathered" values from your previous configurations. This interim solution is available until the next release, providing a comfortable adjustment period.
+- **Simplified Configuration:he number of custom fields in the JWT configuration. This approach not only simplifies the configuration process but also enhances the overall security by minimizing potential vulnerabilities.
+- **Deprecation of Some Fields:** Please note th** This functionality allows you to temporarily use some "grandfathered" values from your previous configurations. This interim solution is available until the next release, providing a comfortable adjustment period.
 
 ## Impact on Your Environment:
 These changes are designed to enhance both security and user experience. However, they may impact your current environment due to the deprecation of certain fields and the shift towards a more streamlined configuration approach. We encourage you to review your current configurations and adapt to the new system, leveraging simplified configuration for an easier transition.

@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,13 +31,12 @@ import hudson.Extension;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
 import hudson.model.ModelObject;
-import hudson.model.Run;
 import hudson.security.ACL;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 
 /**
- * Provides the ConjurCredentails extends CredentialProvider *
+ * Provides the ConjurCredentails extends CredentialProvider
  */
 @Extension
 public class ConjurCredentialProvider extends CredentialsProvider {
@@ -48,8 +48,13 @@ public class ConjurCredentialProvider extends CredentialsProvider {
 	private Supplier<Collection<StandardCredentials>> currentCredentialSupplier;
 
 	/**
-	 * returns the Credentials as List based on the type,itemGroup and
+	 * Returns the Credentials as List based on the type,itemGroup and
 	 * authentication
+	 * 
+	 * @param type               return the Item/job type
+	 * @param itemGroup          return the itemGroup if the job type is multifolder
+	 * @param authentication     authentication details
+	 * @param domainRequirements provides domain requirements.
 	 */
 
 	public <C extends Credentials> List<C> getCredentials(@Nonnull Class<C> type, @Nullable ItemGroup itemGroup,
@@ -85,7 +90,6 @@ public class ConjurCredentialProvider extends CredentialsProvider {
 
 	private <C extends Credentials> List<C> getCredentialsFromSupplier(@Nonnull Class<C> type, ModelObject context,
 			Authentication authentication) {
-		long starttime = System.nanoTime();
 		LOGGER.log(Level.FINE, "Type: " + type.getName() + " authentication: " + authentication + " context: "
 				+ context.getDisplayName());
 
@@ -98,41 +102,28 @@ public class ConjurCredentialProvider extends CredentialsProvider {
 			LOGGER.log(Level.FINE, "*****");
 			if (ACL.SYSTEM.equals(authentication)) {
 				Collection<StandardCredentials> allCredentials = Collections.emptyList();
-				LOGGER.log(Level.FINE,
-						"**** getCredentials ConjurCredentialProvider: " + this.getId() + " : " + ACL.SYSTEM);
-				LOGGER.log(Level.FINE,
-						"Getting Credentials from ConjurCredentialProvider @ " + context.getClass().getName());
-				LOGGER.log(Level.FINE, "To Fetch credentials");
+				LOGGER.log(Level.FINE, "**** getCredentials ConjurCredentialProvider: " + this.getId() + " : "
+						+ ACL.SYSTEM + " Context Name :" + context.getClass().getName());
+				LOGGER.log(Level.FINE, "Call to get the Store details");
 
 				getStore(context);
 				if (currentCredentialSupplier != null) {
 					LOGGER.log(Level.FINE, "Iniside current credentialsupplier>>>>" + currentCredentialSupplier);
 					allCredentials = currentCredentialSupplier.get();
 
-					LOGGER.log(Level.FINE, "Iniside current credentialsupplier class type is >>>>" + type);
-					for (StandardCredentials cred : allCredentials) {
-						if (type.isAssignableFrom(cred.getClass())) {
-							LOGGER.log(Level.FINE, "Type is" + type);
-						}
-					}
 					return allCredentials.stream().filter(c -> type.isAssignableFrom(c.getClass())).map(type::cast)
 							.collect(Collectors.toList());
 				}
-
 			}
 			LOGGER.log(Level.FINE, "**** End of getCredentialsFromSupplier(): " + Collections.emptyList());
 
 		}
-		long endtime = System.nanoTime();
-		long elapsedTime = endtime - starttime;
-		LOGGER.log(Level.FINE,
-				"Execution of Class ConjurCredentialProvider -->Method getCredentialsFromSupplier() elapsedTime: "
-						+ elapsedTime / 1000000d + " milliseconds");
-
 		return Collections.emptyList();
 	}
 
 	/**
+	 * Method to return the Conjur Credential Store
+	 * 
 	 * @return the ConjurCredentailStore based on the ModelObject
 	 */
 	@Override
@@ -189,7 +180,7 @@ public class ConjurCredentialProvider extends CredentialsProvider {
 	 * @return Map containing all credential suppliers
 	 */
 
-	public static ConcurrentHashMap<String, Supplier<Collection<StandardCredentials>>> getAllCredentialSuppliers() {
+	public static ConcurrentMap<String, Supplier<Collection<StandardCredentials>>> getAllCredentialSuppliers() {
 		return allCredentialSuppliers;
 	}
 
