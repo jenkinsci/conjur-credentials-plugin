@@ -88,21 +88,30 @@ public class ConjurSecretCredentialsImpl extends BaseStandardCredentials impleme
 	 *         Get the secret by calling teh getSecret of {@link ConjurAPI }
 	 */
 	public Secret getSecret() {
-		LOGGER.log(Level.FINEST, "Start of getSecret()");
+		LOGGER.log(Level.FINE, "Start of Class ConjurSecretCredentialsImpl *****getSecret()*****");
 		String result = "";
 		try {
 			// Get Http Client
 			OkHttpClient client = ConjurAPIUtils.getHttpClient(this.conjurConfiguration);
-			// Authenticate to Conjur
-			String authToken = ConjurAPI.getAuthorizationToken(client, this.conjurConfiguration, storeContext);
-			// Retrieve secret from Conjur
-			String secretString = ConjurAPI.getSecret(client, this.conjurConfiguration, authToken, this.variablePath);
-			result = secretString;
+			// Non-global credentials in the current context and multi-branch store context
+			ModelObject effectiveContext = (this.context != null) ? this.context : storeContext;
+			LOGGER.log(Level.FINE, "Start of getSecret() *****this.context*****: " + this.context);
+			LOGGER.log(Level.FINE, "Start of getSecret() *****storeContext*****: " + storeContext);
+			LOGGER.log(Level.FINE, "Start of getSecret() *****effectiveContext*****: " + effectiveContext);
+			if (effectiveContext != null) {
+				// Authenticate to Conjur
+				String authToken = ConjurAPI.getAuthorizationToken(client, this.conjurConfiguration, effectiveContext);
+				LOGGER.log(Level.FINE, "Start of getSecret() *****authToken*****: ", authToken);
+				// Retrieve secret from Conjur
+				String secretString = ConjurAPI.getSecret(client, this.conjurConfiguration, authToken,this.variablePath);
+				LOGGER.log(Level.FINE, "Start of getSecret() *****secretString***** " + secretString);
+				result = secretString;
+			}
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, "EXCEPTION: " + e.getMessage());
 			throw new InvalidConjurSecretException(e.getMessage(), e);
 		}
-		LOGGER.log(Level.FINEST, "End of getSecret()");
+		LOGGER.log(Level.FINE, "End of getSecret()");
 		return secretFromString(result);
 	}
 

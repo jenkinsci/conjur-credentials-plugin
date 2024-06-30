@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2024-06-29
+## What’s New
+Fixed to support non-global Jenkins conjur Auth API KEY
+
 ## [2.2.0] - 2024-06-03
 ## What’s New
 Enhancement to support read/view permissions of Conjur Credentials for Jenkins users
