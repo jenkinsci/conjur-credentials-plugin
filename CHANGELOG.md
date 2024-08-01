@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)an
 
 ## [2.2.1] - 2024-06-29
 ## What’s New
-Fixed to support non-global Jenkins conjur Auth API KEY
+Fixed to support Jenkins folder-level system (non-global) credentials with Conjur API key authentication. 
 
 ## [2.2.0] - 2024-06-03
 ## What’s New
