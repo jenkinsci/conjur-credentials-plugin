@@ -105,14 +105,20 @@ public class ConjurCredentialProvider extends CredentialsProvider {
 				LOGGER.log(Level.FINE, "**** getCredentials ConjurCredentialProvider: " + this.getId() + " : "
 						+ ACL.SYSTEM + " Context Name :" + context.getClass().getName());
 				LOGGER.log(Level.FINE, "Call to get the Store details");
-
+				try{
 				getStore(context);
 				if (currentCredentialSupplier != null) {
 					LOGGER.log(Level.FINE, "Iniside current credentialsupplier>>>>" + currentCredentialSupplier);
 					allCredentials = currentCredentialSupplier.get();
-
+					if (allCredentials == null) {
+						LOGGER.log(Level.WARNING, "Credentials supplier returned null. Returning empty list.");
+						return Collections.emptyList();
+					}
 					return allCredentials.stream().filter(c -> type.isAssignableFrom(c.getClass())).map(type::cast)
 							.collect(Collectors.toList());
+				}
+				}catch (Exception ex){
+					LOGGER.log(Level.SEVERE, "getCredentialsFromSupplier()>> Error retrieving credentials: " + ex.getMessage());
 				}
 			}
 			LOGGER.log(Level.FINE, "**** End of getCredentialsFromSupplier(): " + Collections.emptyList());

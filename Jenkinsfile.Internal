@@ -136,8 +136,7 @@ pipeline {
           infrapool.agentSh 'scripts/build.sh'
         }
       }
-    }
-
+    }        
     stage('Release') {
       when {
         expression {

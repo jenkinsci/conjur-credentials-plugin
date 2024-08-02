@@ -62,7 +62,7 @@ public interface ConjurSecretCredentials extends StandardCredentials {
 
 	/**
 	 * static method to fetch the credentials from the Context
-	 * 
+	 *
 	 * @param selected    ConjurSecretcredential
 	 * @param selected    or incoming CredentialId
 	 * @param ModelObject
@@ -77,21 +77,24 @@ public interface ConjurSecretCredentials extends StandardCredentials {
 			Item folder = null;
 
 			if (context instanceof Run) {
-				LOGGER.log(Level.FINE, "Inside Conjur Credentials >> {0}", context.getDisplayName());
 				folder = Jenkins.get().getItemByFullName(((Run<?, ?>) context).getParent().getParent().getFullName());
-			} else {
-
-				LOGGER.log(Level.FINE, "Inside not Conjur Credentials >> {0}", context.getDisplayName());
-				folder = Jenkins.get().getItemByFullName((((AbstractItem) context)).getDisplayName());
-
+				LOGGER.log(Level.FINE, "Context is a Run: {0}", folder);
+			} else if (context instanceof AbstractItem) {
+				AbstractItem item = (AbstractItem) context;
+				String folderName = item.getFullName();
+				if (folderName == null || folderName.isEmpty()) {
+					folderName = item.getParent().getFullName(); // Fallback to parent full name
+				}
+				LOGGER.log(Level.FINE, "Resolving folder by name >> {0}", folderName);
+				folder = Jenkins.get().getItemByFullName(folderName);
 			}
-
-			LOGGER.log(Level.FINE, "Inside not conjur credentials final folder >> {0}", folder);
-			credential = CredentialsMatchers
-					.firstOrNull(
-							CredentialsProvider.lookupCredentials(ConjurSecretCredentials.class, folder, ACL.SYSTEM,
-									Collections.<DomainRequirement>emptyList()),
-							CredentialsMatchers.withId(credentialID));
+			if (folder != null) {
+				credential = CredentialsMatchers
+						.firstOrNull(
+								CredentialsProvider.lookupCredentials(ConjurSecretCredentials.class, folder, ACL.SYSTEM,
+										Collections.<DomainRequirement>emptyList()),
+								CredentialsMatchers.withId(credentialID));
+			}
 			LOGGER.log(Level.FINE, "Returning the Credentials >> {0}", credential);
 
 			return credential;
@@ -102,7 +105,7 @@ public interface ConjurSecretCredentials extends StandardCredentials {
 
 	/**
 	 * static method to fetch the credentials from the Context
-	 * 
+	 *
 	 * @param selected    ConjurSecretcredential
 	 * @param selected    or incoming CredentialId
 	 * @param ModelObject
@@ -112,57 +115,52 @@ public interface ConjurSecretCredentials extends StandardCredentials {
 	static ConjurSecretCredentials credentialWithID(String credentialID, ModelObject context) {
 		LOGGER.log(Level.FINE, "Start of credentialWithID()");
 		ConjurSecretCredentials credential = null;
-		if (context != null) {
-			LOGGER.log(Level.FINE, "* Context Id not null >>>: {0}", context.getDisplayName());
-		}
-		LOGGER.log(Level.FINE, "* Context Id >>> :{0}", Jenkins.get());
+		// First, try to fetch credentials from the global Jenkins context
 		credential = CredentialsMatchers.firstOrNull(
 				CredentialsProvider.lookupCredentials(ConjurSecretCredentials.class, Jenkins.get(), ACL.SYSTEM,
 						Collections.<DomainRequirement>emptyList()),
 				CredentialsMatchers.withId(credentialID));
+		// If not found, check credentials in the context hierarchy (current folder/job and its parents)
+		if (credential == null && context != null) {
+			LOGGER.log(Level.FINE, "Credentials not found at Jenkins instance level >> {0}", context);
+			String[] splitJob = context.toString().split("/");
+			Item parentFolder = null;
+			ConjurSecretCredentials conjurSecretCredential = null;
+			if (context.getDisplayName().equalsIgnoreCase("Jenkins")) {
 
-		if (credential == null) {
-			if (context != null) {
-				LOGGER.log(Level.FINE, "Get all jobs >> {0}", context);
-				String[] spiltJob = context.toString().split("/");
-				Item childFolder = null;
-				Item parentFolder = null;
-				ConjurSecretCredentials conjurSecretCredential = null;
-				if (context.getDisplayName().equalsIgnoreCase("Jenkins")) {
+				LOGGER.log(Level.FINE, "Inside not Context Jenkins" + context.getDisplayName());
 
-					LOGGER.log(Level.FINE, "Inside not Context Jenkins" + context.getDisplayName());
+				return null;
 
-					return null;
-
-				} else if (context instanceof Run) {
-					LOGGER.log(Level.FINE, "Inside Conjur Credentials instance of Run>> {0}", context.getDisplayName());
-					childFolder = Jenkins.get()
-							.getItemByFullName(((Run<?, ?>) context).getParent().getParent().getFullName());
-				} else {
-
-					LOGGER.log(Level.FINE, "Inside not Conjur Credentials >>{0}", context.getDisplayName());
-					childFolder = Jenkins.get()
+			} else if (context instanceof Run) {
+				parentFolder = Jenkins.get()
+						.getItemByFullName(((Run<?, ?>) context).getParent().getParent().getFullName());
+				LOGGER.log(Level.FINE, "Context is a Run, fetching parent folder:{0}" + parentFolder);
+			} else if (context instanceof Job) {
+				parentFolder = Jenkins.get().getItemByFullName(context.getDisplayName());
+				LOGGER.log(Level.FINE, "Context is a Job, fetching parent folder: {0}" + parentFolder);
+				if (parentFolder == null) {
+					parentFolder = Jenkins.get()
 							.getItemByFullName(((AbstractItem) ((AbstractItem) context).getParent()).getFullName());
-
+					LOGGER.log(Level.FINE, "Job has folder level>>{0}", parentFolder);
 				}
-				parentFolder = childFolder;
-				for (int i = 0; i < spiltJob.length; i++) {
-					conjurSecretCredential = credentialFromContextIfNeeded(credential, credentialID, parentFolder);
-					credential = conjurSecretCredential;
-					if (conjurSecretCredential == null) {
-						LOGGER.log(Level.FINE, "Inside Credentials not null");
-						if (parentFolder != null) {
-							parentFolder = Jenkins.get()
-									.getItemByFullName((((AbstractItem) parentFolder).getParent()).getFullName());
-						}
-
-						LOGGER.log(Level.FINE, "Back to the for loop tocheck for the parent level");
-					}
-
-				}
-
+			} else {
+				parentFolder = Jenkins.get()
+						.getItemByFullName(((AbstractItem) ((AbstractItem) context).getParent()).getFullName());
+				LOGGER.log(Level.FINE, "Inside not Context is a Job, fetching parent folder: {0}", parentFolder);
 			}
-
+			for (int i = 0; i < splitJob.length; i++) {
+				// check if folder has multiple parent level
+				conjurSecretCredential = credentialFromContextIfNeeded(credential, credentialID, parentFolder);
+				credential = conjurSecretCredential;
+				if (conjurSecretCredential == null) {
+					LOGGER.log(Level.FINE, "Inside Credentials not null");
+					if (parentFolder != null) {
+						parentFolder = Jenkins.get()
+								.getItemByFullName((((AbstractItem) parentFolder).getParent()).getFullName());
+					}
+				}
+			}
 		}
 		if (credential == null) {
 			List<Item> allItems = Jenkins.get().getAllItems();
@@ -180,18 +178,16 @@ public interface ConjurSecretCredentials extends StandardCredentials {
 					LOGGER.log(Level.FINE, "Items in Folder : " + item);
 					conjurSecretCredential = credentialFromContextIfNeeded(credential, credentialID, item);
 				}
-				
 				credential = conjurSecretCredential;
 			}
 		}
 		LOGGER.log(Level.FINE, "End of credentialWithID()");
-
 		return credential;
 	}
 
 	/**
 	 * static method to set the ConjurConfiguration for CredentialWith ID
-	 * 
+	 *
 	 * @param credentialID
 	 * @param conjurConfiguration
 	 * @param context
@@ -209,7 +205,7 @@ public interface ConjurSecretCredentials extends StandardCredentials {
 
 	/**
 	 * static method to get secretCredentialIDWithConfigAndContext
-	 * 
+	 *
 	 * @param credentialID
 	 * @param conjurConfiguration
 	 * @param context

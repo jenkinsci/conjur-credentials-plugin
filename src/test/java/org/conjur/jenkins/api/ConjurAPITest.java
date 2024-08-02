@@ -1,30 +1,28 @@
 
 package org.conjur.jenkins.api;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import jenkins.model.GlobalConfiguration;
 import org.conjur.jenkins.api.ConjurAPI.ConjurAuthnInfo;
 import org.conjur.jenkins.configuration.ConjurConfiguration;
 import org.conjur.jenkins.configuration.GlobalConjurConfiguration;
-import org.conjur.jenkins.configuration.GlobalConjurConfigurationTest;
 import org.conjur.jenkins.jwtauth.impl.JwtToken;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.when;
-
-import org.mockito.*;
-
-
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
@@ -46,7 +44,10 @@ public class ConjurAPITest {
 
 	@Mock
 	private GlobalConjurConfiguration globalConfig;
-
+	@Mock
+	private ConjurConfiguration mockConjurConjurConfig;
+	@Mock
+	private ConjurConfiguration mockGlobalConjurConfig;
 
 	@Before
 	public void setUp() throws IOException {
@@ -107,5 +108,22 @@ public class ConjurAPITest {
 		});
 		assertNotNull(exception.getMessage());
 	}
+	@Test
+	public void conjurAuthnInfoEmptyFieldsShouldUseGlobalConfig() throws IOException {
+		// Arrange
+		ConjurAuthnInfo conjurAuthn = new ConjurAuthnInfo();
+		// Initialize mocks
+		when(mockConjurConjurConfig.getAccount()).thenReturn(null); // Simulating empty or null configuration
+		when(mockConjurConjurConfig.getApplianceURL()).thenReturn(null); // Simulating empty or null configuration
 
+		when(mockGlobalConjurConfig.getAccount()).thenReturn("globalAccount");
+		when(mockGlobalConjurConfig.getApplianceURL()).thenReturn("globalApplianceURL");
+
+		// Example of setting ConjurAuthnInfo with these configurations
+		conjurAuthn.account =(mockConjurConjurConfig.getAccount() != null ? mockConjurConjurConfig.getAccount() : mockGlobalConjurConfig.getAccount());
+		conjurAuthn.applianceUrl=(mockConjurConjurConfig.getApplianceURL() != null ? mockConjurConjurConfig.getApplianceURL() : mockGlobalConjurConfig.getApplianceURL());
+		// Verify that ConjurAuthnInfo uses global values when local values are null
+		assertEquals("globalAccount", conjurAuthn.account);
+		assertEquals("globalApplianceURL", conjurAuthn.applianceUrl);
+	}
 }

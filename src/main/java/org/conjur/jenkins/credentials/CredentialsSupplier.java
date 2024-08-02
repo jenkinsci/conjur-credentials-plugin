@@ -3,11 +3,17 @@ package org.conjur.jenkins.credentials;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import hudson.model.ItemGroup;
+import hudson.security.ACL;
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.api.ConjurAPIUtils;
 import org.conjur.jenkins.configuration.ConjurConfiguration;
@@ -57,10 +63,30 @@ public class CredentialsSupplier implements Supplier<Collection<StandardCredenti
 	@SuppressFBWarnings
     @Override
     public Collection<StandardCredentials> get() {
-
+        // Log context information
+        if (getContext() == null) {
+            LOGGER.log(Level.WARNING, "Context is null. Returning empty credentials.");
+            return Collections.emptyList();
+        }
         LOGGER.log(Level.FINEST,"Retrieve variables from CyberArk Conjur -- Context => " + getContext());
-        LOGGER.log(Level.FINEST,"Retrieve variables from CyberArk Conjur ==> " + getContext().getClass().getName() + ": " + getContext().toString() + " => " + getContext().hashCode());
         final Collection<StandardCredentials> allCredentials = new ArrayList<>();
+        // Check if context is a folder and if credentials are of type UsernamePasswordCredentials
+        if (getContext() instanceof ItemGroup) {
+            List<UsernamePasswordCredentialsImpl> credentials = CredentialsProvider.lookupCredentials(
+                    UsernamePasswordCredentialsImpl.class, (ItemGroup) getContext(), ACL.SYSTEM, Collections.emptyList());
+            StringBuilder skippedCredentials = new StringBuilder();
+            // Efficiently process credentials using forEach Filter out Credentials Scope that are null with continue statement
+            credentials.forEach(credential -> {
+                if (credential.getScope() == null) {
+                    skippedCredentials.append(credential.getId()).append(",");
+                    return; // equivalent to 'continue' in a loop
+                }
+            });
+            if(LOGGER.isLoggable(Level.FINE) && skippedCredentials.length() > 0) {
+                LOGGER.log(Level.FINE, "*****Skipping authentication for UsernamePasswordCredentials with IDs: "
+                        + skippedCredentials.toString() + " in folder-level context.*****");
+            }
+        }
 
 
 		String result = "";
@@ -141,7 +167,7 @@ public class CredentialsSupplier implements Supplier<Collection<StandardCredenti
 
             }
 
-		} catch (IOException e) {
+		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE, "EXCEPTION: CredentialSuplier => " + e.getMessage());
 		}
 
