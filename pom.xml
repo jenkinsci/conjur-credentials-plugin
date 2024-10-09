@@ -13,13 +13,14 @@
 	<artifactId>conjur-credentials</artifactId>
 	<packaging>hpi</packaging>
 	<properties>
-		<jenkins.version>2.346.3</jenkins.version>
+		<jenkins.version>2.452.3</jenkins.version>
+    
 		<java.level>11</java.level>
 		<!-- <hpi.compatibleSinceVersion>2.0.0</hpi.compatibleSinceVersion> -->
 	</properties>
 	<name>Conjur Secrets Plugin</name>
 	<description>Plugin to retrieve secrets from CyberArk/Conjur</description>
-	<version>2.2.1</version>
+	<version>2.2.2</version>
 	<url>https://github.com/jenkinsci/conjur-credentials-plugin</url>
 	<!-- The default licence for Jenkins OSS Plugins is MIT. Substitute for the
 	applicable one if needed. -->
