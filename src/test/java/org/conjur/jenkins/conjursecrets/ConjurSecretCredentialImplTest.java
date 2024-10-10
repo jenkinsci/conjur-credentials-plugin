@@ -82,8 +82,8 @@ public class ConjurSecretCredentialImplTest {
 				"Test pipeline");
 		conjurSecretCredentials.setConjurConfiguration(conjurConfiguration);
 
-		conjurSecretCredentials.setContext(mockContext);
-		conjurSecretCredentials.setStoreContext(mockStoreContext);
+		conjurSecretCredentials.setContext(mockStoreContext);
+		conjurSecretCredentials.setStoreContext(mockContext);
 
 		// Mock OkHttpClient and static methods
 		try (MockedStatic<ConjurAPIUtils> conjurAPIUtilsMockedStatic = Mockito.mockStatic(ConjurAPIUtils.class);

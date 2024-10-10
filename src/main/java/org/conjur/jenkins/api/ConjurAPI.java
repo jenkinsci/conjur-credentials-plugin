@@ -128,6 +128,15 @@ public class ConjurAPI {
 
 		ConjurAuthnInfo conjurAuthn = getConjurAuthnInfo(configuration, availableCredentials, context);
 		GlobalConjurConfiguration globalConfig = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
+		if(globalConfig != null) {
+		ConjurConfiguration globalConjurConfig = globalConfig.getConjurConfiguration();
+			if(conjurAuthn.account ==null || conjurAuthn.account.isEmpty()){
+				conjurAuthn.account = globalConjurConfig.getAccount();
+			}
+			if(conjurAuthn.applianceUrl ==null || conjurAuthn.applianceUrl.isEmpty()){
+				conjurAuthn.applianceUrl = globalConjurConfig.getApplianceURL();
+			}
+		}
 		if (globalConfig != null && globalConfig.getEnableJWKS()) {
 			LOGGER.log(Level.FINE, "JWT is enabled.");
 			if (!globalConfig.getEnableIdentityFormatFieldsFromToken())// Simplified JWT is disabled
@@ -223,7 +232,6 @@ public class ConjurAPI {
 		LOGGER.log(Level.FINE, "End of getConjurAuthnInfo()");
 		return conjurAuthn;
 	}
-
 	private static void setConjurAuthnForJITCredentialAccess(ModelObject context, ConjurAuthnInfo conjurAuthn) {
 		LOGGER.log(Level.FINE, "Start of setConjurAuthnForJITCredentialAccess()");
 		String token = JwtToken.getToken(context);

@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.2.2] - 2024-10-08
+## What’s New
+- **Subfolder Host Identity Mapping Issue:** Fixed an issue where credentials mapped to subfolder host identities were not injected during pipeline execution, despite being visible at the subfolder level.
+- **Jenkins Credential Store Inheritance:** Fixed the issue with Jenkins credential store inheritance.
+- **Credentials store list is randomly empty:** If the Conjur appliance account or appliance URL is empty, should fall back to the global configuration values.
+- **Jenkins folder-level Job:** Skip JWT/API Key authentication if Jenkins folder credentials scope is null.
+- **Folder-level Display Name:** Fixed the Jenkins folder-level display name.
+
 ## [2.2.1] - 2024-06-29
 ## What’s New
 Fixed to support Jenkins folder-level system (non-global) credentials with Conjur API key authentication. 
