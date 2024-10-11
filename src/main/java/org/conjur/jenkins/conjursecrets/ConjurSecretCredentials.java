@@ -13,6 +13,7 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.NameWith;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 
 import hudson.model.AbstractItem;
 import hudson.model.FreeStyleProject;
@@ -23,9 +24,10 @@ import hudson.model.Run;
 import hudson.security.ACL;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
+import org.springframework.lang.NonNull;
 
 @NameWith(value = ConjurSecretCredentials.NameProvider.class, priority = 1)
-public interface ConjurSecretCredentials extends StandardCredentials {
+public interface ConjurSecretCredentials extends StringCredentials, StandardCredentials {
 
 	/** Innder class to retrieve the displayName for the job */
 	class NameProvider extends CredentialsNameProvider<ConjurSecretCredentials> {
@@ -46,6 +48,7 @@ public interface ConjurSecretCredentials extends StandardCredentials {
 
 	String getNameTag();
 
+	@NonNull
 	Secret getSecret();
 
 	default Secret secretWithConjurConfigAndContext(ConjurConfiguration conjurConfiguration, ModelObject context) {

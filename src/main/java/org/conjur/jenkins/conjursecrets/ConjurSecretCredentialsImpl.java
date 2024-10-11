@@ -98,14 +98,14 @@ public class ConjurSecretCredentialsImpl extends BaseStandardCredentials impleme
 			LOGGER.log(Level.FINE, "Start of getSecret() *****this.context*****: " + this.context);
 			LOGGER.log(Level.FINE, "Start of getSecret() *****storeContext*****: " + storeContext);
 			LOGGER.log(Level.FINE, "Start of getSecret() *****effectiveContext*****: " + effectiveContext);
-			if (effectiveContext != null) {
+//			if (effectiveContext != null) {
 				// Authenticate to Conjur
 				String authToken = ConjurAPI.getAuthorizationToken(client, this.conjurConfiguration, effectiveContext);
 				// Retrieve secret from Conjur
 				String secretString = ConjurAPI.getSecret(client, this.conjurConfiguration, authToken,
 						this.variablePath);
 				result = secretString;
-			}
+//			}
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, "EXCEPTION: " + e.getMessage());
 			throw new InvalidConjurSecretException(e.getMessage(), e);
