@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.2.3] - 2024-11-05
+## What’s New
+- **Fixed should not access to other Jenkins Job Conjur Credentials ID:** Fixed the Conjur Credential store for one folder Job could not be accessed from other folder-level Jobs.
+- **Avoid unnecessary folder-level logging:** Eliminate unnecessary logging by removing all Jenkins Job Items.
+
 ## [2.2.2] - 2024-10-08
 ## What’s New
 - **Subfolder Host Identity Mapping Issue:** Fixed an issue where credentials mapped to subfolder host identities were not injected during pipeline execution, despite being visible at the subfolder level.

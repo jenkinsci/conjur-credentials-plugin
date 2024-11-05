@@ -1,7 +1,6 @@
 package org.conjur.jenkins.conjursecrets;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -15,7 +14,6 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 
 import hudson.model.AbstractItem;
-import hudson.model.FreeStyleProject;
 import hudson.model.Item;
 import hudson.model.Job;
 import hudson.model.ModelObject;
@@ -95,8 +93,6 @@ public interface ConjurSecretCredentials extends StandardCredentials {
 										Collections.<DomainRequirement>emptyList()),
 								CredentialsMatchers.withId(credentialID));
 			}
-			LOGGER.log(Level.FINE, "Returning the Credentials >> {0}", credential);
-
 			return credential;
 		}
 		LOGGER.log(Level.FINE, "End  of credentialFromContextIfNeeded()... returning credentails");
@@ -114,18 +110,17 @@ public interface ConjurSecretCredentials extends StandardCredentials {
 
 	static ConjurSecretCredentials credentialWithID(String credentialID, ModelObject context) {
 		LOGGER.log(Level.FINE, "Start of credentialWithID()");
-		ConjurSecretCredentials credential = null;
+		ConjurSecretCredentials credential, conjurSecretCredential = null;
 		// First, try to fetch credentials from the global Jenkins context
 		credential = CredentialsMatchers.firstOrNull(
 				CredentialsProvider.lookupCredentials(ConjurSecretCredentials.class, Jenkins.get(), ACL.SYSTEM,
 						Collections.<DomainRequirement>emptyList()),
 				CredentialsMatchers.withId(credentialID));
-		// If not found, check credentials in the context hierarchy (current folder/job and its parents)
+		// If not found, check credentials in the context hierarchy current folder job
 		if (credential == null && context != null) {
 			LOGGER.log(Level.FINE, "Credentials not found at Jenkins instance level >> {0}", context);
-			String[] splitJob = context.toString().split("/");
+			String[] multiFolder = context.toString().split("/");
 			Item parentFolder = null;
-			ConjurSecretCredentials conjurSecretCredential = null;
 			if (context.getDisplayName().equalsIgnoreCase("Jenkins")) {
 
 				LOGGER.log(Level.FINE, "Inside not Context Jenkins" + context.getDisplayName());
@@ -149,36 +144,23 @@ public interface ConjurSecretCredentials extends StandardCredentials {
 						.getItemByFullName(((AbstractItem) ((AbstractItem) context).getParent()).getFullName());
 				LOGGER.log(Level.FINE, "Inside not Context is a Job, fetching parent folder: {0}", parentFolder);
 			}
-			for (int i = 0; i < splitJob.length; i++) {
+			// Iterate through parent folders to search for credentials
+			// Folder-level hierarchy exclude the Pipeline Job to search credentials
+			for (int i = 0; i < multiFolder.length - 1; i++) {
 				// check if folder has multiple parent level
-				conjurSecretCredential = credentialFromContextIfNeeded(credential, credentialID, parentFolder);
-				credential = conjurSecretCredential;
-				if (conjurSecretCredential == null) {
-					LOGGER.log(Level.FINE, "Inside Credentials not null");
-					if (parentFolder != null) {
-						parentFolder = Jenkins.get()
-								.getItemByFullName((((AbstractItem) parentFolder).getParent()).getFullName());
+				if (parentFolder != null) {
+					// Pass null if credential is not found
+					credential = credentialFromContextIfNeeded(conjurSecretCredential, credentialID, parentFolder);
+					if (credential != null) {
+						break; // Stop if credentials are found
+					} else {
+						// Retrieve the parent item, but check its type
+						if (parentFolder.getParent() instanceof Item) {
+							parentFolder = (Item) parentFolder.getParent();
+							LOGGER.log(Level.FINE, "Moving up to parent folder: {0}", parentFolder);
+						}
 					}
 				}
-			}
-		}
-		if (credential == null) {
-			List<Item> allItems = Jenkins.get().getAllItems();
-			ConjurSecretCredentials conjurSecretCredential = null;
-
-			for (Item item : allItems) {
-				LOGGER.log(Level.FINE, "Items in jenkins : " + item);
-				if (item instanceof Job) {
-					LOGGER.log(Level.FINE, "Items in job : " + item);
-					conjurSecretCredential = credentialFromContextIfNeeded(credential, credentialID, item);
-				} else if (item instanceof FreeStyleProject) {
-					LOGGER.log(Level.FINE, "Items in FreeStyleProject : " + item);
-					conjurSecretCredential = credentialFromContextIfNeeded(credential, credentialID, item);
-				} else {
-					LOGGER.log(Level.FINE, "Items in Folder : " + item);
-					conjurSecretCredential = credentialFromContextIfNeeded(credential, credentialID, item);
-				}
-				credential = conjurSecretCredential;
 			}
 		}
 		LOGGER.log(Level.FINE, "End of credentialWithID()");

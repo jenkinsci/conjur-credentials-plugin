@@ -13,6 +13,7 @@ import org.conjur.jenkins.credentials.ConjurCredentialStore;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.credentialsbinding.BindingDescriptor;
 import org.jenkinsci.plugins.credentialsbinding.MultiBinding;
+import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -76,8 +77,13 @@ public class ConjurSecretUsernameCredentialsBinding extends MultiBinding<ConjurS
 		conjurSecretCredential.setContext(build);
 
 		Map<String, String> m = new HashMap<>();
-		m.put(usernameVariable, conjurSecretCredential.getUsername());
-		m.put(passwordVariable, conjurSecretCredential.getPassword().getPlainText());
+		if (conjurSecretCredential.getPassword() != null) {
+			m.put(usernameVariable, conjurSecretCredential.getUsername());
+			m.put(passwordVariable, conjurSecretCredential.getPassword().getPlainText());
+		} else {
+			throw new CredentialNotFoundException(
+					"Could not find Conjur Secret Username Credentials entry is null or invalid.");
+		}
 		return new MultiEnvironment(m);
 
 	}

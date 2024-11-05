@@ -10,10 +10,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-import hudson.model.ItemGroup;
-import hudson.security.ACL;
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.api.ConjurAPIUtils;
 import org.conjur.jenkins.configuration.ConjurConfiguration;
@@ -26,11 +22,18 @@ import org.conjur.jenkins.conjursecrets.ConjurSecretUsernameSSHKeyCredentialsImp
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.model.AbstractItem;
+import hudson.model.Item;
+import hudson.model.ItemGroup;
 import hudson.model.ModelObject;
+import hudson.security.ACL;
+import jenkins.model.Jenkins;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -41,18 +44,18 @@ import okhttp3.Response;
  */
 public class CredentialsSupplier implements Supplier<Collection<StandardCredentials>> {
 
-    private static final Logger LOGGER = Logger.getLogger(CredentialsSupplier.class.getName());
+	private static final Logger LOGGER = Logger.getLogger(CredentialsSupplier.class.getName());
 
-    private ModelObject context;
+	private ModelObject context;
 
-    private CredentialsSupplier(ModelObject context) {
-        super();
-        this.context = context;
-    }
+	private CredentialsSupplier(ModelObject context) {
+		super();
+		this.context = context;
+	}
 
-    public static Supplier<Collection<StandardCredentials>> standard(ModelObject context) {
-        return new CredentialsSupplier(context);
-    }
+	public static Supplier<Collection<StandardCredentials>> standard(ModelObject context) {
+		return new CredentialsSupplier(context);
+	}
 
 	/**
 	 * Method to retrieve the resources from Conjur based on the ConjurAuthnInfo
@@ -61,125 +64,156 @@ public class CredentialsSupplier implements Supplier<Collection<StandardCredenti
 	 */
 
 	@SuppressFBWarnings
-    @Override
-    public Collection<StandardCredentials> get() {
-        // Log context information
-        if (getContext() == null) {
-            LOGGER.log(Level.WARNING, "Context is null. Returning empty credentials.");
-            return Collections.emptyList();
-        }
-        LOGGER.log(Level.FINEST,"Retrieve variables from CyberArk Conjur -- Context => " + getContext());
-        final Collection<StandardCredentials> allCredentials = new ArrayList<>();
-        // Check if context is a folder and if credentials are of type UsernamePasswordCredentials
-        if (getContext() instanceof ItemGroup) {
-            List<UsernamePasswordCredentialsImpl> credentials = CredentialsProvider.lookupCredentials(
-                    UsernamePasswordCredentialsImpl.class, (ItemGroup) getContext(), ACL.SYSTEM, Collections.emptyList());
-            StringBuilder skippedCredentials = new StringBuilder();
-            // Efficiently process credentials using forEach Filter out Credentials Scope that are null with continue statement
-            credentials.forEach(credential -> {
-                if (credential.getScope() == null) {
-                    skippedCredentials.append(credential.getId()).append(",");
-                    return; // equivalent to 'continue' in a loop
-                }
-            });
-            if(LOGGER.isLoggable(Level.FINE) && skippedCredentials.length() > 0) {
-                LOGGER.log(Level.FINE, "*****Skipping authentication for UsernamePasswordCredentials with IDs: "
-                        + skippedCredentials.toString() + " in folder-level context.*****");
-            }
-        }
-
+	@Override
+	public Collection<StandardCredentials> get() {
+		// Log context information
+		if (getContext() == null) {
+			LOGGER.log(Level.WARNING, "Context is null. Returning empty credentials.");
+			return Collections.emptyList();
+		}
+		LOGGER.log(Level.FINEST, "Retrieve variables from CyberArk Conjur -- Context => " + getContext());
+		final Collection<StandardCredentials> allCredentials = new ArrayList<>();
+		// Check if context is a folder and if credentials are of type
+		// UsernamePasswordCredentials
+		if (getContext() instanceof ItemGroup) {
+			List<UsernamePasswordCredentialsImpl> credentials = CredentialsProvider.lookupCredentials(
+					UsernamePasswordCredentialsImpl.class, (ItemGroup) getContext(), ACL.SYSTEM,
+					Collections.emptyList());
+			StringBuilder skippedCredentials = new StringBuilder();
+			// Efficiently process credentials using forEach Filter out Credentials Scope
+			// that are null with continue statement
+			credentials.forEach(credential -> {
+				if (credential.getScope() == null) {
+					skippedCredentials.append(credential.getId()).append(",");
+					return; // equivalent to 'continue' in a loop
+				}
+			});
+			if (LOGGER.isLoggable(Level.FINE) && skippedCredentials.length() > 0) {
+				LOGGER.log(Level.FINE, "*****Skipping authentication for UsernamePasswordCredentials with IDs: "
+						+ skippedCredentials.toString() + " in folder-level context.*****");
+			}
+		}
+		// Check the Jenkins Bitbucket MultiBranch Parent level Job
+		Item parentFolder = Jenkins.get().getItemByFullName(getContext().getDisplayName());
+		LOGGER.log(Level.FINE, "Context is a Job, fetching parent folder: {0}" + parentFolder);
+		if (parentFolder == null) {
+			parentFolder = Jenkins.get()
+					.getItemByFullName(((AbstractItem) ((AbstractItem) getContext()).getParent()).getFullName());
+			LOGGER.log(Level.FINE, "Job has folder level>>{0}", parentFolder);
+		}
+		String[] splitContext = getContext().toString().split("/");
+		if (splitContext.length > 1) {
+			// Check if parentFolder is an instance of ItemGroup
+			ItemGroup itemGroup = (ItemGroup) parentFolder;
+			String taskNoun = ((AbstractItem) itemGroup).getTaskNoun();
+			LOGGER.log(Level.FINE, "Jenkins multi branch claims task pronoun  " + taskNoun);
+			if ((!taskNoun.isEmpty() && taskNoun.equalsIgnoreCase("Scan"))) {
+				LOGGER.log(Level.FINE, "Jenkins multi branch claims task pronoun  " + taskNoun);
+				Item item = Jenkins.get().getItemByFullName(((Item) getContext()).getParent().getFullName());
+				this.context = (ModelObject) item;
+				LOGGER.log(Level.FINE, "End logic to get the multi branch parent" + getContext());
+			}
+		}
 
 		String result = "";
 		try {
-            ConjurConfiguration conjurConfiguration = ConjurAPI.getConfigurationFromContext(getContext(), null);
+			ConjurConfiguration conjurConfiguration = ConjurAPI.getConfigurationFromContext(getContext(), null);
 			// Get Http Client
 			OkHttpClient client = ConjurAPIUtils.getHttpClient(conjurConfiguration);
 			// Authenticate to Conjur
 			String authToken = ConjurAPI.getAuthorizationToken(client, conjurConfiguration, getContext());
-			
-            ConjurAPI.ConjurAuthnInfo conjurAuthn = ConjurAPI.getConjurAuthnInfo(conjurConfiguration, null, getContext());
 
-            LOGGER.log(Level.FINE, "Fetching variables from Conjur");
-            Request request = new Request.Builder().url(
-                    String.format("%s/resources/%s?kind=variable&limit=1000", conjurAuthn.applianceUrl, conjurAuthn.account))
-                    .get().addHeader("Authorization", "Token token=\"" + authToken + "\"").build();
-    
-            Response response = client.newCall(request).execute();
-            result = response.body().string();
-            LOGGER.log(Level.FINEST, "RESULT => " + result);
-            if (response.code() != 200) {
-                LOGGER.log(Level.FINE, "Error fetching variables from Conjur [" + response.code() + " - " + response.message()
-                + "\n" + result);
-                throw new IOException("Error fetching variables from Conjur [" + response.code() + " - " + response.message()
-                        + "\n" + result);
-            }
+			ConjurAPI.ConjurAuthnInfo conjurAuthn = ConjurAPI.getConjurAuthnInfo(conjurConfiguration, null,
+					getContext());
 
-            JSONArray resultResources = new JSONArray(result);
-            for (int i = 0; i < resultResources.length(); i++) {
-                JSONObject resource = resultResources.getJSONObject(i);
-                LOGGER.log(Level.FINEST, "resource => {0}", resource.toString(4));
+			LOGGER.log(Level.FINE, "Fetching variables from Conjur");
+			Request request = new Request.Builder()
+					.url(String.format("%s/resources/%s?kind=variable&limit=1000", conjurAuthn.applianceUrl,
+							conjurAuthn.account))
+					.get().addHeader("Authorization", "Token token=\"" + authToken + "\"").build();
 
-                String variablePath = resource.getString("id").split(":")[2];
-                JSONArray annotations = resource.getJSONArray("annotations");
-                String userName = null;
-                String credentialType = null;
-                for (int j = 0; j < annotations.length(); j++) {
-                    JSONObject annotation = annotations.getJSONObject(j);
-                    switch (annotation.getString("name").toLowerCase()) {
-                        case "jenkins_credential_username":
-                            userName = annotation.getString("value");
-                            break;
-                        case "jenkins_credential_type":
-                            credentialType = annotation.getString("value").toLowerCase();
-                            break;
-                        default:
-                            break;
-                    }
-                }
+			Response response = client.newCall(request).execute();
+			result = response.body().string();
+			LOGGER.log(Level.FINEST, "RESULT => " + result);
+			if (response.code() != 200) {
+				LOGGER.log(Level.FINE, "Error fetching variables from Conjur [" + response.code() + " - "
+						+ response.message() + "\n" + result);
+				throw new IOException("Error fetching variables from Conjur [" + response.code() + " - "
+						+ response.message() + "\n" + result);
+			}
 
-                if (credentialType == null) {
-                    if (userName == null) {
-                        credentialType = "credential";
-                    } else {
-                        credentialType = "usernamecredential";
-                    }
-                }
+			JSONArray resultResources = new JSONArray(result);
+			for (int i = 0; i < resultResources.length(); i++) {
+				JSONObject resource = resultResources.getJSONObject(i);
+				LOGGER.log(Level.FINEST, "resource => {0}", resource.toString(4));
 
-                ConjurSecretCredentials credential = (ConjurSecretCredentials) new ConjurSecretCredentialsImpl(CredentialsScope.GLOBAL, variablePath.replace("/", "-"), variablePath, "CyberArk Conjur Provided");
-                credential.setStoreContext(getContext());
-                allCredentials.add(credential);
-                switch (credentialType) {
-                    case "usernamecredential":
-                        ConjurSecretUsernameCredentials usernameCredential = (ConjurSecretUsernameCredentials) new ConjurSecretUsernameCredentialsImpl(CredentialsScope.GLOBAL, "username-" + variablePath.replace("/", "-"), userName, variablePath.replace("/", "-"), conjurConfiguration, "CyberArk Conjur Provided");
-                        usernameCredential.setStoreContext(getContext());
-                        allCredentials.add(usernameCredential);
-                        break;
-                    case "usernamesshkeycredential":
-                        ConjurSecretUsernameSSHKeyCredentials usernameSSHKeyCredential = (ConjurSecretUsernameSSHKeyCredentials) new ConjurSecretUsernameSSHKeyCredentialsImpl(CredentialsScope.GLOBAL, "usernamesshkey-" + variablePath.replace("/", "-"), userName, variablePath.replace("/", "-"), conjurConfiguration, null /* no passphrase yet */, "CyberArk Conjur Provided");
-                        usernameSSHKeyCredential.setStoreContext(getContext());
-                        allCredentials.add(usernameSSHKeyCredential);
-                    break;
-                    default:
-                        break;
-                }
+				String variablePath = resource.getString("id").split(":")[2];
+				JSONArray annotations = resource.getJSONArray("annotations");
+				String userName = null;
+				String credentialType = null;
+				for (int j = 0; j < annotations.length(); j++) {
+					JSONObject annotation = annotations.getJSONObject(j);
+					switch (annotation.getString("name").toLowerCase()) {
+					case "jenkins_credential_username":
+						userName = annotation.getString("value");
+						break;
+					case "jenkins_credential_type":
+						credentialType = annotation.getString("value").toLowerCase();
+						break;
+					default:
+						break;
+					}
+				}
 
-                LOGGER.log(Level.FINEST, String.format("*** Variable Path: %s  userName:[%s]  credentialType:[%s]", variablePath, userName, credentialType));
+				if (credentialType == null) {
+					if (userName == null) {
+						credentialType = "credential";
+					} else {
+						credentialType = "usernamecredential";
+					}
+				}
 
-            }
+				ConjurSecretCredentials credential = (ConjurSecretCredentials) new ConjurSecretCredentialsImpl(
+						CredentialsScope.GLOBAL, variablePath.replace("/", "-"), variablePath,
+						"CyberArk Conjur Provided");
+				credential.setStoreContext(getContext());
+				allCredentials.add(credential);
+				switch (credentialType) {
+				case "usernamecredential":
+					ConjurSecretUsernameCredentials usernameCredential = (ConjurSecretUsernameCredentials) new ConjurSecretUsernameCredentialsImpl(
+							CredentialsScope.GLOBAL, "username-" + variablePath.replace("/", "-"), userName,
+							variablePath.replace("/", "-"), conjurConfiguration, "CyberArk Conjur Provided");
+					usernameCredential.setStoreContext(getContext());
+					allCredentials.add(usernameCredential);
+					break;
+				case "usernamesshkeycredential":
+					ConjurSecretUsernameSSHKeyCredentials usernameSSHKeyCredential = (ConjurSecretUsernameSSHKeyCredentials) new ConjurSecretUsernameSSHKeyCredentialsImpl(
+							CredentialsScope.GLOBAL, "usernamesshkey-" + variablePath.replace("/", "-"), userName,
+							variablePath.replace("/", "-"), conjurConfiguration, null /* no passphrase yet */,
+							"CyberArk Conjur Provided");
+					usernameSSHKeyCredential.setStoreContext(getContext());
+					allCredentials.add(usernameSSHKeyCredential);
+					break;
+				default:
+					break;
+				}
+
+				LOGGER.log(Level.FINEST, String.format("*** Variable Path: %s  userName:[%s]  credentialType:[%s]",
+						variablePath, userName, credentialType));
+
+			}
 
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE, "EXCEPTION: CredentialSuplier => " + e.getMessage());
 		}
 
-        return allCredentials.stream()
-                .map( cred -> {
-                    return cred;
-                })
-                .collect(Collectors.toList());
-    }
+		return allCredentials.stream().map(cred -> {
+			return cred;
+		}).collect(Collectors.toList());
+	}
 
-    private ModelObject getContext() {
-        return this.context;
-    }
+	private ModelObject getContext() {
+		return this.context;
+	}
 
 }
