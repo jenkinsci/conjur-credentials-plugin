@@ -28,8 +28,10 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 
 import hudson.Extension;
+import hudson.model.AbstractItem;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
+import hudson.model.Job;
 import hudson.model.ModelObject;
 import hudson.security.ACL;
 import jenkins.model.GlobalConfiguration;
@@ -46,6 +48,8 @@ public class ConjurCredentialProvider extends CredentialsProvider {
 	private static final ConcurrentHashMap<String, Supplier<Collection<StandardCredentials>>> allCredentialSuppliers = new ConcurrentHashMap<String, Supplier<Collection<StandardCredentials>>>();
 
 	private Supplier<Collection<StandardCredentials>> currentCredentialSupplier;
+	
+	private static final String JOB_MULTI_BRANCH ="branches";
 
 	/**
 	 * Returns the Credentials as List based on the type,itemGroup and
@@ -105,20 +109,41 @@ public class ConjurCredentialProvider extends CredentialsProvider {
 				LOGGER.log(Level.FINE, "**** getCredentials ConjurCredentialProvider: " + this.getId() + " : "
 						+ ACL.SYSTEM + " Context Name :" + context.getClass().getName());
 				LOGGER.log(Level.FINE, "Call to get the Store details");
-				try{
-				getStore(context);
-				if (currentCredentialSupplier != null) {
-					LOGGER.log(Level.FINE, "Iniside current credentialsupplier>>>>" + currentCredentialSupplier);
-					allCredentials = currentCredentialSupplier.get();
-					if (allCredentials == null) {
-						LOGGER.log(Level.WARNING, "Credentials supplier returned null. Returning empty list.");
-						return Collections.emptyList();
+				try {
+					String jenkinsJobBuildDir = "";
+					if (context instanceof AbstractItem) {
+						AbstractItem item = (AbstractItem) context;
+						String taskNoun = item.getTaskNoun();
+						LOGGER.log(Level.FINE, "Jenkins Mulitbrach JWT claims Jenkins task pronoun  " + taskNoun);
+						if (item instanceof Job) {
+							Job job = (Job) item;
+							jenkinsJobBuildDir = job.getBuildDir().getAbsolutePath();
+							LOGGER.log(Level.FINE,
+									"Jenkins Mulitbrach JWT claims Jenkins task Job build  " + jenkinsJobBuildDir);
+						}
 					}
-					return allCredentials.stream().filter(c -> type.isAssignableFrom(c.getClass())).map(type::cast)
-							.collect(Collectors.toList());
-				}
-				}catch (Exception ex){
-					LOGGER.log(Level.SEVERE, "getCredentialsFromSupplier()>> Error retrieving credentials: " + ex.getMessage());
+					//Jenkins MultiBranch JWT claims build branches path to contains
+					if (jenkinsJobBuildDir.contains(JOB_MULTI_BRANCH)) {  
+						LOGGER.log(Level.FINE,
+								"Calling for Mulitbrach build removing final or feature branches " + context);
+						Item itemBuild = Jenkins.get().getItemByFullName(((Item) context).getParent().getFullName());
+						context = itemBuild;
+						LOGGER.log(Level.FINE, "Calling for Mulitbrach build setting context to parent  " + context);
+					}
+					getStore(context);
+					if (currentCredentialSupplier != null) {
+						LOGGER.log(Level.FINE, "Iniside current credentialsupplier>>>>" + currentCredentialSupplier);
+						allCredentials = currentCredentialSupplier.get();
+						if (allCredentials == null) {
+							LOGGER.log(Level.WARNING, "Credentials supplier returned null. Returning empty list.");
+							return Collections.emptyList();
+						}
+						return allCredentials.stream().filter(c -> type.isAssignableFrom(c.getClass())).map(type::cast)
+								.collect(Collectors.toList());
+					}
+				} catch (Exception ex) {
+					LOGGER.log(Level.SEVERE,
+							"getCredentialsFromSupplier()>> Error retrieving credentials: " + ex.getMessage());
 				}
 			}
 			LOGGER.log(Level.FINE, "**** End of getCredentialsFromSupplier(): " + Collections.emptyList());

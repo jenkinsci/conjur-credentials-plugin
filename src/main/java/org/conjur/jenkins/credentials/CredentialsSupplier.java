@@ -28,12 +28,9 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import hudson.model.AbstractItem;
-import hudson.model.Item;
 import hudson.model.ItemGroup;
 import hudson.model.ModelObject;
 import hudson.security.ACL;
-import jenkins.model.Jenkins;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -73,15 +70,13 @@ public class CredentialsSupplier implements Supplier<Collection<StandardCredenti
 		}
 		LOGGER.log(Level.FINEST, "Retrieve variables from CyberArk Conjur -- Context => " + getContext());
 		final Collection<StandardCredentials> allCredentials = new ArrayList<>();
-		// Check if context is a folder and if credentials are of type
-		// UsernamePasswordCredentials
+		// Check if context is a folder and if credentials are of type UsernamePasswordCredentials
 		if (getContext() instanceof ItemGroup) {
 			List<UsernamePasswordCredentialsImpl> credentials = CredentialsProvider.lookupCredentials(
 					UsernamePasswordCredentialsImpl.class, (ItemGroup) getContext(), ACL.SYSTEM,
 					Collections.emptyList());
 			StringBuilder skippedCredentials = new StringBuilder();
-			// Efficiently process credentials using forEach Filter out Credentials Scope
-			// that are null with continue statement
+			// Efficiently process credentials using forEach Filter out Credentials Scope that are null with continue statement
 			credentials.forEach(credential -> {
 				if (credential.getScope() == null) {
 					skippedCredentials.append(credential.getId()).append(",");
@@ -93,28 +88,6 @@ public class CredentialsSupplier implements Supplier<Collection<StandardCredenti
 						+ skippedCredentials.toString() + " in folder-level context.*****");
 			}
 		}
-		// Check the Jenkins Bitbucket MultiBranch Parent level Job
-		Item parentFolder = Jenkins.get().getItemByFullName(getContext().getDisplayName());
-		LOGGER.log(Level.FINE, "Context is a Job, fetching parent folder: {0}" + parentFolder);
-		if (parentFolder == null) {
-			parentFolder = Jenkins.get()
-					.getItemByFullName(((AbstractItem) ((AbstractItem) getContext()).getParent()).getFullName());
-			LOGGER.log(Level.FINE, "Job has folder level>>{0}", parentFolder);
-		}
-		String[] splitContext = getContext().toString().split("/");
-		if (splitContext.length > 1) {
-			// Check if parentFolder is an instance of ItemGroup
-			ItemGroup itemGroup = (ItemGroup) parentFolder;
-			String taskNoun = ((AbstractItem) itemGroup).getTaskNoun();
-			LOGGER.log(Level.FINE, "Jenkins multi branch claims task pronoun  " + taskNoun);
-			if ((!taskNoun.isEmpty() && taskNoun.equalsIgnoreCase("Scan"))) {
-				LOGGER.log(Level.FINE, "Jenkins multi branch claims task pronoun  " + taskNoun);
-				Item item = Jenkins.get().getItemByFullName(((Item) getContext()).getParent().getFullName());
-				this.context = (ModelObject) item;
-				LOGGER.log(Level.FINE, "End logic to get the multi branch parent" + getContext());
-			}
-		}
-
 		String result = "";
 		try {
 			ConjurConfiguration conjurConfiguration = ConjurAPI.getConfigurationFromContext(getContext(), null);
