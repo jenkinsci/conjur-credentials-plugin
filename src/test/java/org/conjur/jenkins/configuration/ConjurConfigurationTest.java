@@ -40,7 +40,7 @@ public class ConjurConfigurationTest {
 	private ConjurConfiguration conjurConfiguration;
 
 	@Before
-	public void setupConjur() {
+	public void setupConjur() throws Exception {
 		CredentialsStore store = CredentialsProvider.lookupStores(j.jenkins).iterator().next();
 		// Setup Conjur login credentials
 		UsernamePasswordCredentialsImpl conjurCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,

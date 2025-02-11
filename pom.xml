@@ -6,20 +6,20 @@
 	<parent>
 		<groupId>org.jenkins-ci.plugins</groupId>
 		<artifactId>plugin</artifactId>
-		<version>4.48</version>
+		<version>4.88</version>
 		<relativePath />
 	</parent>
 	<groupId>org.conjur.jenkins</groupId>
 	<artifactId>conjur-credentials</artifactId>
 	<packaging>hpi</packaging>
 	<properties>
-		<jenkins.version>2.346.3</jenkins.version>
-		<java.level>11</java.level>
+		<jenkins.baseline>2.462</jenkins.baseline>
+		<jenkins.version>${jenkins.baseline}.3</jenkins.version>
 		<!-- <hpi.compatibleSinceVersion>2.0.0</hpi.compatibleSinceVersion> -->
 	</properties>
 	<name>Conjur Secrets Plugin</name>
 	<description>Plugin to retrieve secrets from CyberArk/Conjur</description>
-	<version>2.2.3</version>
+	<version>2.2.4-SNAPSHOT</version>
 	<url>https://github.com/jenkinsci/conjur-credentials-plugin</url>
 	<!-- The default licence for Jenkins OSS Plugins is MIT. Substitute for the
 	applicable one if needed. -->
@@ -29,22 +29,13 @@
 			<url>https://opensource.org/licenses/MIT</url>
 		</license>
 	</licenses>
-	<!-- If you want this to appear on the wiki page:
-    <developers>
-      <developer>
-        <id>bhacker</id>
-        <name>Bob Q. Hacker</name>
-        <email>bhacker@nowhere.net</email>
-      </developer>
-    </developers> -->
-	<!-- <url>https://wiki.jenkins.io/display/JENKINS/TODO+Plugin</url> -->
 	<scm>
 		<connection>
-			scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
+			scm:git:https://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
 		<developerConnection>
 			scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
 		<url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-		<tag>conjur-credentials-1.0.13</tag>
+                <tag>${scmTag}</tag>
 	</scm>
 	<repositories>
 		<repository>
@@ -80,50 +71,36 @@
 		<dependency>
 			<groupId>org.jenkins-ci.modules</groupId>
 			<artifactId>instance-identity</artifactId>
-			<version>2.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jetbrains.kotlin</groupId>
 			<artifactId>kotlin-stdlib-common</artifactId>
-			<version>1.6.20</version>
+			<version>1.9.25</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp -->
-		<dependency>
-			<groupId>com.squareup.okhttp3</groupId>
-			<artifactId>okhttp</artifactId>
-			<version>4.10.0</version>
-		</dependency>
-		<!--
-		https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
-		<!-- <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency> -->
-		<!--
-		https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
-			<version>2.14.0</version>
-		</dependency>
-		<!--
-		https://mvnrepository.com/artifact/org.jenkins-ci.plugins/jackson2-api -->
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>jackson2-api</artifactId>
-		</dependency>
+                <dependency>
+                        <groupId>io.jenkins.plugins</groupId>
+                        <artifactId>okhttp-api</artifactId>
+                </dependency>
+                <dependency>
+                        <groupId>org.jenkins-ci.plugins</groupId>
+                        <artifactId>jackson2-api</artifactId>
+                </dependency>
 		<!-- https://mvnrepository.com/artifact/org.bitbucket.b_c/jose4j -->
 		<dependency>
 			<groupId>org.bitbucket.b_c</groupId>
 			<artifactId>jose4j</artifactId>
-			<version>0.7.9</version>
+			<version>0.9.6</version>
+                        <exclusions>
+                                <exclusion>
+			                <groupId>org.slf4j</groupId>
+			                <artifactId>slf4j-api</artifactId>
+                                </exclusion>
+                        </exclusions>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
-		<dependency>
-			<groupId>com.google.code.gson</groupId>
-			<artifactId>gson</artifactId>
-			<version>2.8.9</version>
-		</dependency>
+                <dependency>
+                        <groupId>io.jenkins.plugins</groupId>
+                        <artifactId>gson-api</artifactId>
+                </dependency>
 		<dependency>
 			<groupId>org.jenkins-ci.plugins.workflow</groupId>
 			<artifactId>workflow-basic-steps</artifactId>
@@ -144,87 +121,51 @@
 			<artifactId>workflow-job</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<!--
-		https://mvnrepository.com/artifact/org.powermock/powermock-module-junit5 -->
-		<!-- https://mvnrepository.com/artifact/junit/junit -->
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.13.2</version>
-			<scope>test</scope>
-		</dependency>
 		<dependency>
 			<groupId>org.mockito</groupId>
-			<artifactId>mockito-inline</artifactId>
-			<version>3.11.2</version>
+			<artifactId>mockito-core</artifactId>
 			<scope>test</scope>
 		</dependency>
+                <dependency>
+                        <groupId>io.jenkins.plugins</groupId>
+                        <artifactId>commons-lang3-api</artifactId>
+			<scope>test</scope>
+                </dependency>
 		<!-- https://mvnrepository.com/artifact/org.javassist/javassist -->
 		<dependency>
 			<groupId>org.javassist</groupId>
 			<artifactId>javassist</artifactId>
-			<version>3.24.1-GA</version>
+			<version>3.30.2-GA</version>
 		</dependency>
 
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>1.4.7</version>
+			<version>1.5.16</version>
+                        <exclusions>
+                                <exclusion>
+			                <groupId>org.slf4j</groupId>
+			                <artifactId>slf4j-api</artifactId>
+                                </exclusion>
+                        </exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.assertj</groupId>
 			<artifactId>assertj-core</artifactId>
-			<version>3.15.0</version>
+			<version>3.27.3</version>
 			<scope>test</scope>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>2.0.4</version>
-		</dependency>
-		<!--
-		https://mvnrepository.com/artifact/org.powermock/powermock-classloading-xstream -->
-		<!-- https://mvnrepository.com/artifact/com.thoughtworks.xstream/xstream -->
-		<dependency>
-			<groupId>com.thoughtworks.xstream</groupId>
-			<artifactId>xstream</artifactId>
-			<version>1.4.20</version>
 		</dependency>
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
 				<groupId>io.jenkins.tools.bom</groupId>
-				<artifactId>bom-2.332.x</artifactId>
-				<version>1678.vc1feb_6a_3c0f1</version>
+				<artifactId>bom-${jenkins.baseline}.x</artifactId>
+				<version>4136.vca_c3202a_7fd1</version>
 				<scope>import</scope>
 				<type>pom</type>
 			</dependency>
 
 		</dependencies>
 	</dependencyManagement>
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<configuration>
-					<argLine>
-						--add-opens=java.base/java.lang=ALL-UNNAMED
-						--add-opens java.base/java.util=ALL-UNNAMED
-						--add-opens=java.base/sun.reflect.generics.parser=ALL-UNNAMED
-					</argLine>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
-	<profiles>
-		<profile>
-			<id>jdk-9-and-above</id>
-			<activation>
-				<jdk>11</jdk>
-			</activation>
-		</profile>
-	</profiles>
 </project>
