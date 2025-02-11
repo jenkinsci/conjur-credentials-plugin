@@ -1,5 +1,5 @@
 #!/usr/bin/env groovy
-
+@Library("product-pipelines-shared-library") _
 // Automated release, promotion and dependencies
 properties([
   // Include the automated release parameters for the build
@@ -109,7 +109,7 @@ pipeline {
       steps {
         script {
           updateVersion(infrapool, "CHANGELOG.md", "${BUILD_NUMBER}")
-
+			
           // Set version in POM file
           infrapool.agentSh 'VERSION="$(<VERSION)" scripts/update-version.sh'
         }

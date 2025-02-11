@@ -2,6 +2,10 @@ package org.conjur.jenkins.api;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -14,6 +18,7 @@ import org.conjur.jenkins.configuration.ConjurConfiguration;
 import org.conjur.jenkins.configuration.ConjurJITJobProperty;
 import org.conjur.jenkins.configuration.FolderConjurConfiguration;
 import org.conjur.jenkins.configuration.GlobalConjurConfiguration;
+import org.conjur.jenkins.configuration.TelemetryConfiguration;
 import org.conjur.jenkins.jwtauth.impl.JwtToken;
 
 import com.cloudbees.hudson.plugins.folder.AbstractFolder;
@@ -160,7 +165,9 @@ public class ConjurAPI {
 			request = new Request.Builder()
 					.url(String.format("%s/%s/%s/%s/authenticate", conjurAuthn.applianceUrl, conjurAuthn.authnPath,
 							conjurAuthn.account, URLEncoder.encode(conjurAuthn.login, "utf-8")))
+				    .addHeader("x-cybr-telemetry", TelemetryConfiguration.buildTelemetryHeader()) // Added the telemetry header
 					.post(RequestBody.create(MediaType.parse("text/plain"), conjurAuthn.apiKey)).build();
+			LOGGER.info("Telemetry Outgoing Request:: "+request);
 		} else if (conjurAuthn.authnPath != null && conjurAuthn.apiKey != null) {
 			LOGGER.log(Level.FINE, "Creating authentication request for JWT authentication with Conjur");
 			String authnPath = conjurAuthn.authnPath.indexOf("/") == -1 ? "authn-jwt/" + conjurAuthn.authnPath
@@ -169,7 +176,10 @@ public class ConjurAPI {
 			request = new Request.Builder()
 					.url(String.format("%s/%s/%s/authenticate", conjurAuthn.applianceUrl, authnPath,
 							conjurAuthn.account))
+				    .addHeader("x-cybr-telemetry", TelemetryConfiguration.buildTelemetryHeader()) // Added the telemetry header
 					.post(RequestBody.create(MediaType.parse("text/plain"), conjurAuthn.apiKey)).build();
+			LOGGER.info("Telemetry Outgoing Request:: "+request);
+
 
 		}
 
@@ -266,7 +276,9 @@ public class ConjurAPI {
 		LOGGER.log(Level.FINEST, "Fetching secret from Conjur Server");
 		Request request = new Request.Builder().url(
 				String.format("%s/secrets/%s/variable/%s", conjurAuthn.applianceUrl, conjurAuthn.account, variablePath))
+			    .addHeader("x-cybr-telemetry", TelemetryConfiguration.buildTelemetryHeader()) // Add the telemetry header
 				.get().addHeader("Authorization", "Token token=\"" + authToken + "\"").build();
+		LOGGER.info("Telemetry Outgoing Request:: "+request);
 
 		Response response = client.newCall(request).execute();
 		String result = response.body().string();
@@ -381,5 +393,4 @@ public class ConjurAPI {
 	private ConjurAPI() {
 		super();
 	}
-
 }
