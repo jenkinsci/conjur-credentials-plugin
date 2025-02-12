@@ -157,7 +157,9 @@
       // Call the function initially to set the initial state based on checkbox
       getIdentityFormatToken();
         document.getElementById('jwtAudience').addEventListener('change', disableJwtAudienceInput);
-        document.addEventListener("input", disableSubmitButton);
+        // https://issues.jenkins.io/browse/JENKINS-75258 - Cannot save system configuration if Conjur Credentials plugin is active
+        // TODO: Restore this call when JENKINS-75258 is fixed
+        // document.addEventListener("input", disableSubmitButton);
 
         function disableJwtAudienceInput(){
             var inputEnableIdentityCheckedToken = document.getElementById('enableIdentityFormatFieldsFromToken');
