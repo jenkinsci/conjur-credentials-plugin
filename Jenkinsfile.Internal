@@ -136,13 +136,6 @@ pipeline {
           infrapool.agentSh 'scripts/build.sh'
         }
       }
-     post {
-        always {
-          script {
-            infrapool.agentArchiveArtifacts artifacts: 'target/conjur-credentials.hpi'
-          }
-        }
-     }
     }
     stage('Release') {
       when {
