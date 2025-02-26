@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.2.4] - 2025-02-18
+## What’s New
+- **Jenkins Conjur Global Configuration UI:** Fixed the issue where toggling the Conjur JWT checkbox (checked/unchecked) with empty JWT input fields disabled/enabled the Save and Apply buttons.
 ## [2.2.3] - 2024-11-12
 ## What’s New
 - **Should not access to other Jenkins Job Conjur Credentials ID:** Fixed the Conjur Credential store for one folder Job could not be accessed from other folder-level Jobs.

@@ -56,8 +56,12 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
      */
     public FormValidation doCheckTokenDurarionInSeconds(@AncestorInPath AbstractItem anc,
                                                         @QueryParameter("tokenDurarionInSeconds") String tokenDurarionInSeconds,
-                                                        @QueryParameter("keyLifetimeInMinutes") String keyLifetimeInMinutes) {
+                                                        @QueryParameter("keyLifetimeInMinutes") String keyLifetimeInMinutes,
+                                                        @QueryParameter("enableJWKS") Boolean enableJWKS) {
         LOGGER.log(Level.FINE, "Inside of doCheckTokenDurarionInSeconds()");
+        if(!enableJWKS) {
+            return FormValidation.ok();
+        }
         try {
             int tokenttl = Integer.parseInt(tokenDurarionInSeconds);
             int keyttl = Integer.parseInt(keyLifetimeInMinutes);
@@ -81,13 +85,18 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
      * @return
      */
     public FormValidation doCheckAuthWebServiceId(@AncestorInPath AbstractItem anc,
-                                                  @QueryParameter("authWebServiceId") String authWebServiceId) {
+                                                  @QueryParameter("authWebServiceId") String authWebServiceId,
+                                                  @QueryParameter("enableJWKS") Boolean enableJWKS) {
         LOGGER.log(Level.FINE, "Inside of doCheckAuthWebServiceId()");
-        if (StringUtils.isEmpty(authWebServiceId) || StringUtils.isBlank(authWebServiceId)) {
-            LOGGER.log(Level.FINE, "Auth WebService Id should not be empty");
-            return FormValidation.error("Auth WebService Id should not be empty");
+        if(enableJWKS) {
+        	if (StringUtils.isEmpty(authWebServiceId) || StringUtils.isBlank(authWebServiceId)) {
+                LOGGER.log(Level.FINE, "Auth WebService Id should not be empty");
+                return FormValidation.error("Auth WebService Id should not be empty");
+            }else {
+                return FormValidation.ok();
+            }
         }else {
-            return FormValidation.ok();
+        	return FormValidation.ok();
         }
     }
 
@@ -99,14 +108,19 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
      * @return
      */
     public FormValidation doCheckJwtAudience(@AncestorInPath AbstractItem anc,
-                                             @QueryParameter("jwtAudience") String jwtAudience) {
+                                             @QueryParameter("jwtAudience") String jwtAudience,
+                                             @QueryParameter("enableJWKS") Boolean enableJWKS) {
         LOGGER.log(Level.FINE, "Inside of doCheckJwtAudience()");
-        if (StringUtils.isEmpty(jwtAudience) || StringUtils.isBlank(jwtAudience)) {
-            LOGGER.log(Level.FINE, "JWT Audience field value defaults to: cyberark-conjur");
-            return FormValidation.warning("JWT Audience field value defaults to: cyberark-conjur ");
-        } else {
-            return FormValidation.ok();
+        if(enableJWKS) {
+        	if (StringUtils.isEmpty(jwtAudience) || StringUtils.isBlank(jwtAudience)) {
+                LOGGER.log(Level.FINE, "JWT Audience field value defaults to: cyberark-conjur");
+                return FormValidation.warning("JWT Audience field value defaults to: cyberark-conjur ");
+            } else {
+                return FormValidation.ok();
 
+            }
+        }else {
+        	return FormValidation.ok();
         }
     }
 	/**
@@ -117,17 +131,22 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
 	 * @return
 	 */
     public FormValidation doCheckIdentityFieldName(@AncestorInPath AbstractItem anc,
-                                                   @QueryParameter("identityFieldName") String identityFieldName) {
-        // Regular expression to allow only alphanumeric characters
-        String alphanumericRegex = "^[a-zA-Z0-9\\-_\"]*$";
-		if (StringUtils.isEmpty(identityFieldName) || StringUtils.isBlank(identityFieldName)) {
-			LOGGER.log(Level.FINE, "Identity Field Name should not be empty");
-			return FormValidation.error("Identity Field Name should not be empty");
-		}if (!identityFieldName.matches(alphanumericRegex)) {
-            LOGGER.log(Level.FINE, "Identity Field Name should contain only alphanumeric characters including \"-\", \"_\", and \" \"");
-            return FormValidation.error("Identity Field Name should contain only alphanumeric characters including \"-\", \"_\", and \" \"");
-        }
-		return FormValidation.ok();
+                                                   @QueryParameter("identityFieldName") String identityFieldName,
+                                                   @QueryParameter("enableJWKS") Boolean enableJWKS) {
+    	if(enableJWKS) {
+    		// Regular expression to allow only alphanumeric characters
+            String alphanumericRegex = "^[a-zA-Z0-9\\-_\"]*$";
+    		if (StringUtils.isEmpty(identityFieldName) || StringUtils.isBlank(identityFieldName)) {
+    			LOGGER.log(Level.FINE, "Identity Field Name should not be empty");
+    			return FormValidation.error("Identity Field Name should not be empty");
+    		}if (!identityFieldName.matches(alphanumericRegex)) {
+                LOGGER.log(Level.FINE, "Identity Field Name should contain only alphanumeric characters including \"-\", \"_\", and \" \"");
+                return FormValidation.error("Identity Field Name should contain only alphanumeric characters including \"-\", \"_\", and \" \"");
+            }
+    		return FormValidation.ok();
+    	}else {
+    		return FormValidation.ok();
+    	}
     }
 
     /**
@@ -138,14 +157,19 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
      * @return
      */
     public FormValidation doCheckIdentityFormatFieldsFromToken(@AncestorInPath AbstractItem anc,
-                                                               @QueryParameter("identityFormatFieldsFromToken") String identityFormatFieldsFromToken) {
+                                                               @QueryParameter("identityFormatFieldsFromToken") String identityFormatFieldsFromToken,
+                                                               @QueryParameter("enableJWKS") Boolean enableJWKS) {
         LOGGER.log(Level.FINE, "Inside of doCheckIdentityFormatField()");
         List<String> identityFields = Arrays.asList(identityFormatFieldsFromToken.split(","));
-        if (StringUtils.isEmpty(identityFormatFieldsFromToken) || StringUtils.isBlank(identityFormatFieldsFromToken)) {
-            LOGGER.log(Level.FINE, "Identity Format Fields should not be empty");
-            return FormValidation.error("Identity Format Fields should not be empty");
+        if(enableJWKS) {
+        	if (StringUtils.isEmpty(identityFormatFieldsFromToken) || StringUtils.isBlank(identityFormatFieldsFromToken)) {
+                LOGGER.log(Level.FINE, "Identity Format Fields should not be empty");
+                return FormValidation.error("Identity Format Fields should not be empty");
+            }
+            return validateIdentityFormatFields(identityFields);
+        }else {
+        	return FormValidation.ok();
         }
-        return validateIdentityFormatFields(identityFields);
     }
 
   
