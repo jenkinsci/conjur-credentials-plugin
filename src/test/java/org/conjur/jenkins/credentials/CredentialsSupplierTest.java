@@ -55,7 +55,7 @@ public class CredentialsSupplierTest {
 	}
 
 	@Test
-	public void testGetWhenContextIsItemGroupWithNullScopeCredentials() {
+	public void testGetWhenContextIsItemGroupWithNullScopeCredentials() throws Exception {
 		List<UsernamePasswordCredentialsImpl> mockCredentials = new ArrayList<>();
 		mockCredentials.add(
 				new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "id1", "desc", "username1", "password1"));
@@ -77,7 +77,7 @@ public class CredentialsSupplierTest {
 		}
 	}
 	@Test
-	public void testGetWhenContextIsItemGroupWithNotNullScopeCredentials() {
+	public void testGetWhenContextIsItemGroupWithNotNullScopeCredentials() throws Exception {
 		List<UsernamePasswordCredentialsImpl> mockCredentials = new ArrayList<>();
 		mockCredentials.add(
 				new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "id1", "desc", "username1", "password1"));
