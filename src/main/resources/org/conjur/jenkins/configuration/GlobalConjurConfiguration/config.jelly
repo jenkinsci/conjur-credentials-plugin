@@ -86,13 +86,15 @@
       // Function to set value based on checkbox state
       document.getElementById('enableIdentityFormatFieldsFromToken').addEventListener('change', getIdentityFormatToken);
       document.getElementById('listIdentityFieldsSeparator').addEventListener('change', selectedFieldSeparator);
-
-
-
       function getIdentityFormatToken() {
           var selectJwtAudienceValue ='${instance.jwtAudience}';
           var identityFieldNameDefault ='${instance.identityFieldName}';
           var selectIdentityFormatTokenValue ='${instance.selectIdentityFormatToken}';
+          selectJwtAudienceValue =selectJwtAudienceValue ? selectJwtAudienceValue :'cyberark-conjur';
+          var inputKeyLifetimeInMinutes = '${instance.keyLifetimeInMinutes}';
+          var inputTokenDurarionInSeconds = '${instance.tokenDurarionInSeconds}';
+          inputKeyLifetimeInMinutes.value =inputKeyLifetimeInMinutes.value ? inputKeyLifetimeInMinutes.value :60;
+          inputTokenDurarionInSeconds.value =inputTokenDurarionInSeconds.value ? inputTokenDurarionInSeconds.value :120;
           identityFieldNameDefault =identityFieldNameDefault ? identityFieldNameDefault : 'sub';
           selectIdentityFormatTokenValue =selectIdentityFormatTokenValue ? selectIdentityFormatTokenValue : 'jenkins_full_name';
           var selectIdentityFieldsSeparatorValue = '${instance.selectIdentityFieldsSeparator}';
@@ -157,10 +159,17 @@
       // Call the function initially to set the initial state based on checkbox
       getIdentityFormatToken();
         document.getElementById('jwtAudience').addEventListener('change', disableJwtAudienceInput);
-        // https://issues.jenkins.io/browse/JENKINS-75258 - Cannot save system configuration if Conjur Credentials plugin is active
-        // TODO: Restore this call when JENKINS-75258 is fixed
-        // document.addEventListener("input", disableSubmitButton);
-
+        // TODO: call when input JWT Set Checked/Unchecked to disabled/enabled submit buttons
+        // Attach event listeners to trigger function on change
+		document.addEventListener('DOMContentLoaded', function () {
+		    document.getElementsByName('enableJWKS')[0].addEventListener('change', disableSubmitButton);
+		    document.getElementsByName('authWebServiceId')[0].addEventListener('input', disableSubmitButton);
+		    document.getElementsByName('jwtAudience')[0].addEventListener('input', disableSubmitButton);
+		    document.getElementsByName('keyLifetimeInMinutes')[0].addEventListener('input', disableSubmitButton);
+		    document.getElementsByName('tokenDurarionInSeconds')[0].addEventListener('input', disableSubmitButton);
+		    document.getElementsByName('identityFieldName')[0].addEventListener('input', disableSubmitButton);
+		    document.getElementsByName('identityFormatFieldsFromToken')[0].addEventListener('input', disableSubmitButton);
+		});
         function disableJwtAudienceInput(){
             var inputEnableIdentityCheckedToken = document.getElementById('enableIdentityFormatFieldsFromToken');
             var jwtAudienceDefault = document.getElementsByName('jwtAudience')[0];
@@ -178,10 +187,11 @@
             }
         }
 
-       function disableSubmitButton(){
+        function disableSubmitButton(){
             var inputAuthWebServiceId = document.getElementsByName('authWebServiceId')[0];
             var inputJwtAudience = document.getElementsByName('jwtAudience')[0];
-
+            var inputEnableJWT = document.getElementsByName('enableJWKS')[0];
+            
             var inputKeyLifetimeInMinutes = document.getElementsByName('keyLifetimeInMinutes')[0];
             var inputTokenDurarionInSeconds = document.getElementsByName('tokenDurarionInSeconds')[0];
 
@@ -190,17 +200,27 @@
 
             var applyBtn = document.querySelector('button[name="Apply"]');
             var submitBtn = document.querySelector('button[name="Submit"]');
-           if (inputAuthWebServiceId.value.trim() === '' || inputJwtAudience.value.trim() === '' || inputIdentityFieldName.value.trim() === '' || inputIdentityFormatFieldsFromToken.value.trim() === '' || inputKeyLifetimeInMinutes.value.trim() === '' || inputTokenDurarionInSeconds.value.trim() === '') {
-                applyBtn.disabled = true;
-                submitBtn.disabled = true;
-             }else{
-                 applyBtn.disabled = false;
-                 submitBtn.disabled = false;
-             }
+            // Check if Enable JWT is checked
+    	   if (inputEnableJWT.checked) {
+	         //Check the JWT Input field values
+	         if (inputAuthWebServiceId.value.trim() === '' || inputJwtAudience.value.trim() === '' 
+	              || inputIdentityFieldName.value.trim() === '' || inputIdentityFormatFieldsFromToken.value.trim() === '' 
+	              || inputKeyLifetimeInMinutes.value.trim() === ''|| (!/^\d+(\.\d+)?$/.test(inputKeyLifetimeInMinutes.value.trim())) 
+	              || inputTokenDurarionInSeconds.value.trim() === '' || (!/^\d+(\.\d+)?$/.test(inputTokenDurarionInSeconds.value.trim()))) {
+	              applyBtn.disabled = true;
+	              submitBtn.disabled = true;
+	          }else{
+	              applyBtn.disabled = false;
+	              submitBtn.disabled = false;
+	          }			
+            }else{
+                //If JWT unchecked, always enable the buttons 
+                applyBtn.disabled = false;
+                submitBtn.disabled = false;
+           }
          }
-         // https://issues.jenkins.io/browse/JENKINS-75258 - Cannot save system configuration if Conjur Credentials plugin is active
-         // TODO: Restore this call when JENKINS-75258 is fixed
-         // disableSubmitButton();
+         // TODO:If Unchecked JWT Set input checkbox enabled then both of the save and apply buttons disabled then vice-versa. 
+         disableSubmitButton();
          disableJwtAudienceInput();
          function selectedFieldSeparator(SelectedSeparatorValue){
              var onChangeWarningSeparatorMsg = document.getElementById("dviWarningSeperator");
@@ -249,7 +269,5 @@
              transition: var(--standard-transition);
              width: 100% !important;
            }
-
-
    </style>
 </j:jelly>

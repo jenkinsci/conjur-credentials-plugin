@@ -33,10 +33,10 @@ public class GlobalConjurConfigurationTest {
 		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
 				GlobalConjurConfiguration.class)) {
 			getConfigMockStatic.when(() -> config.doCheckTokenDurarionInSeconds(abstractItem, tokenDurationInSeconds,
-					keyLifetimeInMinutes)).thenReturn(FormValidation.ok());
+					keyLifetimeInMinutes,true)).thenReturn(FormValidation.ok());
 			// Assert the result
 			assertEquals(FormValidation.ok(),
-					config.doCheckTokenDurarionInSeconds(abstractItem, tokenDurationInSeconds, keyLifetimeInMinutes));
+					config.doCheckTokenDurarionInSeconds(abstractItem, tokenDurationInSeconds, keyLifetimeInMinutes,true));
 		}
 
 	}
@@ -51,11 +51,11 @@ public class GlobalConjurConfigurationTest {
 				GlobalConjurConfiguration.class)) {
 			getConfigMockStatic
 					.when(() -> config.doCheckTokenDurarionInSeconds(abstractItem, tokenDurationInSeconds,
-							keyLifetimeInMinutes))
+							keyLifetimeInMinutes,true))
 					.thenReturn(FormValidation.error("Key lifetime and token duration must be numbers"));
 
 			String actualErrorMessage = config
-					.doCheckTokenDurarionInSeconds(abstractItem, tokenDurationInSeconds, keyLifetimeInMinutes)
+					.doCheckTokenDurarionInSeconds(abstractItem, tokenDurationInSeconds, keyLifetimeInMinutes,true)
 					.getMessage();
 			// Assert the result after removing the prefix "ERROR: "
 			assertEquals("Key lifetime and token duration must be numbers", actualErrorMessage.replace("ERROR: ", ""));
@@ -73,11 +73,11 @@ public class GlobalConjurConfigurationTest {
 				GlobalConjurConfiguration.class)) {
 			getConfigMockStatic
 					.when(() -> config.doCheckTokenDurarionInSeconds(abstractItem, tokenDurationInSeconds,
-							keyLifetimeInMinutes))
+							keyLifetimeInMinutes,true))
 					.thenReturn(FormValidation.error("Token cannot last longer than key"));
 
 			String actualErrorMessage = config
-					.doCheckTokenDurarionInSeconds(abstractItem, tokenDurationInSeconds, keyLifetimeInMinutes)
+					.doCheckTokenDurarionInSeconds(abstractItem, tokenDurationInSeconds, keyLifetimeInMinutes,true)
 					.getMessage();
 			// Assert the result after removing the prefix "ERROR: "
 			assertEquals("Token cannot last longer than key", actualErrorMessage.replace("ERROR: ", ""));
@@ -89,10 +89,10 @@ public class GlobalConjurConfigurationTest {
 		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
 				GlobalConjurConfiguration.class)) {
 			String authWebServiceId = "jenkins";
-			getConfigMockStatic.when(() -> config.doCheckAuthWebServiceId(abstractItem, authWebServiceId))
+			getConfigMockStatic.when(() -> config.doCheckAuthWebServiceId(abstractItem, authWebServiceId,true))
 					.thenReturn(FormValidation.ok());
 			// Assert the result
-			assertEquals(FormValidation.ok(), config.doCheckAuthWebServiceId(abstractItem, authWebServiceId));
+			assertEquals(FormValidation.ok(), config.doCheckAuthWebServiceId(abstractItem, authWebServiceId,true));
 		}
 	}
 
@@ -102,10 +102,10 @@ public class GlobalConjurConfigurationTest {
 				GlobalConjurConfiguration.class)) {
 			String authWebServiceId = "";
 			String errorMsg = "Auth WebService Id should not be empty";
-			getConfigMockStatic.when(() -> config.doCheckAuthWebServiceId(abstractItem, authWebServiceId))
+			getConfigMockStatic.when(() -> config.doCheckAuthWebServiceId(abstractItem, authWebServiceId,true))
 					.thenReturn(FormValidation.error(errorMsg));
 
-			String actualErrorMessage = config.doCheckAuthWebServiceId(abstractItem, authWebServiceId).getMessage();
+			String actualErrorMessage = config.doCheckAuthWebServiceId(abstractItem, authWebServiceId,true).getMessage();
 			// Assert the result after removing the prefix "ERROR: "
 			assertEquals(errorMsg, actualErrorMessage.replace("ERROR: ", ""));
 		}
@@ -116,10 +116,10 @@ public class GlobalConjurConfigurationTest {
 		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
 				GlobalConjurConfiguration.class)) {
 			String jwtAudience = "jenkins-server";
-			getConfigMockStatic.when(() -> config.doCheckJwtAudience(abstractItem, jwtAudience))
+			getConfigMockStatic.when(() -> config.doCheckJwtAudience(abstractItem, jwtAudience,true))
 					.thenReturn(FormValidation.ok());
 			// Assert the result
-			assertEquals(FormValidation.ok(), config.doCheckJwtAudience(abstractItem, jwtAudience));
+			assertEquals(FormValidation.ok(), config.doCheckJwtAudience(abstractItem, jwtAudience,true));
 		}
 	}
 
@@ -129,10 +129,10 @@ public class GlobalConjurConfigurationTest {
 				GlobalConjurConfiguration.class)) {
 			String jwtAudience = "";
 			String errorMsg = "JWT Audience field should not be empty";
-			getConfigMockStatic.when(() -> config.doCheckJwtAudience(abstractItem, jwtAudience))
+			getConfigMockStatic.when(() -> config.doCheckJwtAudience(abstractItem, jwtAudience,true))
 					.thenReturn(FormValidation.error(errorMsg));
 
-			String actualErrorMessage = config.doCheckJwtAudience(abstractItem, jwtAudience).getMessage();
+			String actualErrorMessage = config.doCheckJwtAudience(abstractItem, jwtAudience,true).getMessage();
 			// Assert the result after removing the prefix "ERROR: "
 			assertEquals(errorMsg, actualErrorMessage.replace("ERROR: ", ""));
 		}
@@ -142,10 +142,10 @@ public class GlobalConjurConfigurationTest {
 		try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
 				GlobalConjurConfiguration.class)) {
 			String identityFieldName = "sub";
-			getConfigMockStatic.when(() -> config.doCheckIdentityFieldName(abstractItem, identityFieldName))
+			getConfigMockStatic.when(() -> config.doCheckIdentityFieldName(abstractItem, identityFieldName,true))
 					.thenReturn(FormValidation.ok());
 			// Assert the result
-			assertEquals(FormValidation.ok(), config.doCheckIdentityFieldName(abstractItem, identityFieldName));
+			assertEquals(FormValidation.ok(), config.doCheckIdentityFieldName(abstractItem, identityFieldName,true));
 		}
 	}
 	@Test
@@ -154,10 +154,10 @@ public class GlobalConjurConfigurationTest {
 				GlobalConjurConfiguration.class)) {
 			String identityFieldName = "";
 			String errorMsg = "Identity Field Name should not be empty";
-			getConfigMockStatic.when(() -> config.doCheckIdentityFieldName(abstractItem, identityFieldName))
+			getConfigMockStatic.when(() -> config.doCheckIdentityFieldName(abstractItem, identityFieldName,true))
 					.thenReturn(FormValidation.error(errorMsg));
 
-			String actualErrorMessage = config.doCheckIdentityFieldName(abstractItem, identityFieldName).getMessage();
+			String actualErrorMessage = config.doCheckIdentityFieldName(abstractItem, identityFieldName,true).getMessage();
 			// Assert the result after removing the prefix "ERROR: "
 			assertEquals(errorMsg, actualErrorMessage.replace("ERROR: ", ""));
 		}
@@ -169,10 +169,10 @@ public class GlobalConjurConfigurationTest {
 				GlobalConjurConfiguration.class)) {
 			String identityFieldName = "test!@#";
 			String errorMsg = "Identity Field Name should contain only alphanumeric characters";
-			getConfigMockStatic.when(() -> config.doCheckIdentityFieldName(abstractItem, identityFieldName))
+			getConfigMockStatic.when(() -> config.doCheckIdentityFieldName(abstractItem, identityFieldName,true))
 					.thenReturn(FormValidation.error(errorMsg));
 
-			String actualErrorMessage = config.doCheckIdentityFieldName(abstractItem, identityFieldName).getMessage();
+			String actualErrorMessage = config.doCheckIdentityFieldName(abstractItem, identityFieldName,true).getMessage();
 			// Assert the result after removing the prefix "ERROR: "
 			assertEquals(errorMsg, actualErrorMessage.replace("ERROR: ", ""));
 		}
@@ -184,11 +184,11 @@ public class GlobalConjurConfigurationTest {
 				GlobalConjurConfiguration.class)) {
 			String identityFormatFieldsFromToken = "aud,jenkins_full_name";
 			getConfigMockStatic.when(
-					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
+					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken,true))
 					.thenReturn(FormValidation.ok());
 			// Assert the result
 			assertEquals(FormValidation.ok(),
-					config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken));
+					config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken,true));
 		}
 	}
 
@@ -199,10 +199,10 @@ public class GlobalConjurConfigurationTest {
 			String identityFormatFieldsFromToken = "aud, jenkins_full_name";
 			String errorMsg = "Identity Format Fields can add additional fields with comma-delimited values : aud,jenkins_name,jenkins_full_name,jenkins_parent_full_name,<others>";
 			getConfigMockStatic.when(
-					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
+					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken,true))
 					.thenReturn(FormValidation.error(errorMsg));
 			// Assert the result
-			assertNotNull(config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken));
+			assertNotNull(config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken,true));
 		}
 	}
 
@@ -213,10 +213,10 @@ public class GlobalConjurConfigurationTest {
 			String identityFormatFieldsFromToken = "";
 			String errorMsg = "IdentityFormatFieldsFromToken field should not be empty";
 			getConfigMockStatic.when(
-					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
+					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken,true))
 					.thenReturn(FormValidation.error(errorMsg));
 			String actualErrorMessage = config
-					.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken).getMessage();
+					.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken,true).getMessage();
 			// Assert the result after removing the prefix "ERROR: "
 			assertEquals(errorMsg, actualErrorMessage.replace("ERROR: ", ""));
 		}
@@ -229,10 +229,10 @@ public class GlobalConjurConfigurationTest {
 			String identityFormatFieldsFromToken = "jenkins_full_name,jenkins_full_name";
 			String errorMsg = "Duplicate tokens found in IdentityFormatFieldsFromToken";
 			getConfigMockStatic.when(
-					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
+					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken,true))
 					.thenReturn(FormValidation.error(errorMsg));
 			String actualErrorMessage = config
-					.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken).getMessage();
+					.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken,true).getMessage();
 
 			// Assert the result after removing the prefix "ERROR: "
 			assertEquals(errorMsg, actualErrorMessage.replace("ERROR: ", ""));
@@ -246,10 +246,10 @@ public class GlobalConjurConfigurationTest {
 			String identityFormatFieldsFromToken = "jenkins_name,aud";
 			String errorMsg = "Identity Format Fields must contain at least one of the jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name";
 			getConfigMockStatic.when(
-					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
+					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken,true))
 					.thenReturn(FormValidation.error(errorMsg));
 			String actualErrorMessage = config
-					.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken).getMessage();
+					.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken,true).getMessage();
 			// Assert the result after removing the prefix "ERROR: "
 			assertEquals(errorMsg, actualErrorMessage.replace("ERROR: ", ""));
 		}
@@ -262,10 +262,10 @@ public class GlobalConjurConfigurationTest {
 			String identityFormatFieldsFromToken = "jenkins_parent_full_name,aud";
 			String errorMsg = "Identity Format Fields must contain at least one of the jenkins_full_name or a combination of jenkins_parent_full_name and jenkins_name";
 			getConfigMockStatic.when(
-					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken))
+					() -> config.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken,true))
 					.thenReturn(FormValidation.error(errorMsg));
 			String actualErrorMessage = config
-					.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken).getMessage();
+					.doCheckIdentityFormatFieldsFromToken(abstractItem, identityFormatFieldsFromToken,true).getMessage();
 			// Assert the result after removing the prefix "ERROR: "
 			assertEquals(errorMsg, actualErrorMessage.replace("ERROR: ", ""));
 		}
