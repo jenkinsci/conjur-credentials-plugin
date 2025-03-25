@@ -109,7 +109,6 @@ pipeline {
       steps {
         script {
           updateVersion(infrapool, "CHANGELOG.md", "${BUILD_NUMBER}")
-			
           // Set version in POM file
           infrapool.agentSh 'VERSION="$(<VERSION)" scripts/update-version.sh'
         }

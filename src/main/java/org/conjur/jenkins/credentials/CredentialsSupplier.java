@@ -107,7 +107,6 @@ public class CredentialsSupplier implements Supplier<Collection<StandardCredenti
 					.get().addHeader("Authorization", "Token token=\"" + authToken + "\"")
 				    .addHeader("x-cybr-telemetry", TelemetryConfiguration.buildTelemetryHeader()) // Added the telemetry header
 					.build();
-			LOGGER.info("Telemetry Outgoing Request crede:: "+request);
 
 			Response response = client.newCall(request).execute();
 			result = response.body().string();
