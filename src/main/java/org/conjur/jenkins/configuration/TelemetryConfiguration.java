@@ -25,7 +25,7 @@ public class TelemetryConfiguration {
     
     
     public static String getTelemetryHeader() {
-        if (finalHeader == null || finalHeader.isEmpty()) {
+        if (finalHeader == null) {
             finalHeader = buildTelemetryHeader();
         }
         return finalHeader;
