@@ -163,7 +163,6 @@ public class ConjurAPI {
 							conjurAuthn.account, URLEncoder.encode(conjurAuthn.login, "utf-8")))
 				    .addHeader("x-cybr-telemetry", TelemetryConfiguration.getTelemetryHeader()) // Added the telemetry header
 					.post(RequestBody.create(MediaType.parse("text/plain"), conjurAuthn.apiKey)).build();
-			LOGGER.info("telemetry headers :: " + request);
 
 		} else if (conjurAuthn.authnPath != null && conjurAuthn.apiKey != null) {
 			LOGGER.log(Level.FINE, "Creating authentication request for JWT authentication with Conjur");
@@ -175,7 +174,6 @@ public class ConjurAPI {
 							conjurAuthn.account))
 				    .addHeader("x-cybr-telemetry", TelemetryConfiguration.getTelemetryHeader()) // Added the telemetry header
 					.post(RequestBody.create(MediaType.parse("text/plain"), conjurAuthn.apiKey)).build();
-			LOGGER.info("telemetry headers :: " + request);
 
 		}
 
@@ -274,7 +272,6 @@ public class ConjurAPI {
 				String.format("%s/secrets/%s/variable/%s", conjurAuthn.applianceUrl, conjurAuthn.account, variablePath))
 			    .addHeader("x-cybr-telemetry", TelemetryConfiguration.getTelemetryHeader()) // Add the telemetry header
 				.get().addHeader("Authorization", "Token token=\"" + authToken + "\"").build();
-		LOGGER.info("telemetry headers :: " + request);
 
 		Response response = client.newCall(request).execute();
 		String result = response.body().string();
