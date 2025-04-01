@@ -19,13 +19,20 @@ public class TelemetryConfiguration {
     private static final String DEFAULT_INTEGRATION_TYPE = "cybr-secretsmanager-jenkins";
     private static final String DEFAULT_VENDOR_NAME = "Jenkins";
     private static final String DEFAULT_VERSION = "unknown";
-
+    
+    private static String finalHeader = null;
+    private static String cachedPluginVersion = null;
+    
     /**
      * Builds the telemetry header, including encoding it to Base64.
      *  
      * @return Base64 encoded telemetry header.
      */
     public static String buildTelemetryHeader() {
+    	if (!finalHeader.isEmpty()) {
+            return finalHeader;
+        }
+    	
         String integrationName = DEFAULT_INTEGRATION_NAME;
         String integrationType = DEFAULT_INTEGRATION_TYPE;
         String integrationVersion = getPluginVersion();  // Get version from changelog
@@ -37,7 +44,8 @@ public class TelemetryConfiguration {
                                              integrationVersion, 
                                              vendorName);
 
-        return Base64.getUrlEncoder().encodeToString(telemetryData.getBytes(StandardCharsets.UTF_8));
+        finalHeader = Base64.getUrlEncoder().encodeToString(telemetryData.getBytes(StandardCharsets.UTF_8));
+        return finalHeader;
     }
 
     /**
@@ -46,8 +54,11 @@ public class TelemetryConfiguration {
      * @return The version string or "unknown" if the version is not found.
      */
     public static String getPluginVersion() {
+        if (cachedPluginVersion != null) {
+            return cachedPluginVersion;
+        }
+
         String changelogFilePath = "/CHANGELOG.md";
-        
         Pattern versionPattern = Pattern.compile("## \\[([\\d]+(?:\\.[\\d]+)*)\\]");
 
         try (InputStream inputStream = TelemetryConfiguration.class.getResourceAsStream(changelogFilePath);
@@ -58,15 +69,16 @@ public class TelemetryConfiguration {
                 Matcher matcher = versionPattern.matcher(line);
 
                 if (matcher.find()) {
-                    LOGGER.info("looking fro the top version from CHANGELOG.md :: " +matcher.group(1));
-
-                    return matcher.group(1);
+                    cachedPluginVersion = matcher.group(1);
+                    LOGGER.info("Found version in CHANGELOG.md: " + cachedPluginVersion);
+                    return cachedPluginVersion;
                 }
             }
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Error reading CHANGELOG.md from the JAR.", e);
         }
         
-        return DEFAULT_VERSION;  
+        cachedPluginVersion = DEFAULT_VERSION;
+        return cachedPluginVersion;
     }
 }
