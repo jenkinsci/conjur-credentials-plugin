@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.api.ConjurAPIUtils;
 import org.conjur.jenkins.configuration.ConjurConfiguration;
+import org.conjur.jenkins.configuration.TelemetryConfiguration;
 import org.conjur.jenkins.conjursecrets.ConjurSecretCredentials;
 import org.conjur.jenkins.conjursecrets.ConjurSecretCredentialsImpl;
 import org.conjur.jenkins.conjursecrets.ConjurSecretUsernameCredentials;
@@ -103,7 +104,9 @@ public class CredentialsSupplier implements Supplier<Collection<StandardCredenti
 			Request request = new Request.Builder()
 					.url(String.format("%s/resources/%s?kind=variable&limit=1000", conjurAuthn.applianceUrl,
 							conjurAuthn.account))
-					.get().addHeader("Authorization", "Token token=\"" + authToken + "\"").build();
+					.get().addHeader("Authorization", "Token token=\"" + authToken + "\"")
+				    .addHeader("x-cybr-telemetry", TelemetryConfiguration.getTelemetryHeader()) // Added the telemetry header
+					.build();
 
 			Response response = client.newCall(request).execute();
 			result = response.body().string();
