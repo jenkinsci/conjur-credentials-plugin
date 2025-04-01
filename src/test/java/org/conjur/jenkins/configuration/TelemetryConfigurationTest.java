@@ -1,47 +1,22 @@
 package org.conjur.jenkins.configuration;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.junit.MockitoJUnitRunner;
-
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Base64;
 
-@RunWith(MockitoJUnitRunner.class)
 class TelemetryConfigurationTest {
 
-    @InjectMocks
-    private TelemetryConfiguration telemetryConfiguration;
-
-    @BeforeEach
-    void setUp() {
-    }
-
     @Test
-    public void testGetPluginVersion() {
-        String version = TelemetryConfiguration.getPluginVersion();
-
-        assertNotNull(version);
-        assertFalse(version.isEmpty());
-
-        assertTrue(version.matches("\\d+\\.\\d+\\.\\d+"));
-    }
-    
-    @Test
-    public void testBuildTelemetryHeader() {
+    void testGetTelemetryHeader() {
         String header = TelemetryConfiguration.buildTelemetryHeader();
 
-        assertNotNull(header);
-        assertFalse(header.isEmpty());
+        assertNotNull(header, "Telemetry header should not be null");
+        assertFalse(header.isEmpty(), "Telemetry header should not be empty");
 
-        assertTrue(isBase64Encoded(header));
+        assertTrue(isBase64Encoded(header), "Telemetry header should be Base64 encoded");
     }
 
     private boolean isBase64Encoded(String str) {

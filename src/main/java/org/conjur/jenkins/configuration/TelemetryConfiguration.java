@@ -23,29 +23,32 @@ public class TelemetryConfiguration {
     private static String finalHeader = null;
     private static String cachedPluginVersion = null;
     
+    
+    public static String getTelemetryHeader() {
+        if (finalHeader == null || finalHeader.isEmpty()) {
+            finalHeader = buildTelemetryHeader();
+        }
+        return finalHeader;
+    }
+    
     /**
      * Builds the telemetry header, including encoding it to Base64.
      *  
      * @return Base64 encoded telemetry header.
      */
     public static String buildTelemetryHeader() {
-    	if (!finalHeader.isEmpty()) {
-            return finalHeader;
-        }
-    	
-        String integrationName = DEFAULT_INTEGRATION_NAME;
-        String integrationType = DEFAULT_INTEGRATION_TYPE;
-        String integrationVersion = getPluginVersion();  // Get version from changelog
-        String vendorName = DEFAULT_VENDOR_NAME;
+    	   String integrationName = DEFAULT_INTEGRATION_NAME;
+           String integrationType = DEFAULT_INTEGRATION_TYPE;
+           String integrationVersion = getPluginVersion();  // Get version from changelog
+           String vendorName = DEFAULT_VENDOR_NAME;
 
-        String telemetryData = String.format("in=%s&it=%s&iv=%s&vn=%s", 
-                                             integrationName, 
-                                             integrationType,
-                                             integrationVersion, 
-                                             vendorName);
+           String telemetryData = String.format("in=%s&it=%s&iv=%s&vn=%s", 
+                                                integrationName, 
+                                                integrationType,
+                                                integrationVersion, 
+                                                vendorName);
 
-        finalHeader = Base64.getUrlEncoder().encodeToString(telemetryData.getBytes(StandardCharsets.UTF_8));
-        return finalHeader;
+           return Base64.getUrlEncoder().encodeToString(telemetryData.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
