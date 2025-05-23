@@ -24,7 +24,6 @@ public class InvalidConjurSecretException extends RuntimeException {
 	 * 
 	 * @param errorMessage
 	 */
-
 	public InvalidConjurSecretException(String errorMessage) {
 		super(errorMessage);
 	}

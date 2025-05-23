@@ -1,35 +1,10 @@
 package org.conjur.jenkins.configuration;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.servlet.ServletException;
-
-import org.apache.commons.lang.StringUtils;
-import org.conjur.jenkins.credentials.ConjurCredentialProvider;
-import org.conjur.jenkins.credentials.ConjurCredentialStore;
-import org.conjur.jenkins.credentials.CredentialsSupplier;
-import org.conjur.jenkins.jwtauth.impl.JwtToken;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.verb.POST;
-
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.StandardCertificateCredentials;
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.common.*;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
-
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -37,8 +12,19 @@ import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
+import org.conjur.jenkins.jwtauth.impl.JwtToken;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.verb.POST;
+
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * ConjurConfiguration class extends Jenkins AbstractDescribableImpl class and
@@ -47,7 +33,6 @@ import jenkins.model.Jenkins;
  * 
  *
  */
-
 public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfiguration> implements Serializable {
 
 	private static final Logger LOGGER = Logger.getLogger(ConjurConfiguration.class.getName());
@@ -63,13 +48,12 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 		 * Retrieve the conjur credentials and populate back to the ListBox based on the
 		 * CertificateCredentialIDItems.
 		 * 
-		 * @param Jenkins  Item Object for the pipeline
-		 * @param selected credentialsId
+		 * @param item Jenkins  Item Object for the pipeline
+		 * @param credentialsId id of credentials
 		 * @return Jenkins ListBoxModel
 		 */
 		public ListBoxModel doFillCertificateCredentialIDItems(@AncestorInPath Item item,
 				@QueryParameter String credentialsId) {
-			LOGGER.log(Level.FINE, "Inside doFillCertificateCredentialIDItems()");
 			return fillCredentialIDItemsWithClass(item, credentialsId, StandardCertificateCredentials.class);
 		}
 
@@ -77,13 +61,12 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 		 * Retrieve the conjur credentials and populate back to the ListBox based on the
 		 * CredentialIDItems.
 		 * 
-		 * @param Jenkins  Item Object for the pipeline
-		 * @param selected credentialsId
+		 * @param item Jenkins Item Object for the pipeline
+		 * @param credentialsId id of credentials
 		 * @return Jenkins ListBoxModel
 		 */
 
 		public ListBoxModel doFillCredentialIDItems(@AncestorInPath Item item, @QueryParameter String credentialsId) {
-			LOGGER.log(Level.FINE, "Inside doFillCredentialIDItems()");
 			return fillCredentialIDItemsWithClass(item, credentialsId, StandardUsernamePasswordCredentials.class);
 		}
 
@@ -94,96 +77,34 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 		 */
 		@Override
 		public String getDisplayName() {
-			LOGGER.log(Level.FINE, "Inside getDisplayName()");
 			return "Conjur Configuration";
 		}
-
 		/**
 		 * POST method to obtain the JWTtoken for the Item
 		 * 
-		 * @param Jenkins ITem item
+		 * @param item Object for which JWTToken will be generated
 		 * @return status ok based on the FormValidation
 		 */
-
 		@POST
 		public FormValidation doObtainJwtToken(@AncestorInPath Item item) {
-			LOGGER.log(Level.FINE, "Inside doObtainJwtToken()");
-			
-			String error = doValidateIdentityFormatField();
-
-			if(error.length()!=0)
-			{
-				return FormValidation.error(error);
-			}
-
-
-			JwtToken token = JwtToken.getUnsignedToken("pluginAction", item);
+			//Obtain the global Conjur configuration object
+			GlobalConjurConfiguration globalConfig = GlobalConjurConfiguration.get();
+			// Call the getToken method to obtain the JWT token
+			JwtToken token = JwtToken.getUnsignedToken("pluginAction", item, globalConfig);
 			return FormValidation.ok("JWT Token: \n" + token.claim.toString(4));
-		}
-
-		/**
-		 * POST method to refresh the Credential supplier
-		 * 
-		 * @param Jenkins Itme item
-		 * @return status ok based on the Form Validation
-		 */
-
-		@POST
-		public FormValidation doRefreshCredentialSupplier(@AncestorInPath Item item) throws IOException, ServletException {
-			
-			
-			String error = doValidateIdentityFormatField();
-			if(error.length()!=0)
-			{
-				return FormValidation.error(error);
-			}		
-			if (item != null) {
-				String key = String.valueOf(item.hashCode());            
-				Supplier<Collection<StandardCredentials>> supplier;
-				if (ConjurCredentialStore.getAllStores().containsKey(key)) {
-					LOGGER.log(Level.FINE, "Resetting Credential Supplier : {0},{1},{2}",
-							new Object[] { item.getClass().getName(), item, item.hashCode() });
-
-					supplier = ConjurCredentialProvider.memoizeWithExpiration(CredentialsSupplier.standard(item),
-							Duration.ofSeconds(120));
-					ConjurCredentialProvider.getAllCredentialSuppliers().put(key, supplier);
-				}
-				return FormValidation.ok("Refreshed");
- 			} else {
-				 return FormValidation.ok();
-			 }
-		}
-		private String doValidateIdentityFormatField()
-		{
-			GlobalConjurConfiguration globalConfig = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
-			String errorMsg="";
-			
-			if(globalConfig!=null && !globalConfig.getEnableIdentityFormatFieldsFromToken())//simplified JWT is disabled.
-	        {
-	            LOGGER.log(Level.FINE, "Simplified JWT is disabled.");
-	            List<String> identityFields = Arrays.asList(globalConfig.getIdentityFormatFieldsFromToken().split(","));
-	            LOGGER.log(Level.FINE, "IdentityFields value >>"+identityFields);
-				if(!identityFields.contains("jenkins_full_name"))
-				{
-					if(!identityFields.contains("jenkins_parent_full_name") || !identityFields.contains("jenkins_name"))
-					{
-						errorMsg = "Invalid configuration on conjur jenkins plugin. Ensure Identity format fields are configured correctly.";
-					}
-				}
-	        }
-			LOGGER.log(Level.FINE, "Returning error Msg"+errorMsg);
-			return errorMsg;
 		}
 	}
 
 	/**
-	 * 
+	 * Internal data
 	 */
+	private Boolean inheritFromParent = Boolean.TRUE;
 	private static final long serialVersionUID = 1L;
 	private String applianceURL;
 	private String account;
 	private String credentialID;
 	private String certificateCredentialID;
+	private CertificateCredentials certificateCredentials;
 	private String ownerFullName;
 
 	public ConjurConfiguration() {
@@ -192,8 +113,8 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 	/**
 	 * DataBoundConstructor to bind the configuration
 	 * 
-	 * @param host url applianceURL
-	 * @param host account
+	 * @param applianceURL Conjur url
+	 * @param account host
 	 */
 	@DataBoundConstructor
 	public ConjurConfiguration(String applianceURL, String account) {
@@ -207,44 +128,63 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 	}
 
 	/**
-	 * To check the account is empty
-	 * 
-	 * @param host account value
-	 * @return status ok based on the Account value
+	 * @return the currently configured Account, if any
 	 */
-
-	public FormValidation doCheckAccount(@QueryParameter String value) {
-		if (StringUtils.isEmpty(value)) {
-			return FormValidation.warning("Please specify Account.");
-		}
-		return FormValidation.ok();
-	}
-
-	/** @return the currently configured Account, if any */
 	public String getAccount() {
 		return account;
 	}
 
-	/** @return the currently appliance URL, if any */
+	/**
+	 * @return the currently appliance URL, if any
+	 */
 	public String getApplianceURL() {
 		return applianceURL;
 	}
 
-	/** @return the currently certification credentail Id, if any */
+	/**
+	 * @return the currently certification credentail Id, if any
+	 */
 	public String getCertificateCredentialID() {
 		return certificateCredentialID;
 	}
 
-	/** @return the currently credentail Id, if any */
+	/**
+	 * @return the currently certification credentails, if any
+	 */
+	public CertificateCredentials getCertificateCredentials() {
+		return certificateCredentials;
+	}
+
+	/**
+	 * @return the currently credentail Id, if any
+	 */
 	public String getCredentialID() {
 		return credentialID;
 	}
 
-	/** @return the currently Owner full name, if any */
+
+	/**
+	 * @return the currently Owner full name, if any
+	 */
 	public String getOwnerFullName() {
 		return ownerFullName;
 	}
 
+	/**
+	 * Retrieve information about choosen authenticator
+	 *
+	 * @return authenticator set as string
+	 */
+
+	public String getGlobalAuthenticator() {
+		return GlobalConjurConfiguration.get().getSelectAuthenticator();
+	}
+
+	@DataBoundSetter
+	public void setGlobalAuthenticator( String globalAuthenticator )
+	{
+		// we use this field only to get global configuration
+	}
 
 	/**
 	 * Together with {@link #getAccount}, binds to entry in {@code config.jelly}.
@@ -275,10 +215,30 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 	 * @param certificateCredentialID the new value of Conjur
 	 *                                CertificateCredentialID
 	 */
-
 	@DataBoundSetter
 	public void setCertificateCredentialID(String certificateCredentialID) {
 		this.certificateCredentialID = certificateCredentialID;
+
+		if (certificateCredentialID == null) {
+			LOGGER.log(Level.FINEST, "CertificationID is null");
+			return;
+		}
+
+		// we have to be aware, this function is calling getCredentials in provider
+		this.certificateCredentials = CredentialsMatchers.firstOrNull(
+				CredentialsProvider.lookupCredentials(CertificateCredentials.class, Jenkins.get(), ACL.SYSTEM,
+						Collections.<DomainRequirement>emptyList()),
+				CredentialsMatchers.withId(certificateCredentialID));
+	}
+
+	/**
+	 *
+	 * @param certificateCredentials the new value of Conjur
+	 *                                CertificateCredential
+	 */
+	@DataBoundSetter
+	public void setCertificateCredentials( CertificateCredentials certificateCredentials) {
+		this.certificateCredentials = certificateCredentials;
 	}
 
 	/**
@@ -287,7 +247,6 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 	 * 
 	 * @param credentialID the new value of Conjur credentialID
 	 */
-
 	@DataBoundSetter
 	public void setCredentialID(String credentialID) {
 		this.credentialID = credentialID;
@@ -299,11 +258,17 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 	 * 
 	 * @param ownerFullName the new value of Conjur OwnerFullname
 	 */
-
 	public void setOwnerFullName(String ownerFullName) {
 		this.ownerFullName = ownerFullName;
 	}
 
+	/**
+	 *
+	 * @param item Jenkins item
+	 * @param credentialsId id of credentials
+	 * @param credentialClass class type of credentials
+	 * @return list which contain all credentials with specified id and class
+	 */
 	private static ListBoxModel fillCredentialIDItemsWithClass(Item item, String credentialsId, Class<? extends StandardCredentials> credentialClass) {
 		StandardListBoxModel result = new StandardListBoxModel();
 		if (item == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
@@ -321,7 +286,74 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
 			.includeAs(ACL.SYSTEM, item, credentialClass, URIRequirementBuilder.fromUri(credentialsId).build())
 			.includeCurrentValue(credentialsId);
 	}
-	
-	
 
+	/**
+	 * Get information if configuration and secrets should be inherited from parent object
+	 *
+	 * @return information if entry can inherit data from parent object
+	 */
+	public Boolean getInheritFromParent()
+	{
+		return inheritFromParent;
+	}
+
+	/**
+	 * Together with {@link #getInheritFromParent}, binds to entry in
+	 * {@code config.jelly}.
+	 * @param inheritFromParent true if inherited from parent configuration
+	 */
+	@DataBoundSetter
+	public void setInheritFromParent(Boolean inheritFromParent) {
+		if(inheritFromParent == null)
+		{
+			this.inheritFromParent = Boolean.TRUE;
+		}
+		this.inheritFromParent = inheritFromParent;
+	}
+
+	/**
+	 *
+	 * @param config Create copy of ConjurConfiguration
+	 */
+	public ConjurConfiguration( ConjurConfiguration config )
+	{
+		this.credentialID = config.getCredentialID();
+		this.account = config.getAccount();
+		this.ownerFullName = config.getOwnerFullName();
+		this.certificateCredentialID = config.getCertificateCredentialID();
+		this.applianceURL = config.getApplianceURL();
+	}
+
+	/**
+	 *
+	 * @param parent ConjurConfiguration which will be merged to current configuration
+	 * @return ConjurConfiguration
+	 */
+	public ConjurConfiguration mergeWithParent(ConjurConfiguration parent) {
+		if (parent == null) {
+			return this;
+		}
+		ConjurConfiguration result = new ConjurConfiguration(this);
+
+		if (StringUtils.isBlank(result.getAccount())) {
+			result.setAccount(parent.getAccount());
+		}
+		if (StringUtils.isBlank(result.getOwnerFullName())) {
+			result.setOwnerFullName(parent.getOwnerFullName());
+		}
+		if (StringUtils.isBlank(result.getCertificateCredentialID())) {
+			result.setCertificateCredentialID(parent.getCertificateCredentialID());
+		}
+		if (StringUtils.isBlank(result.getCredentialID())) {
+			result.setCredentialID(parent.getCredentialID());
+		}
+		if( result.certificateCredentials == null )
+		{
+			result.setCertificateCredentials(parent.getCertificateCredentials());
+		}
+		if (StringUtils.isBlank(result.getApplianceURL())) {
+			result.setApplianceURL(parent.getApplianceURL());
+		}
+		return result;
+	}
 }

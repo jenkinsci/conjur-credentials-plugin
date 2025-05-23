@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2025-05-23
+- Global Credentials added
+- Inheritance for Secrets and Configuration added
+- Increased minimal version to 2.455
+- Switched to new API - depricated API calls and object removed
+
 ## [2.2.5] - 2025-04-01
 ## What’s New
 Added telemetry headers

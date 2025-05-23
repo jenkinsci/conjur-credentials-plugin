@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.conjur.jenkins.credentials.ConjurCredentialStore;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.credentialsbinding.BindingDescriptor;
 import org.jenkinsci.plugins.credentialsbinding.MultiBinding;
@@ -31,10 +30,11 @@ public class ConjurSecretUsernameSSHKeyCredentialsBinding extends MultiBinding<C
 	@Symbol("conjurSecretUsernameSSHKey")
 	@Extension
 	public static class DescriptorImpl extends BindingDescriptor<ConjurSecretUsernameSSHKeyCredentials> {
+		private static final String DISPLAY_NAME = "Conjur Secret Username SSHKey credentials";
 
 		@Override
 		public String getDisplayName() {
-			return "Conjur Secret Username SSHKey credentials";
+			return DISPLAY_NAME;
 		}
 
 		@Override
@@ -49,9 +49,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsBinding extends MultiBinding<C
 	}
 
 	private static final Logger LOGGER = Logger.getLogger(ConjurSecretUsernameSSHKeyCredentialsBinding.class.getName());
-
 	private String usernameVariable;
-
 	private String secretVariable;
 
 	@DataBoundConstructor
@@ -61,32 +59,22 @@ public class ConjurSecretUsernameSSHKeyCredentialsBinding extends MultiBinding<C
 
 	/**
 	 * Binding UserName and SSHKey
-	 * 
+	 *
 	 * @return map with username ,secretVariable assign to MultiEnvironment
 	 */
 	@Override
 	public MultiEnvironment bind(Run<?, ?> build, FilePath workSpace, Launcher launcher, TaskListener listener)
 			throws IOException, InterruptedException {
 
-		LOGGER.log(Level.FINE, "Start of bind()");
-
-		ConjurCredentialStore store = ConjurCredentialStore.getAllStores().get(String.valueOf(build.getParent().hashCode()));
-		if (store != null) {
-			store.getProvider().getStore(build);
-		}
+		LOGGER.log( Level.FINEST, String.format("Bind ConjurSecretUsernameSSHKeyCredentials to %s", build.getDisplayName() ) );
+		Map<String, String> m = new HashMap<>();
 
 		ConjurSecretUsernameSSHKeyCredentials conjurSecretCredential = getCredentials(build);
-		conjurSecretCredential.setContext(build);
 
-		Map<String, String> m = new HashMap<>();
-		String usernameValue = conjurSecretCredential.getUsername();
-		String secretValue = conjurSecretCredential.getPrivateKey();
+		m.put(usernameVariable, conjurSecretCredential.getUsername());
+		m.put(secretVariable, conjurSecretCredential.getPrivateKey());
 
-		m.put(usernameVariable, usernameValue);
-		m.put(secretVariable, secretValue);
-		LOGGER.log(Level.FINE, "End of bind()");
 		return new MultiEnvironment(m);
-
 	}
 
 	/**
@@ -101,7 +89,6 @@ public class ConjurSecretUsernameSSHKeyCredentialsBinding extends MultiBinding<C
 	 * Return the UserNameVariable
 	 * @return userNameVaraible
 	 */
-
 	public String getUsernameVariable() {
 		return this.usernameVariable;
 	}
@@ -124,6 +111,10 @@ public class ConjurSecretUsernameSSHKeyCredentialsBinding extends MultiBinding<C
 		this.usernameVariable = usernameVariable;
 	}
 
+	/**
+	 *
+	 * @return ConjurSecretUsernameSSHKeyCredentials class
+	 */
 	@Override
 	protected Class<ConjurSecretUsernameSSHKeyCredentials> type() {
 		return ConjurSecretUsernameSSHKeyCredentials.class;
@@ -133,5 +124,4 @@ public class ConjurSecretUsernameSSHKeyCredentialsBinding extends MultiBinding<C
 	public Set<String> variables() {
 		return new HashSet<>(Arrays.asList(usernameVariable, secretVariable));
 	}
-
 }
