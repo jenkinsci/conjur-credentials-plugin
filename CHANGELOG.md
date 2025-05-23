@@ -4,10 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [3.0.0] - 2025-05-23
-- Global Credentials added
-- Inheritance for Secrets and Configuration added
-- Increased minimal version to 2.455
-- Switched to new API - depricated API calls and object removed
+## What’s New
+- **Global Credentials added
+- **Inheritance for Secrets and Configuration added
+- **Increased minimal version to 2.455
+- **Switched to new API - depricated API calls and object removed
 
 ## [2.2.5] - 2025-04-01
 ## What’s New
@@ -32,7 +33,7 @@ Added telemetry headers
 
 ## [2.2.1] - 2024-06-29
 ## What’s New
-Fixed to support Jenkins folder-level system (non-global) credentials with Conjur API key authentication. 
+Fixed to support Jenkins folder-level system (non-global) credentials with Conjur API key authentication.
 
 ## [2.2.0] - 2024-06-03
 ## What’s New
@@ -64,7 +65,7 @@ We strongly recommend utilizing the default values recommended for fields that w
 ## [1.0.17] - 2023-08-23
 - Fixed for Null-Pointer exception while retrieving Secrets
 - Fixed pipeline build Junit Test cases rewritten with Mockito and removed power-mockito dependencies compatibility with JDK 11 &17 version.
-- Fixed Jenkins-Bitbucket Instance 
+- Fixed Jenkins-Bitbucket Instance
 
 ## [1.0.16] - 2023-06-28
 - End to End test of internal automated build process
@@ -88,10 +89,10 @@ We strongly recommend utilizing the default values recommended for fields that w
 ## [1.0.7] - 2021-10-05
 - JWT token issuer is set to the root URL of the jenkins instance
 - WebService ID for the authentication can be either the service id or authenticator_type/service_id (authn-jwt/id)
-- Warning/error on validation for Key and Token TTL 
+- Warning/error on validation for Key and Token TTL
 
 ## [1.0.6] - 2021-09-27
-- Updated README.md 
+- Updated README.md
 - Added "JWT Token Claims" button to configuration page to obtain referecence claims to be used by JWT Authenticator
 - Fixed bindings for context aware store credentials
 
