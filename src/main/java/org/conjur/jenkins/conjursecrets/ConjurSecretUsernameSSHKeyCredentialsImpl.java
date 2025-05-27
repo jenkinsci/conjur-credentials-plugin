@@ -230,7 +230,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImpl extends BaseSSHUser
                 @QueryParameter("username") String username) {
 
             if (username == null || credentialID == null || passphrase == null) {
-                return FormValidation.error("FAILED usernmae,passphrase,credentialID fields is required");
+                return FormValidation.error("FAILED username,passphrase,credentialID fields is required");
             }
 
             ConjurSecretUsernameSSHKeyCredentialsImpl credential = new ConjurSecretUsernameSSHKeyCredentialsImpl(CredentialsScope.GLOBAL, "test", username, credentialID, passphrase,

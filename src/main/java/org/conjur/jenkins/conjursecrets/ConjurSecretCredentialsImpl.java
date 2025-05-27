@@ -176,12 +176,12 @@ public class ConjurSecretCredentialsImpl extends BaseStandardCredentials impleme
 		public FormValidation doTestConnection(
 				@AncestorInPath ItemGroup<Item> context,
 				@QueryParameter("credentialID") String credentialID,
-				@QueryParameter("variableName") String variableName) {
+				@QueryParameter("variableId") String variableId) {
 
-			if (variableName == null || variableName.isEmpty()) {
-				return FormValidation.error("FAILED variableName field is required");
+			if (variableId == null || variableId.isEmpty()) {
+				return FormValidation.error("FAILED variableId field is required");
 			}
-			ConjurSecretCredentialsImpl credential = new ConjurSecretCredentialsImpl(CredentialsScope.GLOBAL, credentialID, variableName,
+			ConjurSecretCredentialsImpl credential = new ConjurSecretCredentialsImpl(CredentialsScope.GLOBAL, credentialID, variableId,
 					"desc");
 			return ConjurAPIUtils.validateCredential(context, credential);
 		}
