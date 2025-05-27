@@ -167,7 +167,14 @@ public class ConjurAPIUtils {
 					secretValue = ((ConjurSecretUsernameSSHKeyCredentials) credential).getPrivateKey();
 				} else {
 					Secret secret = credential.getSecret();
-					secretValue = secret != null ? secret.getPlainText() : null;
+					if( secret != null )
+					{
+						secretValue = secret.getPlainText();
+					}
+					else
+					{
+						secretValue = null;
+					}
 				}
 				return FormValidation
 						.ok("Successfully retrieved secret string");

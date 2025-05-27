@@ -35,9 +35,9 @@ final class ConjurCustomSuppliers {
     }
 
     /**
+     * Class used to hold Credentials in memory for period of time
      *
-     *
-     * @param <T>
+     * @param <T> object type
      */
 
     static class ExpiringMemoizingSupplier<T>

@@ -69,8 +69,7 @@ public class ConjurCredentialStore extends CredentialsStore {
 	 */
 	public static ConjurCredentialStore getCredentialStore(String key )
 	{
-		ConjurCredentialStore ret = allStores.get( key );
-		return ret;
+		return allStores.get( key );
 	}
 
 	/**
@@ -109,8 +108,11 @@ public class ConjurCredentialStore extends CredentialsStore {
 		boolean isAdmin = Jenkins.get().getACL().hasPermission2(authentication, Jenkins.ADMINISTER);
 		boolean hasCredentialsView = Jenkins.get().getACL().hasPermission2(authentication, CredentialsProvider.VIEW);
 
-		LOGGER.log(Level.FINEST, String.format("Checking permissions for the user: %s admin %s credview %s" ,
-		 authentication.getName(), isAdmin?"yes":"no", hasCredentialsView?"yes":"no" ) );
+		LOGGER.log(Level.FINEST,
+				String.format("Checking permissions for the user: %s admin %s credview %s" ,
+		 authentication.getName(),
+						isAdmin?"yes":"no",
+						hasCredentialsView?"yes":"no" ) );
 
 		//If the permission being checked is not VIEW, return false immediately
 		if(!CredentialsProvider.VIEW.equals(permission))

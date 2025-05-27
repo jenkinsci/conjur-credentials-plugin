@@ -65,14 +65,14 @@ public class ConjurJWTAuthenticator extends AbstractAuthenticator {
 
             Response response = client.newCall(request).execute();
 
-                ResponseBody body = response.body();
-                if (body != null) {
-                    byte[] respMessage = body.string().getBytes(StandardCharsets.UTF_8);
-                    resultingToken = Base64.getEncoder().withoutPadding()
+            ResponseBody body = response.body();
+            if (body != null) {
+                byte[] respMessage = body.string().getBytes(StandardCharsets.UTF_8);
+                resultingToken = Base64.getEncoder().withoutPadding()
                             .encodeToString(respMessage).getBytes(StandardCharsets.US_ASCII);
-                    LOGGER.log(Level.FINEST,
+                LOGGER.log(Level.FINEST,
                             () -> "Conjur Authenticate response " + response.code() + " - " + response.message());
-                }
+            }
 
             if (response.code() != 200) {
                 if (response.code() == 401) {
@@ -111,7 +111,7 @@ public class ConjurJWTAuthenticator extends AbstractAuthenticator {
         byte[] jwtTokenBytes = jwtToken.getBytes(StandardCharsets.US_ASCII);
         byte[] jwt = new byte[jwtNameBytes.length + jwtTokenBytes.length];
 
-        System.arraycopy(jwtNameBytes,0,jwt,0         ,jwtNameBytes.length);
+        System.arraycopy(jwtNameBytes,0,jwt,0,jwtNameBytes.length);
         System.arraycopy(jwtTokenBytes,0,jwt,jwtNameBytes.length,jwtTokenBytes.length);
         conjurAuthn.apiKey = jwt;
     }

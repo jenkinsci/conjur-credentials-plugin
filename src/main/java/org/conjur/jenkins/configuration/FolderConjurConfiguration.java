@@ -26,14 +26,14 @@ public class FolderConjurConfiguration extends AbstractFolderProperty<AbstractFo
 	}
 
 	/**
-	 *  @return ConurConfiguration
+	 *  @return ConjurConfiguration
 	 **/
 	public ConjurConfiguration getConjurConfiguration() {
 		return conjurConfiguration;
 	}
 
 	/**
-	 *  set the Conjur Configuration parameter
+	 *
 	 * @param conjurConfiguration folder configuration
 	 **/
 	@DataBoundSetter
@@ -63,7 +63,7 @@ public class FolderConjurConfiguration extends AbstractFolderProperty<AbstractFo
 	}
 
 	/**
-	 * @return the Jenkins Item object baseon ownerFulleName
+	 * @return the Jenkins Item object baseon ownerFullName
 	 **/
 	public Item getItem() {
 		return Jenkins.get().getItemByFullName(this.owner.getFullName());

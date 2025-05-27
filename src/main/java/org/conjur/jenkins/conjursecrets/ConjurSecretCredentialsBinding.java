@@ -71,7 +71,7 @@ public class ConjurSecretCredentialsBinding extends MultiBinding<ConjurSecretCre
 	public MultiEnvironment bind(Run<?, ?> build, FilePath workSpace, Launcher launcher, TaskListener listener)
 			throws IOException, InterruptedException {
 
-		MultiEnvironment me;
+		MultiEnvironment multiEnv;
 
 		long start = System.nanoTime();
 
@@ -84,14 +84,14 @@ public class ConjurSecretCredentialsBinding extends MultiBinding<ConjurSecretCre
 
 			conjurSecretCredential.setContext(build);
 
-			me = new MultiEnvironment(
+			multiEnv = new MultiEnvironment(
 					Collections.singletonMap(variable, conjurSecretCredential.getSecret().getPlainText()));
 
 		}catch( CredentialNotFoundException e )
 		{
 			LOGGER.log(Level.SEVERE, String.format("No credentials found for: %s", build.getFullDisplayName() ) );
 
-			me = new MultiEnvironment(
+			multiEnv = new MultiEnvironment(
 					new HashMap<String,String>());
 		}
 		long end = System.nanoTime();
@@ -99,14 +99,15 @@ public class ConjurSecretCredentialsBinding extends MultiBinding<ConjurSecretCre
 
 		LOGGER.log(Level.FINEST, String.format("Execution of Class ConjurSecretCredentialsBinding. Method bind() time: %d miliseconds", (int)(execution / 1000000d) ) );
 
-		return me;
+		return multiEnv;
 	}
 
 	/**
+	 * Get Credentials
 	 *
-	 * @param build
-	 * @return
-	 * @param <C>
+	 * @param build current context
+	 * @return Credentials assigned to context
+	 * @param <C> credential type
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */

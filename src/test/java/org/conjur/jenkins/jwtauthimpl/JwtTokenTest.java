@@ -46,7 +46,7 @@ public class JwtTokenTest {
 			mock(JwtToken.class);
 			Object context = "secretId";
 			jwtTokenTestMockedStatic.when(() -> JwtToken.getToken(context,globalConfigMock)).thenReturn("secret retrival " + context);
-			assertEquals("secret retrival secretId", JwtToken.getToken(context,globalConfigMock));
+			assertEquals("secret retrieval secretId", JwtToken.getToken(context,globalConfigMock));
 
 		}
 	}

@@ -35,6 +35,7 @@ public class ConjurCredentialsSupplier implements Supplier<Collection<StandardCr
 
     /**
      * Non standard constructor
+     * We want to create collection and return it back
      *
      * @param context ModelObject context
      * @return StandardCredentials collection
@@ -60,7 +61,6 @@ public class ConjurCredentialsSupplier implements Supplier<Collection<StandardCr
     @Override
     public Collection<StandardCredentials> get()
     {
-        // Log context information
         if (getContext() == null)
         {
             return Collections.emptyList();
@@ -74,13 +74,12 @@ public class ConjurCredentialsSupplier implements Supplier<Collection<StandardCr
                 for (Credentials cred : allCredentials) {
                     if (cred instanceof ConjurSecretCredentials) {
                         ((ConjurSecretCredentials) cred).setStoredInConjurStorage(true);
-                        LOGGER.log(Level.FINEST, "ConjurCredentialStore: found credentials will set it comes from store!");
                     }
                 }
             }
         }catch( Exception e )
         {
-            LOGGER.log(Level.SEVERE, String.format("EXCEPTION: CredentialSuplier returned %s", e.getMessage() ) );
+            LOGGER.log(Level.SEVERE, String.format("EXCEPTION: ConjurCredentialsSupplier: returned %s", e.getMessage() ) );
         }
         return allCredentials;
     }

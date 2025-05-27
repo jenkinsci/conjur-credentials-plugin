@@ -40,7 +40,7 @@ public class ConjurJITJobProperty<T extends Job<?, ?>> extends JobProperty<T> {
 	/**
 	 * @return the ConjurConfiguration
 	 */
-	public ConjurConfiguration getConjurConfiguration() {
+    public ConjurConfiguration getConjurConfiguration() {
         return conjurConfiguration;
     }
 

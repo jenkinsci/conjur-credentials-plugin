@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 public interface ConjurSecretCredentials extends StandardCredentials {
 
 	/**
-	 * Innder class to retrieve the displayName for the job
+	 * Inner class to retrieve the displayName for the job
 	 */
 	class NameProvider extends CredentialsNameProvider<ConjurSecretCredentials> {
 		/**

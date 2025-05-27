@@ -7,7 +7,6 @@ import java.io.IOException;
  */
 public class AuthenticationConjurException extends IOException
 {
-    private static final long serialVersionUID = 1L;
     private int errorCode;
 
     /**
