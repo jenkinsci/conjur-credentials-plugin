@@ -95,10 +95,10 @@ public class ConjurSecretCredentialImplTest {
 			String expectedSecret = "mockedSecret";
 
 			conjurAPIMockedStatic.when(() -> ConjurAPI.getConjurSecret(mockHttpClient, conjurConfiguration, authToken,
-					conjurSecretCredentials.getVariableName())).thenReturn(expectedSecret);
+					conjurSecretCredentials.getVariableId())).thenReturn(expectedSecret);
 
 			String returnSecret = ConjurAPI.getConjurSecret(mockHttpClient, conjurConfiguration, authToken,
-					conjurSecretCredentials.getVariableName());
+					conjurSecretCredentials.getVariableId());
 
 			// Invoke getSecret and assert result
 			Secret secret = conjurSecretCredentials.getSecret();
@@ -141,7 +141,7 @@ public class ConjurSecretCredentialImplTest {
 			// Mock response from ConjurAPI.getSecret
 			String expectedSecret = "mockedSecret";
 			conjurAPIMockedStatic.when(() -> ConjurAPI.getConjurSecret(mockHttpClient, conjurConfiguration, authToken,
-					conjurSecretCredentials.getVariableName())).thenReturn(expectedSecret);
+					conjurSecretCredentials.getVariableId())).thenReturn(expectedSecret);
 
 			// Invoke getSecret and assert result
 			Secret secret = conjurSecretCredentials.getSecret();

@@ -26,7 +26,7 @@ public class ConjurSecretUsernameCredentialsImpl extends BaseStandardCredentials
 		implements ConjurSecretUsernameCredentials {
 
 	private String username;
-	private String variableName;
+	private String variableId;
 	private transient ModelObject context;
 	private transient ModelObject inheritedObjectContext;
 	boolean storedInConjurStorage = false;
@@ -37,16 +37,16 @@ public class ConjurSecretUsernameCredentialsImpl extends BaseStandardCredentials
 	 * @param scope CredentialScope
 	 * @param id String
 	 * @param username String
-	 * @param variableName String
+	 * @param variableId String
 	 * @param description String
 	 */
 	@DataBoundConstructor
-	public ConjurSecretUsernameCredentialsImpl(CredentialsScope scope, String id, String username, String variableName,
+	public ConjurSecretUsernameCredentialsImpl(CredentialsScope scope, String id, String username, String variableId,
 			 String description) {
 		super(scope, id, description);
 		LOGGER.log(Level.FINEST, String.format("ConjurSecretUsernameCredentialsImpl, id %s", id ) );
 		this.username = username;
-		this.variableName = variableName;
+		this.variableId = variableId;
 	}
 
 	/**
@@ -76,18 +76,18 @@ public class ConjurSecretUsernameCredentialsImpl extends BaseStandardCredentials
 	 * 
 	 * @return credentalID as String
 	 */
-	public String getVariableName() {
-		return variableName;
+	public String getVariableId() {
+		return variableId;
 	}
 
 	/**
 	 * set the CredentialId as String
 	 * 
-	 * @param variableName
+	 * @param variableId
 	 */
 	@DataBoundSetter
-	public void setVariableName(String variableName) {
-		this.variableName = variableName;
+	public void setVariableId(String variableId) {
+		this.variableId = variableId;
 	}
 
 	private static final String name = "Conjur Secret Username Credential";
@@ -104,7 +104,7 @@ public class ConjurSecretUsernameCredentialsImpl extends BaseStandardCredentials
 	 */
 	@Override
 	public String getDisplayName() {
-		return "ConjurSecretUsername:" + this.getVariableName();
+		return "ConjurSecretUsername:" + this.getVariableId();
 	}
 
 	/**
@@ -178,9 +178,9 @@ public class ConjurSecretUsernameCredentialsImpl extends BaseStandardCredentials
 		LOGGER.log(Level.FINEST, String.format("getPassword, stored %b context %s",storedInConjurStorage , this.context ) );
 		Secret retSecret = null;
 		if( storedInConjurStorage ) {
-			retSecret = ConjurAPI.getSecretFromConjur(this.context, this.inheritedObjectContext, this.variableName);
+			retSecret = ConjurAPI.getSecretFromConjur(this.context, this.inheritedObjectContext, this.variableId);
 		}else {
-			retSecret = ConjurAPI.getSecretFromConjurWithInheritance(this.context, this, this.variableName);
+			retSecret = ConjurAPI.getSecretFromConjurWithInheritance(this.context, this, this.variableId);
 		}
 		return retSecret;
 	}

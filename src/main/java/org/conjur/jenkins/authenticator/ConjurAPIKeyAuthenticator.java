@@ -32,6 +32,8 @@ import okhttp3.ResponseBody;
 public class ConjurAPIKeyAuthenticator extends AbstractAuthenticator {
 
     private static final Logger LOGGER = Logger.getLogger(ConjurAPIKeyAuthenticator.class.getName());
+    public static final String CONJUR_JENKINS_PLUGIN = "CONJUR_JENKINS_PLUGIN";
+    public static final org.acegisecurity.Authentication CONJUR_JENKINS_PLUGIN2 = new org.acegisecurity.providers.UsernamePasswordAuthenticationToken( CONJUR_JENKINS_PLUGIN, CONJUR_JENKINS_PLUGIN);
 
     /**
      * Function return authenticator name
@@ -104,9 +106,6 @@ public class ConjurAPIKeyAuthenticator extends AbstractAuthenticator {
 
         return resultingToken;
     }
-
-    public static final String CONJUR_JENKINS_PLUGIN = "CONJUR_JENKINS_PLUGIN";
-    public static final org.acegisecurity.Authentication CONJUR_JENKINS_PLUGIN2 = new org.acegisecurity.providers.UsernamePasswordAuthenticationToken( CONJUR_JENKINS_PLUGIN, CONJUR_JENKINS_PLUGIN);
 
     /**
      * Fill authninfo structure

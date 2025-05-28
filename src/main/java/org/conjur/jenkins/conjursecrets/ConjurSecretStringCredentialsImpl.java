@@ -26,7 +26,7 @@ import java.util.logging.Logger;
 public class ConjurSecretStringCredentialsImpl extends BaseStandardCredentials implements ConjurSecretStringCredentials {
     @Override
     public String getDisplayName() {
-        return "ConjurSecretString:" + this.variableName;
+        return "ConjurSecretString:" + this.variableId;
     }
 
     /**
@@ -34,7 +34,7 @@ public class ConjurSecretStringCredentialsImpl extends BaseStandardCredentials i
      */
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(ConjurSecretStringCredentialsImpl.class.getName());
-    private String variableName; // to be used as Username
+    private String variableId; // to be used as Username
     private transient ModelObject context;
     boolean storedInConjurStorage = false;
     private transient ModelObject inheritedObjectContext;
@@ -44,14 +44,14 @@ public class ConjurSecretStringCredentialsImpl extends BaseStandardCredentials i
      *
      * @param scope
      * @param id
-     * @param variableName
+     * @param variableId
      * @param description
      */
     @DataBoundConstructor
-    public ConjurSecretStringCredentialsImpl(CredentialsScope scope, String id, String variableName,
+    public ConjurSecretStringCredentialsImpl(CredentialsScope scope, String id, String variableId,
                                              String description) {
         super(scope, id, description);
-        this.variableName = variableName;
+        this.variableId = variableId;
 
         LOGGER.log( Level.FINEST, "ConjurSecretStringCredentialsImpl");
     }
@@ -66,21 +66,21 @@ public class ConjurSecretStringCredentialsImpl extends BaseStandardCredentials i
     }
 
     /**
-     * set the variableName as String
+     * set the variableId as String
      *
-     * @param variableName
+     * @param variableId
      */
     @DataBoundSetter
-    public void setVariableName(String variableName) {
-        this.variableName = variableName;
+    public void setVariableId(String variableId) {
+        this.variableId = variableId;
     }
 
     /**
      *
-     * @return variableName as String
+     * @return variableId as String
      **/
-    public String getVariableName() {
-        return this.variableName;
+    public String getVariableId() {
+        return this.variableId;
     }
 
     /**
@@ -148,9 +148,9 @@ public class ConjurSecretStringCredentialsImpl extends BaseStandardCredentials i
     public Secret getSecret( ) {
         Secret retSecret;
         if( storedInConjurStorage ) {
-            retSecret = ConjurAPI.getSecretFromConjur(this.context, this.inheritedObjectContext, this.variableName);
+            retSecret = ConjurAPI.getSecretFromConjur(this.context, this.inheritedObjectContext, this.variableId);
         }else {
-            retSecret = ConjurAPI.getSecretFromConjurWithInheritance(this.context, this, this.variableName);
+            retSecret = ConjurAPI.getSecretFromConjurWithInheritance(this.context, this, this.variableId);
         }
         return retSecret;
     }
@@ -178,12 +178,12 @@ public class ConjurSecretStringCredentialsImpl extends BaseStandardCredentials i
         public FormValidation doTestConnection(
                 @AncestorInPath ItemGroup<Item> context,
                 @QueryParameter("credentialID") String credentialID,
-                @QueryParameter("variableName") String variableName) {
+                @QueryParameter("variableId") String variableId) {
 
-            if (variableName == null || variableName.isEmpty()) {
-                return FormValidation.error("FAILED variableName field is required");
+            if (variableId == null || variableId.isEmpty()) {
+                return FormValidation.error("FAILED variableId field is required");
             }
-            ConjurSecretStringCredentialsImpl credential = new ConjurSecretStringCredentialsImpl(CredentialsScope.GLOBAL, credentialID, variableName,
+            ConjurSecretStringCredentialsImpl credential = new ConjurSecretStringCredentialsImpl(CredentialsScope.GLOBAL, credentialID, variableId,
                     "desc");
             return ConjurAPIUtils.validateCredential(context, credential);
         }
@@ -196,7 +196,7 @@ public class ConjurSecretStringCredentialsImpl extends BaseStandardCredentials i
         private final Secret secret;
 
         public SelfContained(ConjurSecretStringCredentialsImpl base) {
-            super( base.getScope(), base.getId(), base.getVariableName() , base.getDescription());
+            super( base.getScope(), base.getId(), base.getVariableId() , base.getDescription());
             secret = base.getSecret();
         }
 

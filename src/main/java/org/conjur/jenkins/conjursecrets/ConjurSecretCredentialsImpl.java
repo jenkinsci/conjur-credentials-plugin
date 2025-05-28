@@ -28,7 +28,7 @@ public class ConjurSecretCredentialsImpl extends BaseStandardCredentials impleme
 	 */
 	private static final long serialVersionUID = 1L;
 	private static final Logger LOGGER = Logger.getLogger(ConjurSecretCredentialsImpl.class.getName());
-	private String variableName; // to be used as Username
+	private String variableId; // to be used as Username
 	private transient ModelObject context;
 	boolean storedInConjurStorage = false;
 	private transient ModelObject inheritedObjectContext;
@@ -38,14 +38,14 @@ public class ConjurSecretCredentialsImpl extends BaseStandardCredentials impleme
 	 * 
 	 * @param scope
 	 * @param id
-	 * @param variableName
+	 * @param variableId
 	 * @param description
 	 */
 	@DataBoundConstructor
 	public ConjurSecretCredentialsImpl(@CheckForNull CredentialsScope scope, @CheckForNull String id,
-			@CheckForNull String variableName, @CheckForNull String description) {
+									   @CheckForNull String variableId, @CheckForNull String description) {
 		super(scope, id, description);
-		this.variableName = variableName;
+		this.variableId = variableId;
 	}
 
 	/**
@@ -53,7 +53,7 @@ public class ConjurSecretCredentialsImpl extends BaseStandardCredentials impleme
 	 */
 	@Override
 	public String getDisplayName() {
-		return "ConjurSecret:" + this.variableName;
+		return "ConjurSecret:" + this.variableId;
 	}
 
 	/**
@@ -66,21 +66,21 @@ public class ConjurSecretCredentialsImpl extends BaseStandardCredentials impleme
 	}
 
 	/**
-	 * set the variableName as String
+	 * set variableId
 	 *
-	 * @param variableName
+	 * @param variableId
 	 */
 	@DataBoundSetter
-	public void setVariableName(String variableName) {
-		this.variableName = variableName;
+	public void setVariableId(String variableId) {
+		this.variableId = variableId;
 	}
 
 	/**
 	 *
-	 * @return variableName as String
+	 * @return variableId as String
 	 **/
-	public String getVariableName() {
-		return this.variableName;
+	public String getVariableId() {
+		return this.variableId;
 	}
 
 	/**
@@ -146,9 +146,9 @@ public class ConjurSecretCredentialsImpl extends BaseStandardCredentials impleme
 	public Secret getSecret( ) {
 		Secret retSecret = null;
 		if( storedInConjurStorage ) {
-			retSecret = ConjurAPI.getSecretFromConjur(this.context, this.inheritedObjectContext, this.variableName);
+			retSecret = ConjurAPI.getSecretFromConjur(this.context, this.inheritedObjectContext, this.variableId);
 		}else {
-			retSecret = ConjurAPI.getSecretFromConjurWithInheritance(this.context, this, this.variableName);
+			retSecret = ConjurAPI.getSecretFromConjurWithInheritance(this.context, this, this.variableId);
 		}
 		return retSecret;
 	}
@@ -194,7 +194,7 @@ public class ConjurSecretCredentialsImpl extends BaseStandardCredentials impleme
 		private final Secret secret;
 
 		public SelfContained(ConjurSecretCredentialsImpl base) {
-			super( base.getScope(), base.getId(), base.getVariableName() , base.getDescription());
+			super( base.getScope(), base.getId(), base.getVariableId() , base.getDescription());
 			secret = base.getSecret();
 		}
 

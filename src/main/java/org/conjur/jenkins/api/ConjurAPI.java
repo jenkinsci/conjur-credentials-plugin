@@ -206,11 +206,11 @@ public class ConjurAPI {
 	 */
 	@SuppressFBWarnings
 	public static byte[] getConjurSecret(OkHttpClient client, ConjurConfiguration configuration, byte[] authToken,
-										 String variableName) throws IOException
+										 String variableId) throws IOException
 	{
-		LOGGER.log(Level.FINEST, String.format( "getConjurSecret: variable name %s", variableName ) );
+		LOGGER.log(Level.FINEST, String.format( "getConjurSecret: variable name %s", variableId ) );
 
-		String formattedUrl = String.format("%s/secrets/%s/variable/%s", configuration.getApplianceURL(), configuration.getAccount(), variableName);
+		String formattedUrl = String.format("%s/secrets/%s/variable/%s", configuration.getApplianceURL(), configuration.getAccount(), variableId);
 
 		Request request = new Request.Builder().url(
 						formattedUrl)
