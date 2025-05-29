@@ -142,7 +142,8 @@ public class ConjurAPI {
 	 * @param conjurAuthn   authentication object which contains data used to authenticate service
 
 	 *
-	 * @param context       current context in which Jenkins Job are running
+	 * @param context       current context in which Jenkins Job is running
+
 	 * @return status code to 200-OK if request is authenticated or 401 if
 	 *         Unauthorized
 	 * @throws IOException in case of error connecting to Conjur Server
