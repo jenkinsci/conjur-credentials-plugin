@@ -139,7 +139,8 @@ public class ConjurAPI {
 	 * Method to build the client authentication API Key/JWT request based on the
 	 * ConjurConfiguration.
 	 *
-	 * @param conjurAuthn   authentication object which contain data used to authenticate service
+	 * @param conjurAuthn   authentication object which contains data used to authenticate service
+
 	 *
 	 * @param context       current context in which Jenkins Job are running
 	 * @return status code to 200-OK if request is authenticated or 401 if
