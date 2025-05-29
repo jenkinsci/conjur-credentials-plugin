@@ -66,7 +66,8 @@ public class ConjurAPI {
 	/**
 	 * Set the ConjurAuthnInfo with the environment variables
 	 *
-	 * @param conjurAuthn authentication info, will be filled with specified data used to authentication
+	 * @param conjurAuthn authentication info, will be filled with specified data used to authenticate
+
 	 */
 
 	private static  void defaultToEnvironment(ConjurAuthnInfo conjurAuthn)
