@@ -91,7 +91,8 @@ public class ConjurAPI {
 	 */
 	public static AbstractAuthenticator getAuthenticatorByName( String name )
 	{
-		AbstractAuthenticator choosedAuthenticator = null;
+		AbstractAuthenticator chosenAuthenticator = null;
+
 		if( name != null )
 		{
 			if (name.equalsIgnoreCase("JWT")) {
