@@ -102,6 +102,7 @@ public class ConjurCredentialStore extends CredentialsStore {
 	 * @return true if the user is admin, has global credentials view permissions, or has Jenkins current item permissions, false otherwise..
 	 */
 	@Override
+	// method hasPermission is deprecated in CredentialsStore, so we use hasPermission2 instead
 	public boolean hasPermission2(@NonNull Authentication authentication, @NonNull Permission permission) {
 		LOGGER.log(Level.FINEST, "Conjur CredentialStore hasPermission() ");
 		// Check if the user has global admin permission
