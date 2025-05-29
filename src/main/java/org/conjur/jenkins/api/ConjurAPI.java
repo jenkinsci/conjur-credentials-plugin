@@ -96,12 +96,12 @@ public class ConjurAPI {
 		if( name != null )
 		{
 			if (name.equalsIgnoreCase("JWT")) {
-				choosedAuthenticator = new ConjurJWTAuthenticator();
+				chosenAuthenticator = new ConjurJWTAuthenticator();
 			} else if (name.equalsIgnoreCase("APIKey")) {
-				choosedAuthenticator = new ConjurAPIKeyAuthenticator();
+				chosenAuthenticator = new ConjurAPIKeyAuthenticator();
 			}
 		}
-		return choosedAuthenticator;
+		return chosenAuthenticator;
 	}
 
 	/**
@@ -204,7 +204,7 @@ public class ConjurAPI {
 	 * @param client   OkHttp builds HTTP/HTTP/2 client that shares the same connection,thread pool and configuration.
 	 * @param configuration  {@link ConjurConfiguration} containing the Conjur authentication parameters
 	 * @param authToken	 token to authenticate the request.
-	 * @param variableName  for which to retrieve the secrets
+	 * @param variableId  for which to retrieve the secrets
 	 * @return the secrets for the specified variableName
 	 * @throws IOException
 	 */
@@ -313,13 +313,13 @@ public class ConjurAPI {
 
 		if( resultingConfig == null )
 		{
-			LOGGER.log(Level.SEVERE, "Conjur Plugin was not set on any level, please fix it");
+			LOGGER.log(Level.SEVERE, "Missing configuration for Conjur Plugin");
 		}
 		else
 		{
 			if(StringUtils.isEmpty( resultingConfig.getAccount() ) )
 			{
-				LOGGER.log(Level.SEVERE, "Conjur Plugin require Account field to be configured");
+				LOGGER.log(Level.SEVERE, "Conjur Plugin missing Account field to be configured");
 			}
 			if(StringUtils.isEmpty( resultingConfig.getApplianceURL() ) )
 			{
