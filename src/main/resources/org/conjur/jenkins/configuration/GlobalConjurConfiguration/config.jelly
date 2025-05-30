@@ -5,254 +5,117 @@
          xmlns:d="jelly:define"
          xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson"
-         xmlns:f="/lib/form">
-    <f:section title="${%Conjur Appliance}">
-        <f:property field="conjurConfiguration" header="${%Conjur Configuration}"/>
-    </f:section>
-    <f:section title="${%Conjur JWT Authentication}">
-        <f:entry title="${%Enable JWT Key Set endpoint?}" description="The JWT Key Set Endpoint will be:BASEURLFORJENKINS/jwtauth/conjur-jwk-set">
-            <f:checkbox name="enableJWKS" field="enableJWKS" default="false" checked="${enableJWKS}"/>
+         xmlns:f="/lib/form"
+         xmlns:c="/lib/credentials">
+
+  <f:section title="${%CyberARK Secrets Manager Conjur Configuration}">
+   <div id="divListAuthenticator">
+        <f:entry title="${%Select Conjur Authentication Type}" name="selectAuthenticatorEntry" field="selectAuthenticatorEntryField">
+            <select id="listAuthenticator" name="selectAuthenticator" class="jenkins-select_input">
+                <option value="APIKey">APIKey</option>
+                <option value="JWT">JWT</option>
+            </select>
         </f:entry>
-        <f:entry title="${%Auth WebService ID}">
+    </div>
+    <div>
+        <f:property field="conjurConfiguration" header="${%Conjur Configuration}"/>
+     </div>
+   </f:section>
+
+  
+  
+
+
+    <div id="conjurGlobalJWTSection">
+    <f:section title="${%Conjur JWT Authentication}">
+
+        <f:entry title="${%Service Id}">
             <f:textbox field="authWebServiceId" name="authWebServiceId"/>
         </f:entry>
-        <f:entry title="${%Enable Context Aware Credential Stores?}" description="If checked, Conjur Credential Provider will populate stores with secret variables available from the current context">
-            <f:checkbox name="enableContextAwareCredentialStore" field="enableContextAwareCredentialStore" default="false" checked="${enableContextAwareCredentialStore}"/>
+         <f:entry title="${%JWT Audience}">
+            <f:textbox field="jwtAudience" name="jwtAudience"/>
         </f:entry>
-        <f:entry title="${%Enable Simplified JWT Configuration?}" description="Enable this option to use default identity field values. This is recommended because the next major release introduces breaking changes that affects these fields and their allowed values.">
-            <f:checkbox id="enableIdentityFormatFieldsFromToken" name="enableIdentityFormatFieldsFromToken" field="enableIdentityFormatFieldsFromToken" default="false"/>
-        </f:entry>
-        <f:entry title="${%JWT Audience}">
-        <!-- Deprecation warning -->
-        <!-- <f:warning>Warning Deprecation: From Next Major version, this field will be deprecated and field is defualt to "cyberark-conjur".</f:warning>-->
-            <f:textbox field="jwtAudience" name="jwtAudience" id="jwtAudience"/>
-        </f:entry>
-        <div class="warning" style="margin-top: -1.25rem;opacity: 1;" id="divJwtAudWarning">The option to configure the JWT Audience field is deprecated. From the next major release, its value will be set to: cyberark-conjur </div>
+        
         <f:entry title="${%Signing Key Lifetime In Minutes}">
-            <f:textbox field="keyLifetimeInMinutes" name="keyLifetimeInMinutes"/>
+            <f:number field="keyLifetimeInMinutes" name="keyLifetimeInMinutes" onkeypress='validateNumber(event)'/>
         </f:entry>
         <f:entry title="${%JWT Token Duration In Seconds}">
-            <f:textbox field="tokenDurarionInSeconds" name="tokenDurarionInSeconds"/>
+            <f:number field="tokenDurarionInSeconds" name="tokenDurarionInSeconds" onkeypress='validateNumber(event)'/>
         </f:entry>
-        <div id="divIdentityFieldName">
-        <f:entry title="${%Identity Field Name}">
-            <!-- Deprecation warning -->
-            <!--<f:warning>Warning Deprecation: Identity field name will be removed from next major version.</f:warning>-->
-            <f:textbox id="identityFieldName" field="identityFieldName" name="identityFieldName" description="Name of the field to be added to JWT claim to possibly use it as identity"/>
-        </f:entry>
-        </div>
-        <div class="warning" style="margin-top: -1.25rem;opacity: 1;" id="dviWarning">The option to configure the Identity Field Name is deprecated. From the next major release, its value will be set to: sub</div>
-
-        <div id="divListIdentityFormatFieldsFromToken" style="display: none;">
-        <f:entry title="${%Identity Format Fields}" name="selectIdentityFormatToken" field="selectIdentityFormatToken">
-           <select id="listIdentityFormatFieldsFromToken" name="selectIdentityFormatToken" class="jenkins-select_input">
-                 <option value="jenkins_full_name">${%jenkins_full_name}</option>
-                 <option value="jenkins_parent_full_name-jenkins_name">${%jenkins_parent_full_name-jenkins_name}</option>
-                 <option value="jenkins_parent_full_name:jenkins_name">${%jenkins_parent_full_name:jenkins_name}</option>
-                 <option value="jenkins_parent_full_name+jenkins_name">${%jenkins_parent_full_name+jenkins_name}</option>
-                 <option value="jenkins_parent_full_name.jenkins_name">${%jenkins_parent_full_name.jenkins_name}</option>
-                 <option value="jenkins_parent_full_name|jenkins_name">${%jenkins_parent_full_name|jenkins_name}</option>
-           </select>
-        </f:entry>
-        </div>
-        <div id="identityFormatFieldsFromToken">
-        <f:entry title="${%Identity Format Fields}">
-            <f:textbox id ="identityFormatFieldsFromToken" field="identityFormatFieldsFromToken" name="identityFormatFieldsFromToken" description="Comma separated fields from JWT Token to create identity field"/>
-        </f:entry>
-        </div>
-        <div class="warning" style="margin-top: -1.25rem;opacity: 1;" id="divTxtWarningIdentityFieldToken">From the next major release, Identity Format Fields will only accept predefined values from a drop-down list</div>
-        <div id="divIdentityFieldsSeparator" style="display: none;">
-       <f:entry title="${%Identity Fields Separator}" name="selectIdentityFieldsSeparator" field="selectIdentityFieldsSeparator">
-           <!-- Deprecation warning -->
-           <!--<f:warning>Warning Deprecation: Identity field separator will be removed from next major version.</f:warning>-->
-         <select id="listIdentityFieldsSeparator" name="selectIdentityFieldsSeparator" class="jenkins-select_input">
-             <option value="-">${%-}</option>
-             <option value="+">${%+}</option>
-             <option value=".">${%.}</option>
-             <option value=":">${%:}</option>
-             <option value="|">${%|}</option>
-         </select>
-       </f:entry>
-        </div>
-         <div class="warning" style="margin-top: -1.25rem;opacity: 1;" id="divWarningSeparator">The option to configure the Identity Fields Separator is deprecated.  From the next major release, its value will be sey to: -</div>
-        <div id="identityFieldsSeparator">
-        <f:entry title="${%Identity Fields Separator}">
-            <f:textbox id="identityFieldsSeparator" field="identityFieldsSeparator" name="identityFieldsSeparator" description="Separator to place between format fields for identity"/>
-        </f:entry>
-        </div>
     </f:section>
+    <div id="conjurLocalTokenClaims">
+    <f:validateButton title="${%JWT Token Claims}" progress="${%resolving...}"
+   method="obtainJwtToken" />
+    </div>
+</div>
 
   <script type="text/javascript">
-      // Function to set value based on checkbox state
-      document.getElementById('enableIdentityFormatFieldsFromToken').addEventListener('change', getIdentityFormatToken);
-      document.getElementById('listIdentityFieldsSeparator').addEventListener('change', selectedFieldSeparator);
-      function getIdentityFormatToken() {
-          var selectJwtAudienceValue ='${instance.jwtAudience}';
-          var identityFieldNameDefault ='${instance.identityFieldName}';
-          var selectIdentityFormatTokenValue ='${instance.selectIdentityFormatToken}';
-          selectJwtAudienceValue =selectJwtAudienceValue ? selectJwtAudienceValue :'cyberark-conjur';
-          var inputKeyLifetimeInMinutes = '${instance.keyLifetimeInMinutes}';
-          var inputTokenDurarionInSeconds = '${instance.tokenDurarionInSeconds}';
-          inputKeyLifetimeInMinutes.value =inputKeyLifetimeInMinutes.value ? inputKeyLifetimeInMinutes.value :60;
-          inputTokenDurarionInSeconds.value =inputTokenDurarionInSeconds.value ? inputTokenDurarionInSeconds.value :120;
-          identityFieldNameDefault =identityFieldNameDefault ? identityFieldNameDefault : 'sub';
-          selectIdentityFormatTokenValue =selectIdentityFormatTokenValue ? selectIdentityFormatTokenValue : 'jenkins_full_name';
-          var selectIdentityFieldsSeparatorValue = '${instance.selectIdentityFieldsSeparator}';
-            // Set default value if selectIdentityFieldsSeparator is empty
-          selectIdentityFieldsSeparatorValue = selectIdentityFieldsSeparatorValue ? selectIdentityFieldsSeparatorValue : '-';
 
-          var jwtAudienceDefault = document.getElementsByName('jwtAudience')[0];
+      function validateNumber(evt) {
+          var theEvent = evt || window.event;
 
-          var inputEnableIdentityCheckedToken = document.getElementById('enableIdentityFormatFieldsFromToken');
-          var divTxtIdentityFieldName =document.getElementById('divIdentityFieldName');
-          var txtIdentityFieldName = document.getElementById('identityFieldName');
-          var divSelectedIdentityFormatFiledToken = document.getElementById("divListIdentityFormatFieldsFromToken");
-          var selectedIdentityFormatFiledToken = document.getElementById("listIdentityFormatFieldsFromToken");
-          var inputIdentityToken = document.getElementById("identityFormatFieldsFromToken");
-          var divSelectedIdentityFieldsSeparator = document.getElementById("divIdentityFieldsSeparator");
-          var selectedIdentityFieldsSeparator = document.getElementById("listIdentityFieldsSeparator");
-          var inputIdentityFieldsSeparator = document.getElementById("identityFieldsSeparator");
-          var divWarningMsg = document.getElementById("dviWarning");
-          var divWarningTxtIdentityTokenMsg = document.getElementById("divTxtWarningIdentityFieldToken");
-          var divWarningSeparatorMsg = document.getElementById("divWarningSeparator");
-          var divJwtAudWarningMsg =document.getElementById("divJwtAudWarning");
-
-
-          if(selectedIdentityFieldsSeparator.value =='-'){
-               divWarningSeparatorMsg.style.display = "none";
-          }else{
-               divWarningSeparatorMsg.style.display = "block";
-            }
-          // If checkbox is checked, set default textbox value, otherwise clear its value
-          if (inputEnableIdentityCheckedToken.checked) {
-              divTxtIdentityFieldName.style.display = "none";
-              txtIdentityFieldName.style.display = "none";
-              divSelectedIdentityFormatFiledToken.style.display = "block";
-              inputIdentityToken.style.display = "none";
-              divSelectedIdentityFieldsSeparator.style.display = "none";
-              inputIdentityFieldsSeparator.style.display = "none";
-              selectedIdentityFormatFiledToken.value=selectIdentityFormatTokenValue;
-              divWarningMsg.style.display = "none";
-              divWarningSeparatorMsg.style.display = "none";
-              jwtAudienceDefault.value = "cyberark-conjur";
-              jwtAudienceDefault.style.color = "#666666"; // Set color to gray
-              jwtAudienceDefault.readOnly = true;
-              divJwtAudWarningMsg.style.display = "none";
-              divWarningTxtIdentityTokenMsg.style.display ="none";
+          // Handle paste
+          if (theEvent.type === 'paste') {
+              key = event.clipboardData.getData('text/plain');
           } else {
-              divTxtIdentityFieldName.style.display = "block";
-              txtIdentityFieldName.style.display = "block";
-              divSelectedIdentityFormatFiledToken.style.display = "none";
-              inputIdentityToken.style.display = "block";
-              divSelectedIdentityFieldsSeparator.style.display = "block";
-              inputIdentityFieldsSeparator.style.display = "none";
-              selectedIdentityFieldsSeparator.value=selectIdentityFieldsSeparatorValue;
-              divWarningMsg.style.display = "block";
-              jwtAudienceDefault.readOnly = false;
-              jwtAudienceDefault.style.color = ""; // Set color to gray
-              divJwtAudWarningMsg.style.display = "block";
-              jwtAudienceDefault.value =selectJwtAudienceValue;
-              txtIdentityFieldName.value =identityFieldNameDefault;
-              divWarningTxtIdentityTokenMsg.style.display ="block";
+              // Handle key press
+              var key = theEvent.keyCode || theEvent.which;
+              key = String.fromCharCode(key);
+          }
+          var regex = /[0-9]|\./;
+          if( !regex.test(key) ) {
+              theEvent.returnValue = false;
+              if(theEvent.preventDefault) theEvent.preventDefault();
+          }
+      }
+
+      // Function to set value based on checkbox state
+      //document.getElementById('listIdentityFieldsSeparator').addEventListener('change', selectedFieldSeparator);
+      document.getElementById('listAuthenticator').addEventListener('change', changeAuthenticationOption);
+
+      function getIdentityFormatToken() {
+          var selectAuthenticator ='${instance.selectAuthenticator}';
+          var listAuthenticator = document.getElementById('listAuthenticator');
+
+          for(var j=0;j &lt; listAuthenticator.length;j++)
+          {
+              if(listAuthenticator.options[j].value == selectAuthenticator )
+              {
+                  listAuthenticator.options[j].selected=true;
+              }
           }
       }
       // Call the function initially to set the initial state based on checkbox
-      getIdentityFormatToken();
-        document.getElementById('jwtAudience').addEventListener('change', disableJwtAudienceInput);
-        // TODO: call when input JWT Set Checked/Unchecked to disabled/enabled submit buttons
-        // Attach event listeners to trigger function on change
-		document.addEventListener('DOMContentLoaded', function () {
-		    document.getElementsByName('enableJWKS')[0].addEventListener('change', disableSubmitButton);
-		    document.getElementsByName('authWebServiceId')[0].addEventListener('input', disableSubmitButton);
-		    document.getElementsByName('jwtAudience')[0].addEventListener('input', disableSubmitButton);
-		    document.getElementsByName('keyLifetimeInMinutes')[0].addEventListener('input', disableSubmitButton);
-		    document.getElementsByName('tokenDurarionInSeconds')[0].addEventListener('input', disableSubmitButton);
-		    document.getElementsByName('identityFieldName')[0].addEventListener('input', disableSubmitButton);
-		    document.getElementsByName('identityFormatFieldsFromToken')[0].addEventListener('input', disableSubmitButton);
-		});
-        function disableJwtAudienceInput(){
-            var inputEnableIdentityCheckedToken = document.getElementById('enableIdentityFormatFieldsFromToken');
-            var jwtAudienceDefault = document.getElementsByName('jwtAudience')[0];
-            var divJwtAudWarningMsg =document.getElementById("divJwtAudWarning");
-                if(inputEnableIdentityCheckedToken.checked){
-                jwtAudienceDefault.value = "cyberark-conjur";
-                jwtAudienceDefault.style.color = "#666666"; // Set color to gray
-                jwtAudienceDefault.readOnly = true;
-                divJwtAudWarningMsg.style.display = "none";
+       getIdentityFormatToken();
 
-            }else{
-                jwtAudienceDefault.readOnly = false;
-                jwtAudienceDefault.style.color = ""; // reset
-                divJwtAudWarningMsg.style.display = "block";
+        function changeAuthenticationOption()
+        {
+            var listAuthenticator = document.getElementById('listAuthenticator');
+            var selectedAuthenticator = listAuthenticator.value;
+            var optionText = listAuthenticator.options[listAuthenticator.selectedIndex].text;
+            var conjurGlobalJWTSection = document.getElementById('conjurGlobalJWTSection');
+            var conjurLocalAPIKeyCredentials = document.getElementById('conjurLocalAPIKeyCredentials');
+            var conjurLocalTokenClaims = document.getElementById('conjurLocalTokenClaims');
+
+            if( optionText === 'APIKey')
+            {
+                try {
+                    conjurGlobalJWTSection.style.display = "none";
+                    conjurLocalAPIKeyCredentials.style.display = "block";
+                    conjurLocalTokenClaims.style.display = "none";
+                    document.getElementById('jwtValidateButton').style.display = "none";
+                }catch(err) {}
+            }
+            else if( optionText === 'JWT')
+            {
+                conjurGlobalJWTSection.style.display = "block";
+                conjurLocalAPIKeyCredentials.style.display = "none";
+                conjurLocalTokenClaims.style.display = "block";
+                document.getElementById('jwtValidateButton').style.display = "none";
             }
         }
 
-        function disableSubmitButton(){
-            var inputAuthWebServiceId = document.getElementsByName('authWebServiceId')[0];
-            var inputJwtAudience = document.getElementsByName('jwtAudience')[0];
-            var inputEnableJWT = document.getElementsByName('enableJWKS')[0];
-            
-            var inputKeyLifetimeInMinutes = document.getElementsByName('keyLifetimeInMinutes')[0];
-            var inputTokenDurarionInSeconds = document.getElementsByName('tokenDurarionInSeconds')[0];
-
-            var inputIdentityFieldName= document.getElementsByName('identityFieldName')[0];
-            var inputIdentityFormatFieldsFromToken= document.getElementsByName('identityFormatFieldsFromToken')[0];
-
-            var applyBtn = document.querySelector('button[name="Apply"]');
-            var submitBtn = document.querySelector('button[name="Submit"]');
-            // Check if Enable JWT is checked
-    	   if (inputEnableJWT.checked) {
-	         //Check the JWT Input field values
-	         if (inputAuthWebServiceId.value.trim() === '' || inputJwtAudience.value.trim() === '' 
-	              || inputIdentityFieldName.value.trim() === '' || inputIdentityFormatFieldsFromToken.value.trim() === '' 
-	              || inputKeyLifetimeInMinutes.value.trim() === ''|| (!/^\d+(\.\d+)?$/.test(inputKeyLifetimeInMinutes.value.trim())) 
-	              || inputTokenDurarionInSeconds.value.trim() === '' || (!/^\d+(\.\d+)?$/.test(inputTokenDurarionInSeconds.value.trim()))) {
-	              applyBtn.disabled = true;
-	              submitBtn.disabled = true;
-	          }else{
-	              applyBtn.disabled = false;
-	              submitBtn.disabled = false;
-	          }			
-            }else{
-                //If JWT unchecked, always enable the buttons 
-                applyBtn.disabled = false;
-                submitBtn.disabled = false;
-           }
-         }
-         // TODO:If Unchecked JWT Set input checkbox enabled then both of the save and apply buttons disabled then vice-versa. 
-         disableSubmitButton();
-         disableJwtAudienceInput();
-         function selectedFieldSeparator(SelectedSeparatorValue){
-             var onChangeWarningSeparatorMsg = document.getElementById("dviWarningSeperator");
-               if(SelectedSeparatorValue.target.value=='-'){
-               onChangeWarningSeparatorMsg.style.display = "none";
-              }else{
-               onChangeWarningSeparatorMsg.style.display = "block";
-            }
-         }
-         //New setUp Integration for JWT Auth Config
-       function enableIdentityFromToken(){
-           var inputEnableJWKS = '${instance.enableJWKS}';
-           var inputAuthWebServiceId = '${instance.authWebServiceId}';
-           var inputJwtAudience = '${instance.jwtAudience}';
-           var inputKeyLifetimeInMinutes = '${instance.keyLifetimeInMinutes}';
-           var inputTokenDurarionInSeconds = '${instance.tokenDurarionInSeconds}';
-           var inputEnableContextAwareCredentialStore = '${instance.enableContextAwareCredentialStore}';
-           var inputEnableIdentityFormatFieldsFromToken = '${instance.enableIdentityFormatFieldsFromToken}';
-           var inputIdentityFormatFieldsFromToken = '${instance.identityFormatFieldsFromToken}';
-           var inputIdentityFieldName = '${instance.identityFieldName}';
-           var allEmpty = areAllVariablesEmpty(inputAuthWebServiceId, inputIdentityFormatFieldsFromToken);
-           function areAllVariablesEmpty(...variables) {
-             return variables.every(variable => !variable.trim());
-           }
-          // Check the config inputs
-        if (allEmpty) {
-             document.getElementById("enableIdentityFormatFieldsFromToken").checked = true;
-         }
-         getIdentityFormatToken();
-       }
-       //Initial call to config
-       enableIdentityFromToken();
+         changeAuthenticationOption();
   </script>
 
        <style type="text/css">
@@ -269,5 +132,7 @@
              transition: var(--standard-transition);
              width: 100% !important;
            }
+
+
    </style>
 </j:jelly>

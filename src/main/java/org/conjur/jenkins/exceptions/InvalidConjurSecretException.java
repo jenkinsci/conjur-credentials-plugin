@@ -7,8 +7,6 @@ package org.conjur.jenkins.exceptions;
  */
 public class InvalidConjurSecretException extends RuntimeException {
 
-	private static final long serialVersionUID = 1L;
-
 	/**
 	 * Throw error message if secret is not found
 	 * 
@@ -24,7 +22,6 @@ public class InvalidConjurSecretException extends RuntimeException {
 	 * 
 	 * @param errorMessage
 	 */
-
 	public InvalidConjurSecretException(String errorMessage) {
 		super(errorMessage);
 	}

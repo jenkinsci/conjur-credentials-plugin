@@ -1,27 +1,20 @@
 package org.conjur.jenkins.conjursecrets;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import org.conjur.jenkins.credentials.ConjurCredentialStore;
-import org.jenkinsci.Symbol;
-import org.jenkinsci.plugins.credentialsbinding.BindingDescriptor;
-import org.jenkinsci.plugins.credentialsbinding.MultiBinding;
-import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.credentialsbinding.BindingDescriptor;
+import org.jenkinsci.plugins.credentialsbinding.MultiBinding;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Bind the ConjurSecretCredential based on UserNameCredential
@@ -32,10 +25,11 @@ public class ConjurSecretUsernameCredentialsBinding extends MultiBinding<ConjurS
 	@Symbol("conjurSecretUsername")
 	@Extension
 	public static class DescriptorImpl extends BindingDescriptor<ConjurSecretUsernameCredentials> {
+		private final static String DISPLAY_NAME = "Conjur Secret Username credentials";
 
 		@Override
 		public String getDisplayName() {
-			return "Conjur Secret Username credentials";
+			return DISPLAY_NAME;
 		}
 
 		@Override
@@ -48,15 +42,17 @@ public class ConjurSecretUsernameCredentialsBinding extends MultiBinding<ConjurS
 			return ConjurSecretUsernameCredentials.class;
 		}
 	}
+
 	private static final Logger LOGGER = Logger.getLogger(ConjurSecretUsernameCredentialsBinding.class.getName());
 
 	private String usernameVariable;
-
 	private String passwordVariable;
 
 	@DataBoundConstructor
-	public ConjurSecretUsernameCredentialsBinding(String credentialsId) {
+	public ConjurSecretUsernameCredentialsBinding(String credentialsId)
+	{
 		super(credentialsId);
+		LOGGER.log(Level.FINEST, String.format("ConjurSecretUsernameCredentialsBinding %s", credentialsId ) );
 	}
 
 	/**
@@ -65,35 +61,30 @@ public class ConjurSecretUsernameCredentialsBinding extends MultiBinding<ConjurS
 	@Override
 	public MultiEnvironment bind(Run<?, ?> build, FilePath workSpace, Launcher launcher, TaskListener listener)
 			throws IOException, InterruptedException {
-		LOGGER.log(Level.FINE, "Start of bind()");
-		LOGGER.log(Level.FINE, "Binding UserName and Password");
-
-		ConjurCredentialStore store = ConjurCredentialStore.getAllStores().get(String.valueOf(build.getParent().hashCode()));
-		if (store != null) {
-			store.getProvider().getStore(build);
-		}
+		LOGGER.log(Level.FINEST, "Binding UserName and Password");
+		Map<String, String> m = new HashMap<>();
 
 		ConjurSecretUsernameCredentials conjurSecretCredential = getCredentials(build);
-		conjurSecretCredential.setContext(build);
 
-		Map<String, String> m = new HashMap<>();
-		if (conjurSecretCredential.getPassword() != null) {
+		if( conjurSecretCredential != null ) {
+			conjurSecretCredential.setContext(build);
 			m.put(usernameVariable, conjurSecretCredential.getUsername());
 			m.put(passwordVariable, conjurSecretCredential.getPassword().getPlainText());
-		} else {
-			throw new CredentialNotFoundException(
-					"Could not find Conjur Secret Username Credentials entry is null or invalid.");
 		}
-		return new MultiEnvironment(m);
 
+		return new MultiEnvironment(m);
 	}
 
-	/** @return password */
+	/**
+	 * @return password
+	 */
 	public String getPasswordVariable() {
 		return this.passwordVariable;
 	}
 
-	/** @return username */
+	/**
+	 * @return username
+	 */
 	public String getUsernameVariable() {
 		return this.usernameVariable;
 	}
@@ -103,10 +94,9 @@ public class ConjurSecretUsernameCredentialsBinding extends MultiBinding<ConjurS
 	 * 
 	 * @param passwordVariable
 	 */
-
 	@DataBoundSetter
 	public void setPasswordVariable(String passwordVariable) {
-		LOGGER.log(Level.FINE, "Setting Password variable to {0}", passwordVariable);
+		LOGGER.log(Level.FINEST, "Setting Password variable to {0}", passwordVariable);
 		this.passwordVariable = passwordVariable;
 	}
 
@@ -115,15 +105,15 @@ public class ConjurSecretUsernameCredentialsBinding extends MultiBinding<ConjurS
 	 * 
 	 * @param usernameVariable
 	 */
-
 	@DataBoundSetter
 	public void setUsernameVariable(String usernameVariable) {
-		LOGGER.log(Level.FINE, "Setting Username variable to {0}", usernameVariable);
+		LOGGER.log(Level.FINEST, "Setting Username variable to {0}", usernameVariable);
 		this.usernameVariable = usernameVariable;
 	}
 
 	@Override
-	protected Class<ConjurSecretUsernameCredentials> type() {
+	protected Class<ConjurSecretUsernameCredentials> type()
+	{
 		return ConjurSecretUsernameCredentials.class;
 	}
 
@@ -131,5 +121,4 @@ public class ConjurSecretUsernameCredentialsBinding extends MultiBinding<ConjurS
 	public Set<String> variables() {
 		return new HashSet<>(Arrays.asList(usernameVariable, passwordVariable));
 	}
-
 }

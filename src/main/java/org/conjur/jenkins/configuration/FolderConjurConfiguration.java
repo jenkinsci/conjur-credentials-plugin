@@ -1,7 +1,5 @@
 package org.conjur.jenkins.configuration;
 
- 
-
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -18,7 +16,6 @@ import jenkins.model.Jenkins;
  */
 public class FolderConjurConfiguration extends AbstractFolderProperty<AbstractFolder<?>> {
 
-	private Boolean inheritFromParent = true;
 	private ConjurConfiguration conjurConfiguration;
 
 	/** Constructor to set the Folder level configuration to ConjurConfiguration */
@@ -28,36 +25,47 @@ public class FolderConjurConfiguration extends AbstractFolderProperty<AbstractFo
 		this.conjurConfiguration = conjurConfiguration;
 	}
 
-	/** @return ConurConfiguration */
+	/**
+	 *  @return ConjurConfiguration
+	 **/
 	public ConjurConfiguration getConjurConfiguration() {
 		return conjurConfiguration;
 	}
 
-	/** set the Conjur Configuration parameter */
+	/**
+	 *
+	 * @param conjurConfiguration folder configuration
+	 **/
 	@DataBoundSetter
 	public void setConjurConfiguration(ConjurConfiguration conjurConfiguration) {
 		this.conjurConfiguration = conjurConfiguration;
 	}
 
-	/** @return true if inheritedFromParent */
+	/**
+	 * @return true if inheritedFromParent
+	 **/
 	public Boolean getInheritFromParent() {
-		return inheritFromParent;
+		if( this.conjurConfiguration.getInheritFromParent() == null ) return Boolean.TRUE;
+		return conjurConfiguration.getInheritFromParent();
 	}
 
-	/** set the boolean value based on inheritedFromParent checkbox */
+	/**
+	 * set the boolean value based on inheritedFromParent checkbox
+	 * @param inheritFromParent boolean option, it enable or disable inheritance
+	 **/
 	@DataBoundSetter
 	public void setInheritFromParent(Boolean inheritFromParent) {
-		this.inheritFromParent = inheritFromParent;
+		this.conjurConfiguration.setInheritFromParent(inheritFromParent);
 	}
 
 	@Extension
 	public static class DescriptorImpl extends AbstractFolderPropertyDescriptor {
 	}
 
-	/** @return the Jenkins Item object baseon ownerFulleName */
-
+	/**
+	 * @return the Jenkins Item object baseon ownerFullName
+	 **/
 	public Item getItem() {
 		return Jenkins.get().getItemByFullName(this.owner.getFullName());
 	}
-
 }

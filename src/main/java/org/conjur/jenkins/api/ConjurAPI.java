@@ -1,42 +1,39 @@
 package org.conjur.jenkins.api;
 
+import com.cloudbees.hudson.plugins.folder.AbstractFolder;
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.model.*;
+import hudson.util.Secret;
+import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import org.apache.commons.lang.StringUtils;
+import org.conjur.jenkins.authenticator.AbstractAuthenticator;
+import org.conjur.jenkins.authenticator.ConjurAPIKeyAuthenticator;
+import org.conjur.jenkins.authenticator.ConjurJWTAuthenticator;
+import org.conjur.jenkins.configuration.*;
+import org.conjur.jenkins.conjursecrets.*;
+import org.conjur.jenkins.exceptions.AuthenticationConjurException;
+import org.conjur.jenkins.exceptions.InvalidConjurSecretException;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.kohsuke.stapler.Stapler;
+
 import java.io.IOException;
-import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.conjur.jenkins.configuration.ConjurConfiguration;
-import org.conjur.jenkins.configuration.ConjurJITJobProperty;
-import org.conjur.jenkins.configuration.FolderConjurConfiguration;
-import org.conjur.jenkins.configuration.GlobalConjurConfiguration;
-import org.conjur.jenkins.configuration.TelemetryConfiguration;
-import org.conjur.jenkins.jwtauth.impl.JwtToken;
-
-import com.cloudbees.hudson.plugins.folder.AbstractFolder;
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import hudson.model.AbstractItem;
-import hudson.model.Item;
-import hudson.model.ItemGroup;
-import hudson.model.ModelObject;
-import hudson.model.Run;
-import hudson.security.ACL;
-import jenkins.model.GlobalConfiguration;
-import jenkins.model.Jenkins;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
 /**
  * The ConjurAPI class provides the service to authenticate and retrieve secrets
@@ -55,28 +52,26 @@ import okhttp3.Response;
  * <b>Credential ID is empty message</b>.
  */
 public class ConjurAPI {
+
 	/**
-	 * static constructor to set the Conjur Auth Configuration Info
+	 * Constructor
 	 */
-	public static class ConjurAuthnInfo {
-		public String applianceUrl;
-		public String authnPath;
-		public String account;
-		public String login;
-		public String apiKey;
+	private ConjurAPI() {
+		super();
 	}
 
 	private static final Logger LOGGER = Logger.getLogger(ConjurAPI.class.getName());
+	private static AbstractAuthenticator authenticator = null;
 
 	/**
 	 * Set the ConjurAuthnInfo with the environment variables
-	 * 
-	 * @param conjurAuthn
+	 *
+	 * @param conjurAuthn authentication info, will be filled with specified data used to authenticate
+
 	 */
 
-	private static  void defaultToEnvironment(ConjurAuthnInfo conjurAuthn) {
-		LOGGER.log(Level.FINE, "Start of defaultToEnvironment()");
-
+	private static  void defaultToEnvironment(ConjurAuthnInfo conjurAuthn)
+	{
 		Map<String, String> env = System.getenv();
 		if (conjurAuthn.applianceUrl == null && env.containsKey("CONJUR_APPLIANCE_URL"))
 			conjurAuthn.applianceUrl = env.get("CONJUR_APPLIANCE_URL");
@@ -85,134 +80,106 @@ public class ConjurAPI {
 		if (conjurAuthn.login == null && env.containsKey("CONJUR_AUTHN_LOGIN"))
 			conjurAuthn.login = env.get("CONJUR_AUTHN_LOGIN");
 		if (conjurAuthn.apiKey == null && env.containsKey("CONJUR_AUTHN_API_KEY"))
-			conjurAuthn.apiKey = env.get("CONJUR_AUTHN_API_KEY");
-		LOGGER.log(Level.FINE, "End of defaultToEnvironment()");
+			conjurAuthn.apiKey = env.get("CONJUR_AUTHN_API_KEY").getBytes(StandardCharsets.US_ASCII);
+	}
+
+	/**
+	 * Return authenticator by name
+	 *
+	 * @param name name of authenticator
+	 * @return authenticator class object
+	 */
+	public static AbstractAuthenticator getAuthenticatorByName( String name )
+	{
+		AbstractAuthenticator chosenAuthenticator = null;
+
+		if( name != null )
+		{
+			if (name.equalsIgnoreCase("JWT")) {
+				chosenAuthenticator = new ConjurJWTAuthenticator();
+			} else if (name.equalsIgnoreCase("APIKey")) {
+				chosenAuthenticator = new ConjurAPIKeyAuthenticator();
+			}
+		}
+		return chosenAuthenticator;
+	}
+
+	/**
+	 * Set authenticator
+	 * Function is getting which authenticator should be set from global configuration
+	 */
+	private static void setAuthenticator()
+	{
+		GlobalConjurConfiguration globalConfig = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
+		if (globalConfig != null)
+		{
+			if (authenticator == null)
+			{
+				authenticator = getAuthenticatorByName( globalConfig.getSelectAuthenticator() );
+			}
+			else    // if there is authenticator set but setting was changed
+			{
+				if (!authenticator.getName().equalsIgnoreCase(globalConfig.getSelectAuthenticator()))	// someone changed authenticator
+				{
+					authenticator = getAuthenticatorByName( globalConfig.getSelectAuthenticator() );
+				}
+			}
+		}	// globalConfig != null
+
+		// if authenticator not set use default
+		if (authenticator == null) {
+			authenticator = new ConjurAPIKeyAuthenticator();
+		}
+
+		LOGGER.log(Level.FINEST, String.format("Authenticator set to: %s", authenticator.getName() ) );
+
 	}
 
 	/**
 	 * Method to build the client authentication API Key/JWT request based on the
 	 * ConjurConfiguration.
-	 * 
-	 * @param client        OkHttp builds HTTP/HTTP/2 client that shares the same
-	 *                      connection,thread pool and configuration.
-	 * @param configuration ConjurConfiguration object containing
-	 *                      account,applianceUrl,credentialID,certificateCredentialID,ownerFullName.
-	 * @param context       current context in which Jenkins Job are running
+	 *
+	 * @param conjurAuthn   authentication object which contains data used to authenticate service
+
+	 *
+	 * @param context       current context in which Jenkins Job is running
+
 	 * @return status code to 200-OK if request is authenticated or 401 if
 	 *         Unauthorized
 	 * @throws IOException in case of error connecting to Conjur Server
 	 */
 	@SuppressFBWarnings
-	public static  String getAuthorizationToken(OkHttpClient client, ConjurConfiguration configuration,
-			ModelObject context) throws IOException {
-		LOGGER.log(Level.FINE, "Start of getAuthorizationToken()");
-		LOGGER.log(Level.INFO,
-				"getAuthorizationToken input params" + "Client:" + client + "Configuration:" + configuration);
-		String resultingToken = null;
+	public static  byte[] getAuthorizationToken(ConjurAuthnInfo conjurAuthn,
+			ModelObject context ) throws IOException
+	{
+		setAuthenticator();
 
-		List<UsernamePasswordCredentials> availableCredentials = null;
-
-		availableCredentials = CredentialsProvider.lookupCredentials(UsernamePasswordCredentials.class, Jenkins.get(),
-				ACL.SYSTEM, Collections.<DomainRequirement>emptyList());
-
-		if (context != null) {
-			if (context instanceof Run) {
-				availableCredentials.addAll(CredentialsProvider.lookupCredentials(UsernamePasswordCredentials.class,
-						((Run) context).getParent(), ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
-			} else {
-				if ((context instanceof AbstractItem)) {
-					availableCredentials.addAll(CredentialsProvider.lookupCredentials(UsernamePasswordCredentials.class,
-							(AbstractItem) context, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
-				}
-			}
-		}
-
-		ConjurAuthnInfo conjurAuthn = getConjurAuthnInfo(configuration, availableCredentials, context);
-		GlobalConjurConfiguration globalConfig = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
-		if(globalConfig != null) {
-		ConjurConfiguration globalConjurConfig = globalConfig.getConjurConfiguration();
-			if(conjurAuthn.account ==null || conjurAuthn.account.isEmpty()){
-				conjurAuthn.account = globalConjurConfig.getAccount();
-			}
-			if(conjurAuthn.applianceUrl ==null || conjurAuthn.applianceUrl.isEmpty()){
-				conjurAuthn.applianceUrl = globalConjurConfig.getApplianceURL();
-			}
-		}
-		if (globalConfig != null && globalConfig.getEnableJWKS()) {
-			LOGGER.log(Level.FINE, "JWT is enabled.");
-			if (!globalConfig.getEnableIdentityFormatFieldsFromToken())// Simplified JWT is disabled
-			{
-				LOGGER.log(Level.FINE, "Simplified JWT is disabled.");
-				List<String> identityFields = Arrays.asList(globalConfig.getIdentityFormatFieldsFromToken().split(","));
-				if(!identityFields.contains("jenkins_full_name"))
-				{
-					if(!identityFields.contains("jenkins_parent_full_name") || !identityFields.contains("jenkins_name"))
-					{
-						throw new RuntimeException(
-								"Invalid configuration on conjur jenkins plugin. Ensure Identity format fields are configured correctly.");
-					}
-				}
-			}
-		}
-
-		Request request = null;
-		if (conjurAuthn.login != null && conjurAuthn.apiKey != null) {
-			LOGGER.log(Level.FINE, "Creating authentication request for API Key authentication with Conjur");
-			request = new Request.Builder()
-					.url(String.format("%s/%s/%s/%s/authenticate", conjurAuthn.applianceUrl, conjurAuthn.authnPath,
-							conjurAuthn.account, URLEncoder.encode(conjurAuthn.login, "utf-8")))
-				    .addHeader("x-cybr-telemetry", TelemetryConfiguration.getTelemetryHeader()) // Added the telemetry header
-					.post(RequestBody.create(MediaType.parse("text/plain"), conjurAuthn.apiKey)).build();
-
-		} else if (conjurAuthn.authnPath != null && conjurAuthn.apiKey != null) {
-			LOGGER.log(Level.FINE, "Creating authentication request for JWT authentication with Conjur");
-			String authnPath = conjurAuthn.authnPath.indexOf("/") == -1 ? "authn-jwt/" + conjurAuthn.authnPath
-					: conjurAuthn.authnPath;
-			LOGGER.log(Level.FINE, "Authenticating with Conjur (JWT) authnPath={0}", authnPath);
-			request = new Request.Builder()
-					.url(String.format("%s/%s/%s/authenticate", conjurAuthn.applianceUrl, authnPath,
-							conjurAuthn.account))
-				    .addHeader("x-cybr-telemetry", TelemetryConfiguration.getTelemetryHeader()) // Added the telemetry header
-					.post(RequestBody.create(MediaType.parse("text/plain"), conjurAuthn.apiKey)).build();
-
-		}
-
-		if (request != null) {
-			Response response = client.newCall(request).execute();
-			resultingToken = Base64.getEncoder().withoutPadding()
-					.encodeToString(response.body().string().getBytes("UTF-8"));
-			LOGGER.log(Level.FINEST,
-					() -> "Conjur Authenticate response " + response.code() + " - " + response.message());
-			if (response.code() != 200) {
-
-				throw new IOException("Error authenticating to Conjur [" + response.code() + " - " + response.message()
-						+ "\n" + resultingToken);
-			}
-		} else {
-			LOGGER.log(Level.FINE, "Failed to authenticate with conjur server");
-		}
-		return resultingToken;
+		return authenticator.getAuthorizationToken( conjurAuthn, context );
 	}
 
 	/**
 	 * Retrieve the ConjurAuthnInfo configured for Jenkins build
-	 * 
-	 * @param ConjurConfiguration               from Jenkins configuration
-	 * @param List<UsernamePasswordCredentials> availabeCredentials
-	 * @param Jenkins                           ModelObject context
+	 *
+	 * @param configuration       Jenkins configuration
+	 * @param context             current context
 	 * @return ConjurAuthnInfo
 	 */
 	public static ConjurAuthnInfo getConjurAuthnInfo(ConjurConfiguration configuration,
-			List<UsernamePasswordCredentials> availableCredentials, ModelObject context) {
-		LOGGER.log(Level.FINE, "Start of getConjurAuthnInfo()");
+													 ModelObject context)
+	{
+		if( authenticator == null )
+		{
+			setAuthenticator();
+		}
 		ConjurAuthnInfo conjurAuthn = new ConjurAuthnInfo();
+		conjurAuthn.conjurConfiguration = configuration;
 
-		if (configuration != null) {
+		// Default to Environment variables if not values present
+		defaultToEnvironment(conjurAuthn);
 
-			if (availableCredentials != null) {
-				initializeWithCredential(conjurAuthn, configuration.getCredentialID(), availableCredentials);
-			}
-
+		// default settings from configuration
+		if (configuration != null)
+		{
 			String applianceUrl = configuration.getApplianceURL();
 			if (applianceUrl != null && !applianceUrl.isEmpty()) {
 				conjurAuthn.applianceUrl = applianceUrl;
@@ -224,166 +191,559 @@ public class ConjurAPI {
 			// Default authentication will be authn
 			conjurAuthn.authnPath = "authn";
 		}
-		LOGGER.log(Level.FINE, "getConjurAuthnInfo() calling defaultToEnvironment");
-		// Default to Environment variables if not values present
-		defaultToEnvironment(conjurAuthn);
 
-		LOGGER.log(Level.FINE, "Check for Just-In-time Credential Access if no login and apikey {0}", conjurAuthn);
-		// Check for Just-In-time Credential Access if no login and apikey
-		if (conjurAuthn.login == null && conjurAuthn.apiKey == null && context != null) {
-			setConjurAuthnForJITCredentialAccess(context, conjurAuthn);
-		}
-		LOGGER.log(Level.FINE, "End of getConjurAuthnInfo()");
+		authenticator.fillAuthnInfo(conjurAuthn, context);
+
 		return conjurAuthn;
-	}
-	private static void setConjurAuthnForJITCredentialAccess(ModelObject context, ConjurAuthnInfo conjurAuthn) {
-		LOGGER.log(Level.FINE, "Start of setConjurAuthnForJITCredentialAccess()");
-		String token = JwtToken.getToken(context);
-		GlobalConjurConfiguration globalconfig = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
-
-		if (token != null && globalconfig != null) {
-			conjurAuthn.login = null;
-			conjurAuthn.authnPath = globalconfig.getAuthWebServiceId();
-			conjurAuthn.apiKey = "jwt=" + token;
-		}
-		LOGGER.log(Level.FINE, "End of setConjurAuthnForJITCredentialAccess()");
 	}
 
 	/**
 	 * This method gets the {@link ConjurAuthIno} data and retrieve the secret for the valid authenticationToken,account
-	 * variablePath. The request to fetch the secret are build using the OkHttp client.
-	 * 
+	 * variableName. The request to fetch the secret are build using the OkHttp client.
+	 *
 	 * @param client   OkHttp builds HTTP/HTTP/2 client that shares the same connection,thread pool and configuration.
-	 * @param configuration  {@link ConjurConfiguration} containing the Conjur authentication parameters 
+	 * @param configuration  {@link ConjurConfiguration} containing the Conjur authentication parameters
 	 * @param authToken	 token to authenticate the request.
-	 * @param variablePath  for which to retrieve the secrets
-	 * @return the secrets for the specified variablePath
+	 * @param variableId  for which to retrieve the secrets
+	 * @return the secrets for the specified variableName
 	 * @throws IOException
 	 */
 	@SuppressFBWarnings
-	public static String getSecret(OkHttpClient client, ConjurConfiguration configuration, String authToken,
-			String variablePath) throws IOException {
-		LOGGER.log(Level.FINE, "Start of getSecret()");
-		
-		ConjurAuthnInfo conjurAuthn = getConjurAuthnInfo(configuration, null, null);
+	public static byte[] getConjurSecret(OkHttpClient client, ConjurConfiguration configuration, byte[] authToken,
+										 String variableId) throws IOException
+	{
+		LOGGER.log(Level.FINEST, String.format( "getConjurSecret: variable name %s", variableId ) );
 
-		LOGGER.log(Level.FINEST, "Fetching secret from Conjur Server");
+		String formattedUrl = String.format("%s/secrets/%s/variable/%s", configuration.getApplianceURL(), configuration.getAccount(), variableId);
+
 		Request request = new Request.Builder().url(
-				String.format("%s/secrets/%s/variable/%s", conjurAuthn.applianceUrl, conjurAuthn.account, variablePath))
-			    .addHeader("x-cybr-telemetry", TelemetryConfiguration.getTelemetryHeader()) // Add the telemetry header
-				.get().addHeader("Authorization", "Token token=\"" + authToken + "\"").build();
+						formattedUrl)
+				.get()
+				.addHeader("x-cybr-telemetry", TelemetryConfiguration.getTelemetryHeader()) // Added the telemetry header
+				.addHeader("Authorization", "Token token=\"" + new String(authToken, StandardCharsets.US_ASCII) + "\"").build();
 
 		Response response = client.newCall(request).execute();
-		String result = response.body().string();
-		LOGGER.log(Level.FINEST, () -> "Fetch secret [" + variablePath + "] from Conjur response " + response.code()
+		byte[] result = {};
+		ResponseBody body = response.body();
+		if( body != null )
+		{
+			result = body.bytes();
+		}
+		LOGGER.log(Level.FINEST, () -> "getConjurSecret: Fetch secret from Conjur response code " + response.code()
 				+ " - " + response.message());
 		if (response.code() != 200) {
-			throw new IOException("Error fetching secret from Conjur [" + response.code() + " - " + response.message()
-					+ "\n" + result);
+			if( response.code() == 404 )
+			{
+				throw new AuthenticationConjurException("No access");
+			}
+			throw new IOException(String.format("Error fetching secret from Conjur [%d - %s] %s",response.code(), response.message()
+					, new String(result) ));
 		}
-		
-		LOGGER.log(Level.FINE, "End of getSecret()");
 		return result;
 	}
 
 	/**
 	 * Log the Conjur Configuration details
-	 * 
+	 *
 	 * @param conjurConfiguration log the ConjurConfiguration from Jenkins
 	 *                            configuration
 	 * @return ConjurConfiguration log the Conjur Configuration parameters
 	 */
-	public static ConjurConfiguration logConjurConfiguration(ConjurConfiguration conjurConfiguration) {
-		LOGGER.log(Level.FINE, "Start of logConjurConfiguration()");
-		if (conjurConfiguration != null) {
+	public static ConjurConfiguration logConjurConfiguration(ConjurConfiguration conjurConfiguration)
+	{
+		if (conjurConfiguration != null)
+		{
 			LOGGER.log(Level.FINEST, "Conjur configuration provided");
 			LOGGER.log(Level.FINEST, "Conjur Configuration Appliance Url:{0} ", conjurConfiguration.getApplianceURL());
 			LOGGER.log(Level.FINEST, "Conjur Configuration Account: {0}", conjurConfiguration.getAccount());
 			LOGGER.log(Level.FINEST, "Conjur Configuration credential ID:{0} ", conjurConfiguration.getCredentialID());
 		}
-		LOGGER.log(Level.FINE, "End of logConjurConfiguration()");
 		return conjurConfiguration;
 	}
 
-	private static void initializeWithCredential(ConjurAuthnInfo conjurAuthn, String credentialID,
-			List<UsernamePasswordCredentials> availableCredentials) {
-		LOGGER.log(Level.FINE, "Start of initializeWithCredential()");
-		if (credentialID != null && !credentialID.isEmpty()) {
-			LOGGER.log(Level.FINEST, "Retrieving Conjur credential stored in Jenkins");
-			UsernamePasswordCredentials credential = CredentialsMatchers.firstOrNull(availableCredentials,
-					CredentialsMatchers.withId(credentialID));
-			if (credential != null) {
-				conjurAuthn.login = credential.getUsername();
-				conjurAuthn.apiKey = credential.getPassword().getPlainText();
+	/**
+	 * Get ConjurConfiguration object for ItemGroup
+	 *
+	 * @param itemGroup item for which configuration will be returned. It also include hierarchy
+	 * @return ConjurConfiguration
+	 */
+	public static ConjurConfiguration getConjurConfig(@NonNull ItemGroup<?> itemGroup)
+	{
+		ConjurConfiguration resultingConfig = null;
+
+		for (ItemGroup<?> g = itemGroup; g instanceof AbstractFolder; g = ((AbstractFolder<?>) g).getParent()) {
+			FolderConjurConfiguration folderProperty = ((AbstractFolder<?>) g).getProperties()
+					.get(FolderConjurConfiguration.class);
+
+			if (folderProperty != null)
+			{
+				// stop inheritance
+				if( folderProperty.getConjurConfiguration() != null && !folderProperty.getInheritFromParent() )
+				{
+					return resultingConfig;
+				}
+
+				if (resultingConfig != null)
+				{
+					resultingConfig = resultingConfig.mergeWithParent(folderProperty.getConjurConfiguration());
+				}
+				else
+				{
+					resultingConfig = folderProperty.getConjurConfiguration();
+				}
 			}
 		}
-		LOGGER.log(Level.FINE, "End of initializeWithCredential()");
+
+		// Getting global configuration
+
+		GlobalConjurConfiguration globalConfig = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
+		if( globalConfig != null )
+		{
+			if( resultingConfig == null )
+			{
+				resultingConfig = globalConfig.getConjurConfiguration();
+			}
+			else
+			{
+				resultingConfig = resultingConfig.mergeWithParent(globalConfig.getConjurConfiguration());
+			}
+		}
+
+		// report configuration issues
+
+		if( resultingConfig == null )
+		{
+			LOGGER.log(Level.SEVERE, "Missing configuration for Conjur Plugin");
+		}
+		else
+		{
+			if(StringUtils.isEmpty( resultingConfig.getAccount() ) )
+			{
+				LOGGER.log(Level.SEVERE, "Conjur Plugin missing Account field to be configured");
+			}
+			if(StringUtils.isEmpty( resultingConfig.getApplianceURL() ) )
+			{
+				LOGGER.log(Level.SEVERE, "Conjur Plugin require ConjurURL field to be configured");
+			}
+
+			if( globalConfig != null && globalConfig.getSelectAuthenticator().equals("APIKey") )
+			{
+				if( StringUtils.isEmpty(resultingConfig.getCredentialID() ) )
+				{
+					LOGGER.log(Level.SEVERE, "Credentials not set for APIKey authenticator");
+				}
+			}
+		}
+
+		return resultingConfig;
 	}
 
 	/**
-	 * Retrieve the configuration specific to Context
-	 * 
-	 * @param Jenkins ModelObject context
-	 * @param Jenkins ModelObject storeContext
+	 * Retrieve the configuration specific to Context and configuration
+	 *
+	 * @param context ModelObject context
 	 * @return the Conjur Configuration based on the Jenkins ModelOjbect
 	 */
 
-	public static ConjurConfiguration getConfigurationFromContext(ModelObject context, ModelObject storeContext) {
-		LOGGER.log(Level.FINE, "Start of getConfigurationFromContext()");
-		ModelObject effectiveContext = context != null ? context : storeContext;
+	public static ConjurConfiguration getConfigurationFromContext(ModelObject context) {
+		ConjurConfiguration returnConfig = null;
+		ConjurConfiguration conjurJobConfig = null;
 
-		Item contextObject = null;
-		ConjurJITJobProperty conjurJobConfig = null;
+		LOGGER.log(Level.FINEST, String.format("getConfigurationFromContext for context: %s", context ) );
 
-		if (effectiveContext instanceof Run) {
-			LOGGER.log(Level.FINE, "getConfigurationFromContext():instanceOf Run");
-			Run run = (Run) effectiveContext;
-			conjurJobConfig = (ConjurJITJobProperty) run.getParent().getProperty(ConjurJITJobProperty.class);
-			contextObject = run.getParent();
-		} else if (effectiveContext instanceof AbstractItem) {
-			LOGGER.log(Level.FINE, "getConfigurationFromContext():instanceOf AbstractItem");
-			contextObject = (Item) effectiveContext;
-		}
+		if (context != null) {
+			if (context instanceof Hudson)    // for global context we return global config
+			{
+				// Getting global configuration, its always on top
+				GlobalConjurConfiguration globalConfig = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
+				if (globalConfig != null && globalConfig.getConjurConfiguration() != null) {
+					return globalConfig.getConjurConfiguration();
+				}
+			}
 
-		ConjurConfiguration conjurConfig = GlobalConjurConfiguration.get().getConjurConfiguration();
+			// if it's runnable process or build
+			if (context instanceof Run)
+			{
+				Run<?,?> run = (Run<?,?>) context;
+				Job<?,?> job = run.getParent();
+				// getting JOB config
 
-		if (effectiveContext == null) {
-			LOGGER.log(Level.FINE, "getConfigurationFromContext():Context null,logging the configuration");
-			return ConjurAPI.logConjurConfiguration(conjurConfig);
-		}
+				ConjurJITJobProperty<?> conjurJITConfig = (ConjurJITJobProperty<?>) run.getParent().getProperty(ConjurJITJobProperty.class);
+				if (conjurJITConfig != null) {
+					conjurJobConfig = conjurJITConfig.getConjurConfiguration();
+				}
 
-		if (conjurJobConfig != null && !conjurJobConfig.getInheritFromParent()) {
-			LOGGER.log(Level.FINE, "getConfigurationFromContext():Configuration from Job and inheritedParent");
-			// Taking the configuration from the Job
-			return ConjurAPI.logConjurConfiguration(conjurJobConfig.getConjurConfiguration());
-		}
+				// we have configuration for job, time to merge it with configuration from parent folders
+				if (conjurJobConfig != null) {
+					if (conjurJobConfig.getInheritFromParent())
+					{
+						// if its running process (Run) we always have to get job and then folders
+						returnConfig = conjurJobConfig.mergeWithParent(getConjurConfig(job.getParent()));}
+					else {
+						returnConfig = conjurJobConfig;
+					}
+				}else {
+					returnConfig = getConjurConfig(job.getParent());
+				}
+			} else if (context instanceof WorkflowJob)
+			{
+				WorkflowJob cont = (WorkflowJob) context;
+				ConjurJITJobProperty<?> cjitjobprop = cont.getProperty(ConjurJITJobProperty.class);
+				if (cjitjobprop != null && cjitjobprop.getConjurConfiguration() != null) {
+					returnConfig = cjitjobprop.getConjurConfiguration();
+				} else {
+					returnConfig = new ConjurConfiguration();
+				}
+				ConjurConfiguration foldconf = getConjurConfig(((WorkflowJob) context).getParent());
 
-		ConjurConfiguration inheritedConfig = inheritedConjurConfiguration(contextObject);
-		if (inheritedConfig != null) {
-			return ConjurAPI.logConjurConfiguration(inheritedConfig);
-		}
-		LOGGER.log(Level.FINE, "End of getConfigurationFromContext()");
-		return ConjurAPI.logConjurConfiguration(conjurConfig);
-
-	}
-
-	@SuppressWarnings("unchecked")
-	private static ConjurConfiguration inheritedConjurConfiguration(Item job) {
-		LOGGER.log(Level.FINE, "Start of inheritedConjurConfiguration()");
-		for (ItemGroup<? extends Item> g = job != null ? job.getParent()
-				: null; g instanceof AbstractFolder; g = ((AbstractFolder<? extends Item>) g).getParent()) {
-			FolderConjurConfiguration fconf = ((AbstractFolder<?>) g).getProperties()
-					.get(FolderConjurConfiguration.class);
-			if (!(fconf == null || fconf.getInheritFromParent())) {
-				// take the folder Conjur Configuration
-				return fconf.getConjurConfiguration();
+				returnConfig = returnConfig.mergeWithParent(foldconf);
+			} else if (context instanceof AbstractFolder)
+			{
+				returnConfig = getConjurConfig((ItemGroup<?>) context);
+			} else if (context instanceof AbstractItem)
+			{
+				AbstractItem abstractItem = (AbstractItem) context;
+				returnConfig = getConjurConfig(abstractItem.getParent());
 			}
 		}
-		LOGGER.log(Level.FINE, "End of inheritedConjurConfiguration()");
-		return null;
+		LOGGER.log(Level.FINEST, String.format( "getConfigurationFromContext for context END: returnConfig %s", returnConfig ) );
+		return returnConfig;
 	}
 
-	private ConjurAPI() {
-		super();
+	/**
+	 * Get credentials for Context from Conjur
+	 *
+	 * @param context object
+	 * @return list of credentials
+	 */
+	public static Collection<StandardCredentials> getCredentialsForContext(@NonNull Class<?> type, ModelObject context ) throws Exception
+	{
+		LOGGER.log(Level.FINEST, String.format( "getCredentialsForContext: %s", context.getDisplayName() ) );
+		Collection<StandardCredentials> allCredentials = new ArrayList<>();
+		// Check if context is a folder and if credentials are of type UsernamePasswordCredentials
+
+		boolean authenticationFailed = false;
+
+		// in some cases when Jenkins start it want's immediately to deliver credentials
+		// so it must be taken from config and set
+		if( authenticator == null )
+		{
+			setAuthenticator();
+		}
+
+		ConjurConfiguration conjurConfiguration = ConjurAPI.getConfigurationFromContext(context);
+
+		// Authenticate to Conjur
+		byte[] authToken = null;
+
+		ConjurAuthnInfo conjurAuthn;
+		try {
+			conjurAuthn = ConjurAPI.getConjurAuthnInfo(conjurConfiguration, context);
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, String.format("Cannot generate AuthnInfo. Exception: %s", e ) );
+			return null;
+		}
+
+		try {
+			authToken = ConjurAPI.getAuthorizationToken(conjurAuthn, context);
+		} catch (AuthenticationConjurException exc) {
+			authenticationFailed = true;
+		} catch(Exception e )
+		{
+			LOGGER.log(Level.SEVERE, String.format("Cannot get authentication token from Conjur. Exception: %s", e ) );
+		}
+
+		if (authenticationFailed)
+		{
+			LOGGER.log(Level.SEVERE, String.format("Authentication failed. Cannot get token from Conjur for context: %s", context.getDisplayName() ) );
+			return null;
+		}
+
+		// First we are getting list of secrets
+
+		String requestUrl = String.format("%s/resources/%s?kind=variable&limit=1000", conjurAuthn.applianceUrl, conjurAuthn.account);
+
+		Request request = new Request.Builder().url(
+				requestUrl)
+				.get().addHeader("x-cybr-telemetry", TelemetryConfiguration.getTelemetryHeader()) // Added the telemetry header
+				.addHeader("Authorization", "Token token=\"" + new String(authToken, StandardCharsets.US_ASCII) + "\"").build();
+
+		// Get Http Client
+		OkHttpClient client = ConjurAPIUtils.getHttpClient(conjurConfiguration);
+		Response response = client.newCall(request).execute();
+		ResponseBody responseBody = response.body();
+
+		if( responseBody != null  )
+		{
+			String respBodyString = responseBody.string();
+
+			LOGGER.log(Level.FINEST, String.format("ConjurAPI RESULT => %s request %s", respBodyString, requestUrl ) );
+			if (response.code() != 200) {
+				LOGGER.log(Level.FINEST, String.format("Error fetching variables from Conjur [%d - %s] : %s", response.code(), response.message()
+						, respBodyString ) );
+				throw new IOException( String.format("Error fetching variables from Conjur [%d - %s] : %s",response.code(), response.message(),
+						 respBodyString ) );
+			}
+
+			// now we parse response and go through all secrets
+
+			JSONArray resultResources = new JSONArray(respBodyString);
+			for (int i = 0; i < resultResources.length(); i++)
+			{
+				JSONObject resource = resultResources.getJSONObject(i);
+
+				String variablePath = resource.getString("id").split(":")[2];
+				JSONArray annotations = resource.getJSONArray("annotations");
+				String userName = null;
+				String credentialType = null;
+				for (int j = 0; j < annotations.length(); j++) {
+					JSONObject annotation = annotations.getJSONObject(j);
+					switch (annotation.getString("name").toLowerCase()) {
+						case "jenkins_credential_username":
+							userName = annotation.getString("value");
+							break;
+						case "jenkins_credential_type":
+							credentialType = annotation.getString("value").toLowerCase();
+							break;
+						default:
+							break;
+					}
+				}
+
+				if (credentialType == null) {
+					if (userName == null) {
+						credentialType = "credential";
+					} else {
+						credentialType = "usernamecredential";
+					}
+				}
+
+				// Intel request, we always create secret string credentials
+
+				ConjurSecretCredentials credential = new ConjurSecretCredentialsImpl(CredentialsScope.GLOBAL, variablePath.replace("/", "-"), variablePath, "CyberArk Conjur Provided");
+				credential.setContext( context );
+				credential.setInheritedContext( context );
+
+				allCredentials.add(credential);
+
+				switch (credentialType) {
+					case "usernamecredential":
+						ConjurSecretUsernameCredentials usernameCredential = new ConjurSecretUsernameCredentialsImpl(CredentialsScope.GLOBAL, "username-" + variablePath.replace("/", "-"), userName, variablePath.replace("/", "-"), "CyberArk Conjur Provided");
+						usernameCredential.setContext( context );
+						usernameCredential.setInheritedContext( context );
+						if( type.isInstance(usernameCredential)) {
+							allCredentials.add(usernameCredential);
+						}
+						break;
+					case "stringcredential":
+						ConjurSecretStringCredentials stringCredential = new ConjurSecretStringCredentialsImpl(CredentialsScope.GLOBAL, "string-" + variablePath.replace("/", "-"), variablePath.replace("/", "-"), "CyberArk Conjur Provided");
+						stringCredential.setContext( context );
+						stringCredential.setInheritedContext( context );
+						if( type.isInstance(stringCredential)) {
+							allCredentials.add(stringCredential);
+						}
+						break;
+					case "usernamesshkeycredential":
+						ConjurSecretUsernameSSHKeyCredentials usernameSSHKeyCredential = new ConjurSecretUsernameSSHKeyCredentialsImpl(CredentialsScope.GLOBAL, "usernamesshkey-" + variablePath.replace("/", "-"), userName, variablePath.replace("/", "-"), null /* no passphrase yet */, "CyberArk Conjur Provided");
+						usernameSSHKeyCredential.setContext( context );
+						usernameSSHKeyCredential.setInheritedContext( context );
+						if( type.isInstance(usernameSSHKeyCredential)) {
+							allCredentials.add(usernameSSHKeyCredential);
+						}
+						break;
+					default:
+
+					break;
+				}
+
+				LOGGER.log(Level.FINEST, String.format("[getCredentialsForContext] Path: %s  userName:[%s]  credentialType:[%s]", variablePath, userName, credentialType));
+			}	// for() json structures in loop
+		}
+		else
+		{
+			throw new IOException("Error fetching variables from Conjur");
+		}
+		LOGGER.log(Level.FINEST, String.format("%d credentials returned", allCredentials.size() ) );
+		return allCredentials;
+	}
+
+	/**
+	 * Get secret from Conjur
+	 * @param context
+	 * @param inheritedObjectContext
+	 * @param variablePath
+	 * @return
+	 */
+	public static Secret getSecretFromConjur( ModelObject context, ModelObject inheritedObjectContext, String variablePath )
+	{
+		byte[] result;
+		Secret retSecret = null;
+		try {
+			ConjurConfiguration conjurConfiguration = getConfigurationFromContext( context );
+
+			// Non-global credentials in the current context and multi-branch store context
+
+			if (context != null)
+			{
+				// if call is done when context is inherited we must use it to get proper auth data
+				// like JWTToken or ApiKey Credential ID
+				ConjurAuthnInfo conjurAuthn;
+				if( inheritedObjectContext == null) {
+					conjurAuthn = getConjurAuthnInfo(conjurConfiguration, context);
+				}
+				else
+				{
+					conjurAuthn = getConjurAuthnInfo(conjurConfiguration, inheritedObjectContext);
+				}
+
+				// Authenticate to Conjur
+				byte[] authToken = getAuthorizationToken(conjurAuthn, context);
+
+				// Retrieve secret from Conjur
+				// Get Http Client
+				OkHttpClient client = ConjurAPIUtils.getHttpClient(conjurConfiguration);
+				result = getConjurSecret(client, conjurConfiguration, authToken,
+						variablePath);
+
+				retSecret = Secret.fromString( new String(result, StandardCharsets.UTF_8));
+				// clean byte array
+
+				Arrays.fill(authToken, (byte)0);
+				Arrays.fill(result, (byte)0);
+			}
+		} catch (IOException ie) {
+			throw new InvalidConjurSecretException(ie.getMessage(), ie);
+		} catch (Exception e) {
+			throw new InvalidConjurSecretException(e.getMessage(), e);
+		}
+		return retSecret;
+	}
+
+	/**
+	 * Check if inheritance is turned on for specified context
+	 * @param context for which inheritance option will be checked
+	 * @return if inheritance option is on or off for context
+	 */
+	public static boolean isInheritanceOn( ModelObject context )
+	{
+		boolean inheritanceOn = true;
+
+		if( context instanceof Job ){
+			// Item
+			try {
+				Job<?,?> run = (Job<?,?>) context;
+				// getting JOB config
+				ConjurJITJobProperty<?> conjurJITConfig = (ConjurJITJobProperty<?>) run.getProperty(ConjurJITJobProperty.class);
+
+				if (conjurJITConfig != null)
+				{
+					// there are properties for this context. By default inheritance is ON, so we check if inheritance is off and quit
+					if (conjurJITConfig.getConjurConfiguration() != null && !conjurJITConfig.getConjurConfiguration().getInheritFromParent())
+					{
+						LOGGER.log(Level.FINEST, "There is no config assigned to Job/Item. Inheritance is off." );
+						inheritanceOn = false;
+					}
+				}
+			}catch(Exception e ){
+				LOGGER.log(Level.FINEST, "Cannot get properties for Job/Item" );
+			}
+		}else if( context instanceof AbstractFolder )
+		{
+			try {
+				FolderConjurConfiguration fc = (FolderConjurConfiguration) (((AbstractFolder<?>) context).getProperties()).get(FolderConjurConfiguration.class);
+				if (fc != null) {
+					if (!fc.getInheritFromParent()) {
+						inheritanceOn = false;
+					}
+				}
+			} catch (Exception e) {
+				LOGGER.log(Level.FINEST, "Cannot get properties for AbstractFolder" );
+			}
+		}
+		return inheritanceOn;
+	}
+
+	/**
+	 * Get secret from Conjur with using inheritance
+	 * @param context main context to which credential is assigned
+	 * @param credentials to which context will be assigned when call will be able to receive secrets
+	 * @param variablePath secret name
+	 * @return Secret
+	 */
+	public static Secret getSecretFromConjurWithInheritance( ModelObject context, ConjurSecretCredentials credentials, String variablePath )
+	{
+		byte[] result;
+		Secret retSecret = null;
+		byte[] authToken;
+
+		if( context == null)
+		{
+			LOGGER.log(Level.FINEST, "No context set for function getSecretWithInheritance"  );
+			context = Stapler.getCurrentRequest().findAncestorObject(ModelObject.class);
+
+			if( context == null){
+				LOGGER.log(Level.FINEST, "No context available for current request"  );
+				context = Jenkins.get();
+			}
+		}
+
+		LOGGER.log(Level.FINEST, String.format("Get Secret with inheritance for context: %s", context.getDisplayName() ) );
+
+		try{
+			ConjurConfiguration conjurConfiguration;
+
+			// we go through item to the folder on the top and try to get credentials
+			while( true ) {
+				try {
+					LOGGER.log(Level.FINEST, String.format("Get config context %s", context.getDisplayName() ) );
+					conjurConfiguration = getConfigurationFromContext(context);
+					ConjurAuthnInfo conjurAuthn;
+					conjurAuthn = getConjurAuthnInfo(conjurConfiguration, context);
+					// Authenticate to Conjur
+					authToken = getAuthorizationToken(conjurAuthn, context);
+
+					// Retrieve secret from Conjur
+					// Get Http Client
+					OkHttpClient client = ConjurAPIUtils.getHttpClient(conjurConfiguration);
+					result = getConjurSecret(client, conjurConfiguration, authToken,
+							variablePath);
+					retSecret = Secret.fromString(new String(result, StandardCharsets.UTF_8));
+
+					credentials.setContext( context );
+					// clean byte array
+					Arrays.fill(authToken, (byte)0);
+					Arrays.fill(result, (byte)0);
+					break;
+				} catch (AuthenticationConjurException e) {
+					// when authentication fail we check if upper level have access
+					if (isInheritanceOn(context)) {
+						LOGGER.log(Level.FINEST, "Get config context exception: " + context.getDisplayName() + " " + context );
+						if (context instanceof Run) {
+							Run<?,?> run = (Run<?,?>) context;
+							Job<?,?> job = run.getParent();
+							context = job.getParent();
+                        } else if (context instanceof Job) {
+                            context = ((Job) context).getParent();
+						} else if (context instanceof AbstractFolder) {
+							context = ((AbstractFolder<?>) context).getParent();
+						} else if (context instanceof Hudson) {
+							LOGGER.log(Level.FINEST, "Get config context Invalid when inheritance is on!");
+							throw new InvalidConjurSecretException(e.getMessage(), e);
+						}
+					} else {
+						// inheritance is turned off, we have to try to get credentials from root
+						if (context instanceof Hudson) {
+							LOGGER.log(Level.FINEST, "Get config context Invalid!");
+							throw new InvalidConjurSecretException(e.getMessage(), e);
+						}
+						// we are sure this will be our last level to check
+						context = Jenkins.get();
+					}
+				}
+			}
+		} catch (IOException e) {
+			throw new InvalidConjurSecretException(e.getMessage(), e);
+		}
+		return retSecret;
 	}
 }
