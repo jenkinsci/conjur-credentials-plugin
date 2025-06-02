@@ -9,9 +9,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)an
 - Added inheritance for Secrets and Configuration
 - Increased minimum Jenkins version to 2.455
 - Switched to new API - removed deprecated API calls and objects
-
-## [2.2.5] - 2025-04-01
-## What’s New
 - Added telemetry headers
 
 ## [2.2.4] - 2025-02-18
