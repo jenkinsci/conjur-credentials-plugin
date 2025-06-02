@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [3.0.1] - 2025-06-02
+
 ## [3.0.0] - 2025-05-23
 ## What’s New
 - Global Credentials added
@@ -105,7 +107,7 @@ We strongly recommend utilizing the default values recommended for fields that w
 - Brought fixes for core cyberark/conjur-credentials-plugin
 - Release in plugins
 
-##[ 1.0.2] - 2020-05-05
+## [1.0.2] - 2020-05-05
 
 ### Added
 - Included changes to allow GIT plugin to retrieve credentials from slaves
@@ -118,5 +120,24 @@ We strongly recommend utilizing the default values recommended for fields that w
 ### Added
 - Added Support for SSH Private Key
 
-[Unreleased]: https://github.com/cyberark/conjur-credentials-plugin/compare/v1.0.2...HEAD
-[1.0.2]: https://github.com/cyberark/conjur-credentials-plugin/compare/v0.7.0...v1.0.2
+[Unreleased]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.0.0...HEAD
+[3.0.1]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.0.0...v3.0.1
+[3.0.0]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v2.2.4...v3.0.0
+[2.2.4]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v2.2.3...v2.2.4
+[2.2.3]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v2.2.2...v2.2.3
+[2.2.2]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v2.2.1...v2.2.2
+[2.2.1]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v2.2.0...v2.2.1
+[2.2.0]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v2.1.0...v2.2.0
+[2.1.0]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v1.0.18...v2.0.0
+[1.0.18]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v1.0.17...v1.0.18
+[1.0.17]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v1.0.16...v1.0.17
+[1.0.16]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v1.0.15...v1.0.16
+[1.0.15]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v1.0.14...v1.0.15
+[1.0.14]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v1.0.13...v1.0.14
+[1.0.13]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v1.0.7...v1.0.13
+[1.0.7]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v1.0.6...v1.0.7
+[1.0.6]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v1.0.5...v1.0.6
+[1.0.5]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v1.0.4...v1.0.5
+[1.0.4]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v1.0.2...v1.0.4
+[1.0.2]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v0.7.0...v1.0.2
