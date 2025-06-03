@@ -551,6 +551,18 @@ public class ConjurAPI {
 							allCredentials.add(usernameSSHKeyCredential);
 						}
 						break;
+					case "filecredential":
+						ConjurSecretFileCredentials fileCredential = new ConjurSecretFileCredentialsImpl(
+								CredentialsScope.GLOBAL,
+								"file-" + variablePath.replace("/", "-"),
+								variablePath.replace("/", "-"),
+								variablePath);
+						fileCredential.setContext(context);
+						fileCredential.setInheritedContext(context);
+						if (type.isInstance(fileCredential)) {
+							allCredentials.add(fileCredential);
+						}
+						break;
 					default:
 
 					break;
