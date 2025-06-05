@@ -1,11 +1,11 @@
 package org.conjur.jenkins.credentials;
 
 import com.cloudbees.hudson.plugins.folder.AbstractFolder;
-import com.cloudbees.plugins.credentials.*;
+import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
-import com.cloudbees.plugins.credentials.domains.DomainCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
@@ -15,7 +15,6 @@ import jenkins.model.Jenkins;
 import org.acegisecurity.Authentication;
 import org.conjur.jenkins.api.ConjurAPI;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -125,16 +124,16 @@ public class ConjurCredentialProvider extends CredentialsProvider {
 
 		// this type is used to get APIKey so we cannot process it as other Credentials
 
-		if(type == UsernamePasswordCredentials.class && authentication.getPrincipal().equals("CONJUR_JENKINS_PLUGIN") )
-		{
-			CredentialsMatcher matcher =
-					CredentialsMatchers.instanceOf(type);
-			List<C> globalCreds = DomainCredentials.getCredentials(
-					SystemCredentialsProvider.getInstance().getDomainCredentialsMap(), type, domainRequirements, matcher);
-
-			creds.addAll(globalCreds);
-			return creds;
-		}
+//		if(type == UsernamePasswordCredentials.class && authentication.getPrincipal().equals("CONJUR_JENKINS_PLUGIN") )
+//		{
+//			CredentialsMatcher matcher =
+//					CredentialsMatchers.instanceOf(type);
+//			List<C> globalCreds = DomainCredentials.getCredentials(
+//					SystemCredentialsProvider.getInstance().getDomainCredentialsMap(), type, domainRequirements, matcher);
+//
+//			creds.addAll(globalCreds);
+//			return creds;
+//		}
 
 		ItemGroup<?> locg = null;
 

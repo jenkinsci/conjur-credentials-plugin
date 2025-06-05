@@ -1,5 +1,18 @@
 package org.conjur.jenkins.authenticator;
 
+import com.cloudbees.plugins.credentials.CredentialsMatcher;
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
+import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainCredentials;
+import hudson.model.ModelObject;
+import okhttp3.*;
+import org.conjur.jenkins.api.ConjurAPI;
+import org.conjur.jenkins.api.ConjurAPIUtils;
+import org.conjur.jenkins.api.ConjurAuthnInfo;
+import org.conjur.jenkins.configuration.ConjurConfiguration;
+import org.conjur.jenkins.exceptions.AuthenticationConjurException;
+
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -9,31 +22,9 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.conjur.jenkins.api.ConjurAPI;
-import org.conjur.jenkins.api.ConjurAPIUtils;
-import org.conjur.jenkins.api.ConjurAuthnInfo;
-import org.conjur.jenkins.configuration.ConjurConfiguration;
-import org.conjur.jenkins.exceptions.AuthenticationConjurException;
-
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-
-import hudson.model.ModelObject;
-import jenkins.model.Jenkins;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
-
 public class ConjurAPIKeyAuthenticator extends AbstractAuthenticator {
 
     private static final Logger LOGGER = Logger.getLogger(ConjurAPIKeyAuthenticator.class.getName());
-    public static final String CONJUR_JENKINS_PLUGIN = "CONJUR_JENKINS_PLUGIN";
-    public static final org.acegisecurity.Authentication CONJUR_JENKINS_PLUGIN2 = new org.acegisecurity.providers.UsernamePasswordAuthenticationToken( CONJUR_JENKINS_PLUGIN, CONJUR_JENKINS_PLUGIN);
 
     /**
      * Function return authenticator name
@@ -114,22 +105,20 @@ public class ConjurAPIKeyAuthenticator extends AbstractAuthenticator {
      */
     @Override
     public void fillAuthnInfo(ConjurAuthnInfo conjurAuthn, ModelObject context) {
-        List<UsernamePasswordCredentials> availableCredentials;
         ConjurConfiguration configuration = ConjurAPI.getConfigurationFromContext(context);
-
-        availableCredentials = CredentialsProvider.lookupCredentials(UsernamePasswordCredentials.class, Jenkins.get(),
-                ConjurAPIKeyAuthenticator.CONJUR_JENKINS_PLUGIN2, Collections.<DomainRequirement>emptyList());
-        // if credentials are set and apikey, then we take apikey from credentials and set it
-
+        CredentialsMatcher matcher =
+                CredentialsMatchers.instanceOf(UsernamePasswordCredentials.class);
+        List <UsernamePasswordCredentials> globalCreds = DomainCredentials.getCredentials(
+                SystemCredentialsProvider.getInstance().getDomainCredentialsMap(), UsernamePasswordCredentials.class, Collections.emptyList(), matcher);
 
         if (configuration.getCredentialID() != null && !configuration.getCredentialID().isEmpty()) {
-            UsernamePasswordCredentials credential = CredentialsMatchers.firstOrNull(availableCredentials,
+            UsernamePasswordCredentials credential = CredentialsMatchers.firstOrNull(globalCreds,
                     CredentialsMatchers.withId(configuration.getCredentialID()));
             if (credential != null) {
                 conjurAuthn.login = credential.getUsername();
                 conjurAuthn.apiKey = credential.getPassword().getPlainText().getBytes(StandardCharsets.US_ASCII);
             }
         }
-        LOGGER.log(Level.SEVERE, String.format("UsernamePasswordCredentials found %d for ID %s",availableCredentials.size(), configuration.getCredentialID( ) ) );
+        LOGGER.log(Level.SEVERE, String.format("UsernamePasswordCredentials found %d for ID %s",globalCreds.size(), configuration.getCredentialID( ) ) );
     }
 }

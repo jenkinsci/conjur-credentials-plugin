@@ -109,10 +109,9 @@ public class ConjurSecretCredentialsBinding extends MultiBinding<ConjurSecretCre
 	 * @return Credentials assigned to context
 	 * @param <C> credential type
 	 * @throws IOException
-	 * @throws InterruptedException
-	 */
+     */
 	@SuppressWarnings("unchecked")
-	private final @NonNull <C> C getCredentialsFor(@NonNull Run<?, ?> build) throws IOException ,InterruptedException{
+	private final @NonNull <C> C getCredentialsFor(@NonNull Run<?, ?> build) throws IOException {
 		long start = System.nanoTime();
 		LOGGER.log(Level.FINEST, String.format("getCredentialsFor context %s credentialid %s" , build.getFullDisplayName(), credentialsId ) );
 
