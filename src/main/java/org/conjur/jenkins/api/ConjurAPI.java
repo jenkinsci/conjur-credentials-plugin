@@ -492,7 +492,7 @@ public class ConjurAPI {
 			{
 				JSONObject resource = resultResources.getJSONObject(i);
 
-				String variablePath = resource.getString("id").split(":")[2];
+				String variableId = resource.getString("id").split(":")[2];
 				JSONArray annotations = resource.getJSONArray("annotations");
 				String userName = null;
 				String credentialType = null;
@@ -520,7 +520,7 @@ public class ConjurAPI {
 
 				// Intel request, we always create secret string credentials
 
-				ConjurSecretCredentials credential = new ConjurSecretCredentialsImpl(CredentialsScope.GLOBAL, variablePath.replace("/", "-"), variablePath, "CyberArk Conjur Provided");
+				ConjurSecretCredentials credential = new ConjurSecretCredentialsImpl(CredentialsScope.GLOBAL, variableId.replace("/", "-"), variableId, "CyberArk Conjur Provided");
 				credential.setContext( context );
 				credential.setInheritedContext( context );
 
@@ -528,7 +528,7 @@ public class ConjurAPI {
 
 				switch (credentialType) {
 					case "usernamecredential":
-						ConjurSecretUsernameCredentials usernameCredential = new ConjurSecretUsernameCredentialsImpl(CredentialsScope.GLOBAL, "username-" + variablePath.replace("/", "-"), userName, variablePath.replace("/", "-"), "CyberArk Conjur Provided");
+						ConjurSecretUsernameCredentials usernameCredential = new ConjurSecretUsernameCredentialsImpl(CredentialsScope.GLOBAL, "username-" + variableId.replace("/", "-"), userName, variableId.replace("/", "-"), "CyberArk Conjur Provided");
 						usernameCredential.setContext( context );
 						usernameCredential.setInheritedContext( context );
 						if( type.isInstance(usernameCredential)) {
@@ -536,7 +536,7 @@ public class ConjurAPI {
 						}
 						break;
 					case "stringcredential":
-						ConjurSecretStringCredentials stringCredential = new ConjurSecretStringCredentialsImpl(CredentialsScope.GLOBAL, "string-" + variablePath.replace("/", "-"), variablePath.replace("/", "-"), "CyberArk Conjur Provided");
+						ConjurSecretStringCredentials stringCredential = new ConjurSecretStringCredentialsImpl(CredentialsScope.GLOBAL, "string-" + variableId.replace("/", "-"), variableId.replace("/", "-"), "CyberArk Conjur Provided");
 						stringCredential.setContext( context );
 						stringCredential.setInheritedContext( context );
 						if( type.isInstance(stringCredential)) {
@@ -544,7 +544,7 @@ public class ConjurAPI {
 						}
 						break;
 					case "usernamesshkeycredential":
-						ConjurSecretUsernameSSHKeyCredentials usernameSSHKeyCredential = new ConjurSecretUsernameSSHKeyCredentialsImpl(CredentialsScope.GLOBAL, "usernamesshkey-" + variablePath.replace("/", "-"), userName, variablePath.replace("/", "-"), null /* no passphrase yet */, "CyberArk Conjur Provided");
+						ConjurSecretUsernameSSHKeyCredentials usernameSSHKeyCredential = new ConjurSecretUsernameSSHKeyCredentialsImpl(CredentialsScope.GLOBAL, "usernamesshkey-" + variableId.replace("/", "-"), userName, variableId.replace("/", "-"), null /* no passphrase yet */, "CyberArk Conjur Provided");
 						usernameSSHKeyCredential.setContext( context );
 						usernameSSHKeyCredential.setInheritedContext( context );
 						if( type.isInstance(usernameSSHKeyCredential)) {
@@ -554,9 +554,9 @@ public class ConjurAPI {
 					case "filecredential":
 						ConjurSecretFileCredentials fileCredential = new ConjurSecretFileCredentialsImpl(
 								CredentialsScope.GLOBAL,
-								"file-" + variablePath.replace("/", "-"),
-								variablePath.replace("/", "-"),
-								variablePath);
+								"file-" + variableId.replace("/", "-"),
+								variableId.replace("/", "-"),
+								variableId);
 						fileCredential.setContext(context);
 						fileCredential.setInheritedContext(context);
 						if (type.isInstance(fileCredential)) {
@@ -568,7 +568,7 @@ public class ConjurAPI {
 					break;
 				}
 
-				LOGGER.log(Level.FINEST, String.format("[getCredentialsForContext] Path: %s  userName:[%s]  credentialType:[%s]", variablePath, userName, credentialType));
+				LOGGER.log(Level.FINEST, String.format("[getCredentialsForContext] Path: %s  userName:[%s]  credentialType:[%s]", variableId, userName, credentialType));
 			}	// for() json structures in loop
 		}
 		else
@@ -583,10 +583,10 @@ public class ConjurAPI {
 	 * Get secret from Conjur
 	 * @param context
 	 * @param inheritedObjectContext
-	 * @param variablePath
+	 * @param variableId
 	 * @return
 	 */
-	public static Secret getSecretFromConjur( ModelObject context, ModelObject inheritedObjectContext, String variablePath )
+	public static Secret getSecretFromConjur( ModelObject context, ModelObject inheritedObjectContext, String variableId )
 	{
 		byte[] result;
 		Secret retSecret = null;
@@ -615,7 +615,7 @@ public class ConjurAPI {
 				// Get Http Client
 				OkHttpClient client = ConjurAPIUtils.getHttpClient(conjurConfiguration);
 				result = getConjurSecret(client, conjurConfiguration, authToken,
-						variablePath);
+						variableId);
 
 				retSecret = Secret.fromString( new String(result, StandardCharsets.UTF_8));
 				// clean byte array
@@ -679,10 +679,10 @@ public class ConjurAPI {
 	 * Get secret from Conjur with using inheritance
 	 * @param context main context to which credential is assigned
 	 * @param credentials to which context will be assigned when call will be able to receive secrets
-	 * @param variablePath secret name
+	 * @param variableId secret name
 	 * @return Secret
 	 */
-	public static Secret getSecretFromConjurWithInheritance( ModelObject context, ConjurSecretCredentials credentials, String variablePath )
+	public static Secret getSecretFromConjurWithInheritance( ModelObject context, ConjurSecretCredentials credentials, String variableId )
 	{
 		byte[] result;
 		Secret retSecret = null;
@@ -718,7 +718,7 @@ public class ConjurAPI {
 					// Get Http Client
 					OkHttpClient client = ConjurAPIUtils.getHttpClient(conjurConfiguration);
 					result = getConjurSecret(client, conjurConfiguration, authToken,
-							variablePath);
+							variableId);
 					retSecret = Secret.fromString(new String(result, StandardCharsets.UTF_8));
 
 					credentials.setContext( context );
