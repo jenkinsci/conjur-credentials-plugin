@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [3.0.1] - 2025-06-02
+## What’s New
+- Fixed the issue where plugin couldn't find user credentials
+- Added support for storing secrets in a secret file
 
 ## [3.0.0] - 2025-05-23
 ## What’s New
