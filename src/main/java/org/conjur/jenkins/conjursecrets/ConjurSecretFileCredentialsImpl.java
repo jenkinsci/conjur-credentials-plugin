@@ -12,6 +12,7 @@ import org.springframework.lang.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class ConjurSecretFileCredentialsImpl extends BaseStandardCredentials implements ConjurSecretFileCredentials {
 
@@ -40,7 +41,7 @@ public class ConjurSecretFileCredentialsImpl extends BaseStandardCredentials imp
         if (secret == null) {
             throw new IOException("Can't retrieve secret for variableId: " + this.variableId);
         }
-        return new ByteArrayInputStream(secret.getPlainText().getBytes());
+        return new ByteArrayInputStream(secret.getPlainText().getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
