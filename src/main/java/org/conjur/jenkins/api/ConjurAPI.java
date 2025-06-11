@@ -563,6 +563,21 @@ public class ConjurAPI {
 							allCredentials.add(fileCredential);
 						}
 						break;
+					case "dockercertcredential":
+						ConjurSecretDockerCertCredentials dockerCertCredential = new ConjurSecretDockerCertCredentialsImpl(
+								CredentialsScope.GLOBAL,
+								"docker-cert-" + variableId.replace("/", "-"),
+								variableId.replace("/", "-"),
+								variableId + "/key",
+								variableId + "/cert",
+								variableId + "/ca"
+						);
+						dockerCertCredential.setContext(context);
+						dockerCertCredential.setInheritedContext(context);
+						if (type.isInstance(dockerCertCredential)) {
+							allCredentials.add(dockerCertCredential);
+						}
+						break;
 					default:
 
 					break;
