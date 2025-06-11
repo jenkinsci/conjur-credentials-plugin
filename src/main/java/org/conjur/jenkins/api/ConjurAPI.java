@@ -528,7 +528,7 @@ public class ConjurAPI {
 
 				switch (credentialType) {
 					case "usernamecredential":
-						ConjurSecretUsernameCredentials usernameCredential = new ConjurSecretUsernameCredentialsImpl(CredentialsScope.GLOBAL, "username-" + variableId.replace("/", "-"), userName, variableId.replace("/", "-"), "CyberArk Conjur Provided");
+						ConjurSecretUsernameCredentials usernameCredential = new ConjurSecretUsernameCredentialsImpl(CredentialsScope.GLOBAL, "username-" + variableId.replace("/", "-"), userName, variableId, "CyberArk Conjur Provided");
 						usernameCredential.setContext( context );
 						usernameCredential.setInheritedContext( context );
 						if( type.isInstance(usernameCredential)) {
@@ -536,7 +536,7 @@ public class ConjurAPI {
 						}
 						break;
 					case "stringcredential":
-						ConjurSecretStringCredentials stringCredential = new ConjurSecretStringCredentialsImpl(CredentialsScope.GLOBAL, "string-" + variableId.replace("/", "-"), variableId.replace("/", "-"), "CyberArk Conjur Provided");
+						ConjurSecretStringCredentials stringCredential = new ConjurSecretStringCredentialsImpl(CredentialsScope.GLOBAL, "string-" + variableId.replace("/", "-"), variableId, "CyberArk Conjur Provided");
 						stringCredential.setContext( context );
 						stringCredential.setInheritedContext( context );
 						if( type.isInstance(stringCredential)) {
@@ -544,7 +544,7 @@ public class ConjurAPI {
 						}
 						break;
 					case "usernamesshkeycredential":
-						ConjurSecretUsernameSSHKeyCredentials usernameSSHKeyCredential = new ConjurSecretUsernameSSHKeyCredentialsImpl(CredentialsScope.GLOBAL, "usernamesshkey-" + variableId.replace("/", "-"), userName, variableId.replace("/", "-"), null /* no passphrase yet */, "CyberArk Conjur Provided");
+						ConjurSecretUsernameSSHKeyCredentials usernameSSHKeyCredential = new ConjurSecretUsernameSSHKeyCredentialsImpl(CredentialsScope.GLOBAL, "usernamesshkey-" + variableId.replace("/", "-"), userName, variableId, null /* no passphrase yet */, "CyberArk Conjur Provided");
 						usernameSSHKeyCredential.setContext( context );
 						usernameSSHKeyCredential.setInheritedContext( context );
 						if( type.isInstance(usernameSSHKeyCredential)) {
@@ -555,7 +555,7 @@ public class ConjurAPI {
 						ConjurSecretFileCredentials fileCredential = new ConjurSecretFileCredentialsImpl(
 								CredentialsScope.GLOBAL,
 								"file-" + variableId.replace("/", "-"),
-								variableId.replace("/", "-"),
+								"CyberArk Conjur Provided",
 								variableId);
 						fileCredential.setContext(context);
 						fileCredential.setInheritedContext(context);
