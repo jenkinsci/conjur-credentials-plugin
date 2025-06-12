@@ -27,7 +27,7 @@ public class JwtToken {
     private static final Logger LOGGER = Logger.getLogger(JwtToken.class.getName());
     private static final int DEFAULT_NOT_BEFORE_IN_SEC = 30;
     private static final String IDENTITY_FIELD_NAME_PATTERN = "^[a-zA-Z0-9\\-_\\\"]*$";
-    public static final DateTimeFormatter ID_FORMAT = DateTimeFormatter.ofPattern("MMddkkmmss").withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter ID_FORMAT = DateTimeFormatter.ofPattern("MMddkkmmss").withZone(ZoneId.systemDefault());
     private static final ConcurrentLinkedQueue<JwtRsaDigitalSignatureKey> keysQueue = new ConcurrentLinkedQueue<JwtRsaDigitalSignatureKey>();
 
     /**
@@ -232,21 +232,21 @@ public class JwtToken {
             jwtToken.claim.put("jenkins_name", "GlobalCredentials");
             jwtToken.claim.put("jenkins_full_name", "GlobalCredentials");
             jwtToken.claim.put("jenkins_parent_name", "/");
-            jwtToken.claim.put("sub", "/");
+            jwtToken.claim.put("sub", "GlobalCredentials");
         }
         LOGGER.log(Level.FINEST, String.format("Claim : %s", jwtToken.claim.toString()));
         return jwtToken;
     }
 
-    private static String processIdentityFieldName(String inputIdentityFiedName) {
+    private static String processIdentityFieldName(String inputIdentityFiledName) {
         LOGGER.log(Level.FINE, "Start of processIdentityFieldName())");
         // Check if input matches the pattern
-        if (inputIdentityFiedName.matches(IDENTITY_FIELD_NAME_PATTERN)) {
+        if (inputIdentityFiledName.matches(IDENTITY_FIELD_NAME_PATTERN)) {
             // If input matches, return the input itself
-            return inputIdentityFiedName;
+            return inputIdentityFiledName;
         } else {
             // If input does not match, replace special characters with an empty string
-            return inputIdentityFiedName.replaceAll("[^a-zA-Z0-9\\-_\\\"]", "");
+            return inputIdentityFiledName.replaceAll("[^a-zA-Z0-9\\-_\\\"]", "");
         }
     }
 
