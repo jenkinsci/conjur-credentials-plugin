@@ -197,7 +197,7 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
 
     @DataBoundSetter
     public void setEnableIdentityFormatFieldsFromToken(Boolean enableIdentityFormatFieldsFromToken) {
-        LOGGER.log(Level.FINE, "GlobalConjurConfiguration get() #enableIdentityFormatFieldsFromToken " + enableIdentityFormatFieldsFromToken);
+        LOGGER.log(Level.WARNING, "DEPRECATED: GlobalConjurConfiguration get() #enableIdentityFormatFieldsFromToken " + enableIdentityFormatFieldsFromToken);
         this.enableIdentityFormatFieldsFromToken = enableIdentityFormatFieldsFromToken;
         save();
     }

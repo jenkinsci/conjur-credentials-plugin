@@ -42,6 +42,9 @@
         <f:entry title="${%JWT Token Duration In Seconds}">
             <f:number field="tokenDurarionInSeconds" name="tokenDurarionInSeconds" onkeypress='validateNumber(event)'/>
         </f:entry>
+        <f:entry title="${%Enable Identity Format Fields From Token}" description="DEPRECATED: If checked, populate variables available from the current context">
+            <f:checkbox id="enableIdentityFormatFieldsFromToken" name="enableIdentityFormatFieldsFromToken" field="enableIdentityFormatFieldsFromToken" default="false"/>
+        </f:entry>
     </f:section>
     <div id="conjurLocalTokenClaims">
     <f:validateButton title="${%JWT Token Claims}" progress="${%resolving...}"
