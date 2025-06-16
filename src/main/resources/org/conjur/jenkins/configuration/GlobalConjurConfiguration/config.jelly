@@ -92,6 +92,12 @@
       function getIdentityFormatToken() {
           var selectAuthenticator ='${instance.selectAuthenticator}';
           var listAuthenticator = document.getElementById('listAuthenticator');
+          var selectIdentityFormatTokenValue ='${instance.selectIdentityFormatToken}';
+
+          var selectedIdentityFormatFiledToken = document.getElementById("listIdentityFormatFieldsFromToken");
+          selectIdentityFormatTokenValue =selectIdentityFormatTokenValue ? selectIdentityFormatTokenValue : 'jenkins_full_name';
+          selectedIdentityFormatFiledToken.value=selectIdentityFormatTokenValue;
+
 
           for(var j=0;j &lt; listAuthenticator.length;j++)
           {
