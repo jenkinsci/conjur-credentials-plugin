@@ -45,6 +45,19 @@
         <f:entry title="${%Enable Identity Format Fields From Token}" description="DEPRECATED: If checked, populate variables available from the current context">
             <f:checkbox id="enableIdentityFormatFieldsFromToken" name="enableIdentityFormatFieldsFromToken" field="enableIdentityFormatFieldsFromToken" default="false"/>
         </f:entry>
+
+        <div id="divListIdentityFormatFieldsFromToken">
+            <f:entry title="${%Identity Format Fields}" name="selectIdentityFormatToken" field="selectIdentityFormatToken">
+                <select id="listIdentityFormatFieldsFromToken" name="selectIdentityFormatToken" class="jenkins-select_input">
+                    <option value="jenkins_full_name">${%jenkins_full_name}</option>
+                    <option value="jenkins_parent_full_name-jenkins_name">${%jenkins_parent_full_name-jenkins_name}</option>
+                    <option value="jenkins_parent_full_name:jenkins_name">${%jenkins_parent_full_name:jenkins_name}</option>
+                    <option value="jenkins_parent_full_name+jenkins_name">${%jenkins_parent_full_name+jenkins_name}</option>
+                    <option value="jenkins_parent_full_name.jenkins_name">${%jenkins_parent_full_name.jenkins_name}</option>
+                    <option value="jenkins_parent_full_name|jenkins_name">${%jenkins_parent_full_name|jenkins_name}</option>
+                </select>
+            </f:entry>
+        </div>
     </f:section>
     <div id="conjurLocalTokenClaims">
     <f:validateButton title="${%JWT Token Claims}" progress="${%resolving...}"

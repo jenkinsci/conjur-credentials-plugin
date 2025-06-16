@@ -208,7 +208,7 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
 
     @DataBoundSetter
     public void setSelectIdentityFormatToken(String selectIdentityFormatToken) {
-        LOGGER.log(Level.FINE, "GlobalConjurConfiguration get() #selectIdentityFormatToken " + selectIdentityFormatToken);
+        LOGGER.log(Level.FINEST, "GlobalConjurConfiguration get() #selectIdentityFormatToken " + selectIdentityFormatToken);
         this.selectIdentityFormatToken = selectIdentityFormatToken;
         save();
     }
