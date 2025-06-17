@@ -16,32 +16,32 @@ This repo is a **Certified** level project. It's a community contributed project
 ## Usage
 
 Install the plugin using Jenkins "Plugin Manager" with an administrator account. After installing the plugin and restarting Jenkins, you are ready to start.
+
 Please follow this documentation to configure plugin:
 
-### Configure the integration using JWT authentication
+- [Configure JWT Authentication](#configure-jwt-authentication)
+- [Configure API Key Authentication](#configure-api-key-authentication)
+- [Migration Guide](#migration-guide)
 
-Step 1: Gather information
-Conjur admin and Jenkins admin: Provide the following information:
 
-| Provided by, to                  | Required information                                                                                                    |
-|----------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| Conjur admin to the Jenkins admin | The Jenkins admin needs the following information when configuring the Conjur Secrets plugin:                           |
-|                                  | The Conjur details:                                                                                                     |
-|                                  | Account - The Conjur organizational account that was assigned when Conjur was originally configured. For example, conjur. |
-|                                  | Conjur appliance URL - The secure URL to Conjur.                                                                        |
-|                                  | For example: https://conjur.example.com                                                                                 |
-|                                  | The JWT authenticator service ID in the following format:                                                               |
-|                                  | authn-jwt/<name>                                                                                                        |
-|                                  | Example: authn-jwt/jenkins                                                                                              |
-| Jenkins admin to the Conjur admin | Give the Conjur admin the following information to set up the JWT authenticator: |
-| | The name of the claim in the JWT that will represent the Jenkins job. For our examples, we've used the sub claim. |
-| | The Conjur admin needs this value for the token-app-property variable of the JWT authenticator |
-| | The JWKS URI |
-| | The JWT issuer (iss claim value) |
-| | The audience (aud claim value) |
 
-Demo JWT
-We assume the following JWT in the policies and examples in this topic.
+## Configure JWT authentication
+
+### Step 1: Gather information
+
+The following information will be needed from the Conjur installation in order to configure the Jenkins integration:
+
+- Conjur Account - The Conjur account that was created when Conjur was originally configured
+- Conjur Appliance URL - The secure URL to Conjur (ex: `https://conjur.example.com`)
+- JWT authenticator service ID: The ID for the JWT authenticator service as defined in Conjur policy (ex: `authn-jwt/jenkins`)
+
+The following information will be needed from the Jenkins environment in order to configure Conjur:
+- The name of the claim in the JWT that will represent the Jenkins job (ex: `sub`)
+- The JWKS URI that will be used to validate JWT tokens
+- The JWT issuer (`iss` claim value in the JWT token)
+- The audience (`aud` claim value in the JWT token)
+
+Here is an example of what a JWT token used by the Jenkins integration should look like.
 
 ```
 {
@@ -65,41 +65,41 @@ We assume the following JWT in the policies and examples in this topic.
 }
 ```
 
-Step 2: Jenkins admin: Configure the Conjur Secrets plugin
+### Step 2: Configure the Conjur Secrets Plugin in Jenkins
 
-In this step you configure the Conjur Secret plugin with the authentication details for your Jenkins job.
-2.1 Provide the Conjur connection details (under Manage Jenkins > System):
-Under Conjur Appliance enter the Conjur details:
+Configure the Conjur Secret plugin within Jenkins with authentication details for your Jenkins job. This step will need to be done by a Jenkins admin.
 
-| Field   | Description                                                                                   |
-|---------|-----------------------------------------------------------------------------------------------|
-| Account | As provided by your Conjur admin |
-| Appliance URL | As provided by your Conjur admin |
+Navigate to `Manage Jenkins > System`.
+
+Under `Conjur Appliance`, provide the Conjur connection details gathered earlier in this process:
+
+| Field                   | Description                                |
+|-------------------------|--------------------------------------------|
+| Account                 | As provided by your Conjur admin           |
+| Appliance URL           | As provided by your Conjur admin           |
 | Conjur Auth Credentials | For JWT authentication, leave this as none |
-| Conjur SSL Certificate | Please use [this documentation](https://docs.cyberark.com/conjur-open-source/latest/en/content/integrations/jenkins.htm) to configure SSL properly |
+| Conjur SSL Certificate  | Please use [this documentation](https://docs.cyberark.com/conjur-open-source/latest/en/content/integrations/jenkins.htm) to configure SSL properly |
 
-2.2 Configure JWT authentication in Jenkins.
-Under Conjur JWT Authentication
+Under `Conjur JWT Authentication`, provide the JWT authentication details gathered earlier in this process:
 
-| Setting   | Description                                                                                                                                                                          |
-|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Auth Webservice ID | The service ID of the JWT authenticator in the following format; authn-jwt/NAME, as provided by your Conjur admin.                                                                   |
-| | Example: authn-jwt/jenkins                                                                                                                                                           |
-| JWT Audience| Set to: cyberark-conjur                                                                                                                                                              |
-| Signing Key Lifetime in Minutes | The duration that the JWT signing key remains valid, based on your organization's security requirements; after this duration, the signing key must be refreshed. Default: 60 minutes |
-| JWT Token Duration in Seconds | The duration after which the JWT needs to be regenerated, based on your organization's security requirements. Default: 120 seconds (2 minutes)                                       |
-| Identity Format Fields | Set to : jenkins_full_name                                                                                                                                                           |
+| Setting   | Description                                                                                                                                             |
+|---------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| Auth Webservice ID              | The service ID of the JWT authenticator as defined in Conjur policy (ex: authn-jwt/jenkins) |
+| JWT Audience                    | Set to `cyberark-conjur`   |
+| Signing Key Lifetime in Minutes | The duration that the JWT signing key remains valid, based on your organization's security requirements (default: 60 mins)        |
+| JWT Token Duration in Seconds   | The duration after which the JWT needs to be regenerated, based on your organization's security requirements (default: 2 minutes) |
+| Identity Format Fields          | Set to `jenkins_full_name` |
 
-2.3 Save the configuration.
+Finally, save the configuration.
 
-Step 3: Conjur admin: Define the Conjur resources
-Set up a JWT authenticator.
+### Step 3: Define Conjur Authenticator
 
-You must have Conjur permissions to perform this step.
+Set up a JWT authenticator. This step will need to be done by the Conjur admin.
 
-For information and guidelines about setting up JWT authentication, see JWT Authentication.
+For information and guidelines about setting up JWT authentication, see [JWT Authentication](https://docs.cyberark.com/conjur-open-source/latest/en/content/operations/services/cjr-authn-jwt-lp.htm).
 
-a) Copy the following policy into a text editor:
+Copy the following policy into a text editor:
+
 ```
 # This policy defines a JWT authenticator
 - !policy
@@ -163,36 +163,49 @@ a) Copy the following policy into a text editor:
       resource: !webservice status
 ```
 
-b) Save the policy as authn-jwt-jenkins.yml and use the Conjur CLI to load the policy into root:
+Save the policy as `authn-jwt-jenkins.yml` and use the Conjur CLI to load the policy into `root`:
 
-> conjur policy load -f /path/to/file/authn-jwt-jenkins.yml -b root
-c) Using the Conjur CLI populate the variables as follows:
+```
+conjur policy load -f /path/to/file/authn-jwt-jenkins.yml -b root
+```
 
-Populate token-app-property with name of the claim that you received from the Jenkins admin for this purpose. In our example, this is the jenkins_name claim:
-> conjur variable set -i conjur/authn-jwt/jenkins/token-app-property -v 'jenkins_name'
-Populate identity-path the name you will give to the host policy for the Jenkins job, for example myspace/jwt-apps:
+Using the Conjur CLI populate the variables as follows:
 
-> conjur variable set -i conjur/authn-jwt/jenkins/identity-path -v 'myspace/jwt-apps'
+Populate the `token-app-property` variable with the name of the claim that you received from the Jenkins admin, for example `jenkins_name`
+
+```
+conjur variable set -i conjur/authn-jwt/jenkins/token-app-property -v 'jenkins_name'
+```
+
+Populate the `identity-path` variable with the name you will give to the host policy for the Jenkins job, for example `myspace/jwt-apps`
+
+```
+conjur variable set -i conjur/authn-jwt/jenkins/identity-path -v 'myspace/jwt-apps'
+```
 
 Populate the rest of the variables with the information you received from the Jenkins admin:
-> conjur variable set -i conjur/authn-jwt/jenkins/issuer -v 'https://Jenkins URL'
 
-> conjur variable set -i conjur/authn-jwt/jenkins/jwks-uri -v 'https://Jenkins URL/jwtauth/conjur-jwk-set'
+```
+conjur variable set -i conjur/authn-jwt/jenkins/issuer -v 'https://<Jenkins URL>'
+conjur variable set -i conjur/authn-jwt/jenkins/jwks-uri -v 'https://<Jenkins URL>/jwtauth/conjur-jwk-set'
+conjur variable set -i conjur/authn-jwt/jenkins/audience -v "cyberark-conjur"
+```
 
-> conjur variable set -i conjur/authn-jwt/jenkins/audience -v "cyberark-conjur"
+Enable the JWT authenticator in Conjur by [allow-listing the authenticator](https://docs.cyberark.com/conjur-open-source/latest/en/content/operations/services/authentication-types.htm#Allowlis).
 
-d) Enable the JWT authenticator in Conjur.
-For details, see Allowlist the authenticators.
+### Step 4: Define Conjur Host
 
-2. Define a host to represent your Jenkins job.
+Define a host in Conjur policy to represent your Jenkins job. This step will need to be done by the Conjur admin.
 
 The host uses your JWT authenticator to authenticate to Conjur:
 
-a) Copy the following policy into a text editor:
+Save the following policy as `author-jwt-jenkins-host.yml`. This policy includes examples of hosts that can be used to represent Jenkins jobs / folders / or global credentials:
+
 ```
 - !policy
   id: myspace/jwt-apps
   body:
+  
   # example of secrets assigned to Global Credentials
   - !host
     id: GlobalCredentials
@@ -200,18 +213,21 @@ a) Copy the following policy into a text editor:
       jenkins: true
       authn-jwt/jenkins/jenkins_full_name: GlobalCredentials
       authn-jwt/jenkins/jenkins_pronoun: Global
+  
   # example of secrets assigned to Folder
   - !host
     id: Project1
     annotations:
       authn-jwt/jenkins/jenkins_pronoun: Folder
       authn-jwt/jenkins/jenkins_full_name: Project1
+  
   # example of secrets assigned to pipeline
   - !host
     id: pipeline
     annotations:
       authn-jwt/jenkins/jenkins_pronoun: Pipeline
       authn-jwt/jenkins/jenkins_full_name: Project1/pipeline
+  
   - !grant
     role: !group conjur/authn-jwt/jenkins/jwt-authn-access
     members:
@@ -220,31 +236,42 @@ a) Copy the following policy into a text editor:
       - !host Pipeline
 ```
 
-b) Save the policy as author-jwt-jenkins-host.yml and use the Conjur CLI to load it into root:
-> conjur policy load -f /path/to/file/authn-jwt-jenkins-host.yml -b root
-c) Give your host permission to authenticate to Conjur using the JWT authenticator:
+Use the Conjur CLI to load `author-jwt-jenkins-host.yml` into `root`:
+
+```
+conjur policy load -f /path/to/file/authn-jwt-jenkins-host.yml -b root
+```
+
+Save the following policy as `grant-app-access.yml`. This policy allows your host permission to authenticate to Conjur using the JWT authenticator:
 ```
 - !grant
   role: !group conjur/authn-jwt/jenkins/jwt-authn-access
   members:
     - !group myspace/jwt-apps
 ```
-d) Save the policy as grant-app-access.yml and use the Conjur CLI to load it into root:
 
-> conjur policy load -f grant app-access.yml -b root
+Use the Conjur CLI to load `grant-app-access.yml` into `root`:
 
-Step 4: Define variables in Conjur to represent your secrets and give the host permission to access to the secrets
-Copy the following policy to a text editor:
+```
+conjur policy load -f grant app-access.yml -b root
+```
+
+### Step 5: Define and Grant Access to Conjur Variables
+
+Save following policy as `secrets.yml`. This policy defines your Conjur secrets and grants access to the hosts defined in the previous step:
+
 ```
 - &devvariablesGlobal
   - !variable secretGlobal
-# you may also set specified type like Username Credential, by using this annotation
+  # you may also set specified type like Username Credential, by using this annotation
   annotations:
     jenkins_credential_type: usernamecredential
     jenkins_credential_username: globaluser
+
 # by default all secrets are mapped to Conjur Secret Credential
 - &devvariablesFolder
   - !variable secretFolder
+
 - &devvariablesPipeline
   - !variable secretPipeline
  
@@ -263,29 +290,32 @@ Copy the following policy to a text editor:
   privileges: [ read, execute ]
   roles: !host myspace/jwt-apps/Pipeline
 ```
-2. Save the policy as secrets.yml and use the Conjur CLI to load into root:
 
-> conjur policy load -f /path/to/file/secrets.yml -b root
+Use the Conjur CLI to load `secrets.yml` into `root`:
 
-Step 5: Populate the secret variables
-Populate the variable with a secret value:
+```
+conjur policy load -f /path/to/file/secrets.yml -b root
+```
 
-> conjur variable set -i devvariablesGlobal -v myglobalsecret
+Finally, use the CLI to assign secret values to your Conjur variables
 
-> conjur variable set -i devvariablesFolder -v myfoldersecret
+```
+conjur variable set -i devvariablesGlobal -v myglobalsecret
+conjur variable set -i devvariablesFolder -v myfoldersecret
+conjur variable set -i devvariablesPipeline -v mypipelinesecret
+```
 
-> conjur variable set -i devvariablesPipeline -v mypipelinesecret
+### Important Notes for Conjur Admin
 
-...
+#### Folder Permission Inheritance
 
-Inheritance feature
-This section describes how to assign secrets to specified levels in Jenkins.
-Plugin allow to assign secrets to folders or to global configuration and manage their access to items placed below.
-By default inheritance is turned on and if you define secrets availability for folders all of subfolders and items will get access to them.
-To disable access, you have to go to folder configuration disable option and save.
+By default, subfolders **inherit the permissions of their parent folders** in Jenkins. This means that if you grant a folder access to a secret, all subfolders will also have access to that secret. This inheritance can be disabled in the folder settings in Jenkins.
 
-It is also important to mention that all secrets assigned to root (global configuration) are visible from any level of Jenkins even if "Inherit from parent" option is turned off.
-When JWT authenticator is selected, you have to remember to set proper path in jenkins_full_name field.
+It is also important to mention that all secrets assigned to `root` (global configuration) are visible from any level of Jenkins, even if the "Inherit from parent" option is turned off.
+
+#### Host Annotation Examples
+
+When JWT authenticator is selected, you have to remember to set the proper path in the `jenkins_full_name` field.
 
 Example of policy with host assigned to folder:
 ```
@@ -317,14 +347,18 @@ Example of policy with host assigned to pipeline:
     authn-jwt/jenkins/jenkins_pronoun: Pipeline
 ```
 
-IMPORTANT: id of host must be always equal to last part of jenkins_full_name.
-Example: If the ID is:  PipelineHostID the annotation should be authn-jwt/jenkins/jenkins_full_name: Organisation/Folder/PipelineHostID
+**IMPORTANT**: The `id` of a host must always be equal to the last part of `jenkins_full_name`. For example, if the ID is `PipelineHostID` then the annotation should be:
 
-Use policy file to specify type of Credential in Jenkins
-This section describes how to get specified Credentials in Jenkins by using policy files.
+```
+authn-jwt/jenkins/jenkins_full_name: Organisation/Folder/PipelineHostID`
+```
 
-Jenkins give possibility of using many different type of Credentials. By default all secrets are mapped to Jenkins StandardCredentials (https://javadoc.jenkins.io/plugin/credentials/com/cloudbees/plugins/credentials/common/StandardCredentials.html).
-To change that behaviour you must edit your policy with secret definitions as below and add annotations to the secrets.
+#### Using Policy File to Specify Jenkins Credential Type
+This section describes how to get specified Credentials in Jenkins using Conjur policy files.
+
+Jenkins allows the possibility of using many different types of Credentials. By default, all secrets are mapped to [Jenkins StandardCredentials](https://javadoc.jenkins.io/plugin/credentials/com/cloudbees/plugins/credentials/common/StandardCredentials.html).
+
+To change this behaviour, you must add annotations to the secrets in your Conjur policy:
 
 ```
 # mapped as string credentials
@@ -352,7 +386,125 @@ To change that behaviour you must edit your policy with secret definitions as be
   - !variable local-secret3
 ```
 
-### Configure the integration using API key authentication
+## Configure API Key Authentication
 
-Please follow [this documentation](https://docs.cyberark.com/conjur-open-source/latest/en/content/integrations/jenkins.htm) to run Jenkins Plugin in APIKey authentication mode. 
+Please follow [this documentation](https://docs.cyberark.com/conjur-open-source/latest/en/content/integrations/jenkins.htm) to run Jenkins Plugin in API key authentication mode. 
 
+## Migration Guide
+
+This part of documentation provides guidance for migrating from the previous version of the CyberArk Conjur Jenkins integration to the latest version. The update introduces support for global credentials and credentials inheritance, while removing deprecated components.
+
+For reference to the previous version’s functionality, see the [Conjur Jenkins Integration Documentation (Legacy)](https://docs.cyberark.com/conjur-open-source/latest/en/content/integrations/jenkins.htm).
+
+### Key Changes in the New Version
+
+✅ New Features:
+- Global Credentials Support:
+  - Credentials can now be defined at the global level, enabling reuse across Jenkins jobs and pipelines. This significantly improves manageability and reduces duplication.
+- Credentials Inheritance:
+  - Jenkins jobs can now inherit credentials from parent folders or global configurations, simplifying credentials management in complex project hierarchies.
+- New credential types:
+  - File Secret Credential
+  - Secret String Credential
+- Increased minimum Jenkins version to 2.455.
+- Added telemetry support
+
+### Deprecated Features Removed
+
+- All previously deprecated features (e.g. legacy environment variable injection methods, older configuration options) have been removed.
+- Compatibility with outdated credential syntax and legacy configuration models is no longer supported.
+
+### Migration Steps
+
+1. Backup Current Configuration
+
+Before proceeding with the upgrade, ensure you back up:
+- Jenkins configuration files
+- Conjur policies and secrets
+- Any pipeline scripts that interface with Conjur
+
+2. Review Deprecated Usage
+
+Audit your Jenkins setup for use of:
+- Deprecated credential definitions
+- Legacy environment variable injection (e.g. through older `withCredentials` wrappers)
+- Plugin configuration not aligned with the current Conjur plugin version
+
+Update or remove any deprecated patterns.
+
+3. Update the Plugin
+
+Upgrade the Jenkins Conjur plugin to the latest version:
+- Navigate to `Manage Jenkins > Plugin Manager`
+- Search for `Conjur Secrets Plugin`
+- Update to the latest version
+
+4. Configure Global Credentials
+
+You can now add global Conjur credentials (previously option "Enable Context-Aware Credential Stores"):
+
+Edit your policy files and add a global credentials host like so:
+```
+# example of secrets assigned to Global Credentials
+ - !host
+   id: GlobalCredentials
+   annotations:
+     jenkins: true
+     authn-jwt/jenkins/jenkins_full_name: GlobalCredentials
+     authn-jwt/jenkins/jenkins_pronoun: Global
+```
+ 
+You will also need to grant variable access to the new host.
+
+These credentials will now be accessible in any Jenkins job or folder.
+
+5. Leverage Credential Inheritance
+
+You can now create hosts to represent Jenkins jobs that are structured into folders.
+
+Edit your policy files and add a folder host like so:
+```
+# example of secrets assigned to Folder
+- !host
+  id: Project1
+  annotations:
+    authn-jwt/jenkins/jenkins_pronoun: Folder
+    authn-jwt/jenkins/jenkins_full_name: Project1
+```
+
+You will also need to grant variable access to the new host.
+
+6. Convert old pipeline hosts to new format
+
+The old Jenkins plugin defined pipeline hosts as follows:
+
+```
+- !host
+  id: Project1-pipeline
+  annotations:
+      authn-jwt/jenkins/jenkins_task_noun: Build
+      authn-jwt/jenkins/jenkins_parent_full_name: Project1
+```
+
+In the new plugin, the host `id` and annotations should be updated like so:
+
+```
+# example of secrets assigned to pipeline
+- !host
+  id: pipeline
+  annotations:
+    authn-jwt/jenkins/jenkins_pronoun: Pipeline
+    authn-jwt/jenkins/jenkins_full_name: Project1/pipeline
+```
+
+### Compatibility Notes
+- Requires Jenkins version `2.455` or newer
+- Legacy configurations must be updated to comply with the new structure
+
+### Troubleshooting
+| Issue | Resolution |
+| ----- | ---------- |
+| Credentials not found	| Ensure credentials are correctly configured and accessible in the job / folder / global scope |
+| Authentication errors | Verify Conjur host and authentication identity used in the plugin |
+
+In case you are using JWTAuthentication, please check JWT Token Claims
