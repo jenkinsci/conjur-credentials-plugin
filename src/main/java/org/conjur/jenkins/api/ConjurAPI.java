@@ -26,6 +26,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.kohsuke.stapler.Stapler;
 
+import javax.net.ssl.SSLPeerUnverifiedException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -420,9 +421,6 @@ public class ConjurAPI {
 	{
 		LOGGER.log(Level.FINEST, String.format( "getCredentialsForContext: %s", context.getDisplayName() ) );
 		Collection<StandardCredentials> allCredentials = new ArrayList<>();
-		// Check if context is a folder and if credentials are of type UsernamePasswordCredentials
-
-		boolean authenticationFailed = false;
 
 		// in some cases when Jenkins start it want's immediately to deliver credentials
 		// so it must be taken from config and set
@@ -447,15 +445,14 @@ public class ConjurAPI {
 		try {
 			authToken = ConjurAPI.getAuthorizationToken(conjurAuthn, context);
 		} catch (AuthenticationConjurException exc) {
-			authenticationFailed = true;
+			LOGGER.log(Level.SEVERE, String.format("Authentication failed. Cannot get token from Conjur for context: %s", context.getDisplayName()));
+			return null;
+		} catch(SSLPeerUnverifiedException pve ){
+			LOGGER.log(Level.SEVERE, String.format("Cannot get authentication token from Conjur. SSL Peer Unverified url: %s", conjurAuthn.applianceUrl ) );
+			return null;
 		} catch(Exception e )
 		{
 			LOGGER.log(Level.SEVERE, String.format("Cannot get authentication token from Conjur. Exception: %s", e ) );
-		}
-
-		if (authenticationFailed)
-		{
-			LOGGER.log(Level.SEVERE, String.format("Authentication failed. Cannot get token from Conjur for context: %s", context.getDisplayName() ) );
 			return null;
 		}
 
@@ -528,7 +525,7 @@ public class ConjurAPI {
 
 				switch (credentialType) {
 					case "usernamecredential":
-						ConjurSecretUsernameCredentials usernameCredential = new ConjurSecretUsernameCredentialsImpl(CredentialsScope.GLOBAL, "username-" + variableId.replace("/", "-"), userName, variableId.replace("/", "-"), "CyberArk Conjur Provided");
+						ConjurSecretUsernameCredentials usernameCredential = new ConjurSecretUsernameCredentialsImpl(CredentialsScope.GLOBAL, "username-" + variableId.replace("/", "-"), userName, variableId, "CyberArk Conjur Provided");
 						usernameCredential.setContext( context );
 						usernameCredential.setInheritedContext( context );
 						if( type.isInstance(usernameCredential)) {
@@ -536,7 +533,7 @@ public class ConjurAPI {
 						}
 						break;
 					case "stringcredential":
-						ConjurSecretStringCredentials stringCredential = new ConjurSecretStringCredentialsImpl(CredentialsScope.GLOBAL, "string-" + variableId.replace("/", "-"), variableId.replace("/", "-"), "CyberArk Conjur Provided");
+						ConjurSecretStringCredentials stringCredential = new ConjurSecretStringCredentialsImpl(CredentialsScope.GLOBAL, "string-" + variableId.replace("/", "-"), variableId, "CyberArk Conjur Provided");
 						stringCredential.setContext( context );
 						stringCredential.setInheritedContext( context );
 						if( type.isInstance(stringCredential)) {
@@ -544,7 +541,7 @@ public class ConjurAPI {
 						}
 						break;
 					case "usernamesshkeycredential":
-						ConjurSecretUsernameSSHKeyCredentials usernameSSHKeyCredential = new ConjurSecretUsernameSSHKeyCredentialsImpl(CredentialsScope.GLOBAL, "usernamesshkey-" + variableId.replace("/", "-"), userName, variableId.replace("/", "-"), null /* no passphrase yet */, "CyberArk Conjur Provided");
+						ConjurSecretUsernameSSHKeyCredentials usernameSSHKeyCredential = new ConjurSecretUsernameSSHKeyCredentialsImpl(CredentialsScope.GLOBAL, "usernamesshkey-" + variableId.replace("/", "-"), userName, variableId, null /* no passphrase yet */, "CyberArk Conjur Provided");
 						usernameSSHKeyCredential.setContext( context );
 						usernameSSHKeyCredential.setInheritedContext( context );
 						if( type.isInstance(usernameSSHKeyCredential)) {
@@ -555,7 +552,7 @@ public class ConjurAPI {
 						ConjurSecretFileCredentials fileCredential = new ConjurSecretFileCredentialsImpl(
 								CredentialsScope.GLOBAL,
 								"file-" + variableId.replace("/", "-"),
-								variableId.replace("/", "-"),
+								"CyberArk Conjur Provided",
 								variableId);
 						fileCredential.setContext(context);
 						fileCredential.setInheritedContext(context);

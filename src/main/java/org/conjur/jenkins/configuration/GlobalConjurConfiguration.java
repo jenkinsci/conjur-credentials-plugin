@@ -31,13 +31,18 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
     private long keyLifetimeInMinutes = 60;
     private long tokenDurationInSeconds = 120;
     private String selectAuthenticator = "APIKey";
+    private Boolean enableIdentityFormatFieldsFromToken = false;
+    private String identityFormatFieldsFromToken = "jenkins_full_name";
+    private String selectIdentityFormatToken = "jenkins_full_name";
+    private String selectIdentityFieldsSeparator = "-";
+    private String identityFieldName = "sub";
 
     private static final Logger LOGGER = Logger.getLogger(GlobalConjurConfiguration.class.getName());
 
     /**
      * check the Auth WebService Id
      *
-     * @param anc AbstractItem
+     * @param anc              AbstractItem
      * @param authWebServiceId Token
      * @return FormValidation - information about form status
      */
@@ -46,7 +51,7 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
         if (StringUtils.isEmpty(authWebServiceId) || StringUtils.isBlank(authWebServiceId)) {
             LOGGER.log(Level.FINEST, "Auth WebService Id should not be empty");
             return FormValidation.error("Auth WebService Id should not be empty");
-        }else {
+        } else {
             return FormValidation.ok();
         }
     }
@@ -78,7 +83,6 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
     }
 
     /**
-     *
      * @return ConjurConfiguration
      */
     public ConjurConfiguration getConjurConfiguration() {
@@ -150,7 +154,6 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
     }
 
     /**
-     *
      * @return selected authenticator name
      */
     public String getSelectAuthenticator() {
@@ -158,35 +161,87 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
     }
 
     /**
-     *
      * @param authenticator name of authenticator
      */
     @DataBoundSetter
     public void setSelectAuthenticator(String authenticator) {
-        LOGGER.log(Level.FINEST, String.format("GlobalConjurConfiguration authenticator set to: %s", authenticator ) );
+        LOGGER.log(Level.FINEST, String.format("GlobalConjurConfiguration authenticator set to: %s", authenticator));
         this.selectAuthenticator = authenticator;
         save();
     }
-	/**
-	 * POST method to obtain the JWTtoken for the Item
-	 * 
-	 * @param item Jenkins Item
-	 * @return status ok based on the FormValidation
-	 */
-	@POST
-	public FormValidation doObtainJwtToken(@AncestorInPath ModelObject item) {
-		GlobalConjurConfiguration globalConfig = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
-		// global context is when item is equal to null
-		if( item == null )
-		{
-			item = Jenkins.get();
-		}
 
-		JwtToken token = JwtToken.getUnsignedToken("pluginAction", item, globalConfig);
-		if( token != null ) {
-			return FormValidation.ok("JWT Token: \n" + token.claim.toString(4));
-		}
-		return FormValidation.ok("JWT Token: \nCannot obtain token");
-	}
-	
+    /**
+     * POST method to obtain the JWTtoken for the Item
+     *
+     * @param item Jenkins Item
+     * @return status ok based on the FormValidation
+     */
+    @POST
+    public FormValidation doObtainJwtToken(@AncestorInPath ModelObject item) {
+        GlobalConjurConfiguration globalConfig = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
+        // global context is when item is equal to null
+        if (item == null) {
+            item = Jenkins.get();
+        }
+
+        JwtToken token = JwtToken.getUnsignedToken("pluginAction", item, globalConfig);
+        if (token != null) {
+            return FormValidation.ok("JWT Token: \n" + token.claim.toString(4));
+        }
+        return FormValidation.ok("JWT Token: \nCannot obtain token");
+    }
+
+    public Boolean getEnableIdentityFormatFieldsFromToken() {
+        return enableIdentityFormatFieldsFromToken;
+    }
+
+    @DataBoundSetter
+    public void setEnableIdentityFormatFieldsFromToken(Boolean enableIdentityFormatFieldsFromToken) {
+        LOGGER.log(Level.WARNING, "DEPRECATED: GlobalConjurConfiguration get() #enableIdentityFormatFieldsFromToken " + enableIdentityFormatFieldsFromToken);
+        this.enableIdentityFormatFieldsFromToken = enableIdentityFormatFieldsFromToken;
+        save();
+    }
+
+    public String getSelectIdentityFormatToken() {
+        return selectIdentityFormatToken;
+    }
+
+    @DataBoundSetter
+    public void setSelectIdentityFormatToken(String selectIdentityFormatToken) {
+        LOGGER.log(Level.FINEST, "GlobalConjurConfiguration get() #selectIdentityFormatToken " + selectIdentityFormatToken);
+        this.selectIdentityFormatToken = selectIdentityFormatToken;
+        save();
+    }
+
+    public String getSelectIdentityFieldsSeparator() {
+        return selectIdentityFieldsSeparator;
+    }
+
+    @DataBoundSetter
+    public void setSelectIdentityFieldsSeparator(String selectIdentityFieldsSeparator) {
+        this.selectIdentityFieldsSeparator = selectIdentityFieldsSeparator;
+        save();
+    }
+
+    public String getidentityFieldName() {
+        return identityFieldName;
+    }
+
+    @DataBoundSetter
+    public void setIdentityFieldName(String identityFieldName) {
+        this.identityFieldName = (!identityFieldName.isEmpty()) ? identityFieldName : "sub";
+        save();
+    }
+
+    public String getIdentityFormatFieldsFromToken() {
+        return identityFormatFieldsFromToken;
+    }
+
+    @DataBoundSetter
+    public void setIdentityFormatFieldsFromToken(String identityFormatFieldsFromToken) {
+        LOGGER.log(Level.FINE, "GlobalConjurConfiguration get() #identityFormatFieldsFromToken " + identityFormatFieldsFromToken);
+        this.identityFormatFieldsFromToken = identityFormatFieldsFromToken;
+        save();
+    }
+
 }

@@ -65,10 +65,10 @@ public class ConjurAPIUtils {
 			}
 			TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 			tmf.init(trustStore);
+
 			TrustManager[] tms = tmf.getTrustManagers();
 
 			SSLContext sslContext;
-
 			sslContext = SSLContext.getInstance("TLSv1.3");
 			sslContext.init(kms, tms, new SecureRandom());
 
