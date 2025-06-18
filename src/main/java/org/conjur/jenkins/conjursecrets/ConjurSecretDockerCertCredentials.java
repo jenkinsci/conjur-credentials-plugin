@@ -43,7 +43,7 @@ public abstract class ConjurSecretDockerCertCredentials extends DockerServerCred
         return cert != null ? cert.getPlainText() : null;
     }
 
-    class NameProvider extends CredentialsNameProvider<ConjurSecretDockerCertCredentials> {
+    static class NameProvider extends CredentialsNameProvider<ConjurSecretDockerCertCredentials> {
         @NonNull
         @Override
         public String getName(ConjurSecretDockerCertCredentials credentials) {

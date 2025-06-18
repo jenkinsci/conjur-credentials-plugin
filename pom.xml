@@ -20,7 +20,7 @@
 	</properties>
 	<name>Conjur Secrets Plugin</name>
 	<description>Plugin to retrieve secrets from CyberArk/Conjur</description>
-	<version>3.0.4</version>
+	<version>3.0.5</version>
 	<url>https://github.com/jenkinsci/conjur-credentials-plugin</url>
 	<!-- The default licence for Jenkins OSS Plugins is MIT. Substitute for the
 	applicable one if needed. -->
@@ -172,6 +172,12 @@
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>docker-commons</artifactId>
 			<version>445.v6b_646c962a_94</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jenkins-ci</groupId>
+			<artifactId>acceptance-test-harness</artifactId>
+			<version>6254.vca_87b_2b_59e5a_</version>
+			<scope>test</scope>
 		</dependency>
     </dependencies>
 	<dependencyManagement>
