@@ -5,6 +5,7 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.util.Secret;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.credentialsbinding.BindingDescriptor;
 import org.jenkinsci.plugins.credentialsbinding.MultiBinding;
@@ -33,7 +34,10 @@ public class ConjurSecretDockerCertCredentialsBinding extends MultiBinding<Conju
 
         if (credentials != null) {
             credentials.setContext(build);
-            m.put(clientKeyVariable, Objects.requireNonNull(credentials.getClientKeySecret()).getPlainText());
+            Secret secret = credentials.getClientKeySecret();
+            if (secret != null) {
+                m.put(clientKeyVariable, secret.getPlainText());
+            }
             m.put(clientCertVariable, credentials.getClientCertificate());
             m.put(caCertificateVariable, credentials.getServerCaCertificate());
         }
