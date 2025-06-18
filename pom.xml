@@ -173,12 +173,6 @@
 			<artifactId>docker-commons</artifactId>
 			<version>445.v6b_646c962a_94</version>
 		</dependency>
-		<dependency>
-			<groupId>org.jenkins-ci</groupId>
-			<artifactId>acceptance-test-harness</artifactId>
-			<version>6254.vca_87b_2b_59e5a_</version>
-			<scope>test</scope>
-		</dependency>
     </dependencies>
 	<dependencyManagement>
 		<dependencies>
