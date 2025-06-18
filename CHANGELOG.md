@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)an
 
 Please use documentation outlined in the GitHub Readme for this version.  Official CyberArk documentation pages will be updated to reflect these changes once available
 
+## [3.0.5] - 2025-06-18
+## What’s New
+- Added support for docker certificates
+
 ## [3.0.4] - 2025-06-06
 ## What’s New
 - Added 'sub' entry  to JWTToken

@@ -33,7 +33,7 @@ public class ConjurSecretDockerCertCredentialsBinding extends MultiBinding<Conju
 
         if (credentials != null) {
             credentials.setContext(build);
-            m.put(clientKeyVariable, credentials.getClientKeySecret().getPlainText());
+            m.put(clientKeyVariable, Objects.requireNonNull(credentials.getClientKeySecret()).getPlainText());
             m.put(clientCertVariable, credentials.getClientCertificate());
             m.put(caCertificateVariable, credentials.getServerCaCertificate());
         }
