@@ -28,7 +28,7 @@ function getIdentityFormatToken() {
 
 
     for (var j = 0; j < listAuthenticator.length; j++) {
-        if (listAuthenticator.options[j].value == selectAuthenticator) {
+    if (listAuthenticator.options[j].value == selectAuthenticator) {
       listAuthenticator.options[j].selected = true;
         }
     }
