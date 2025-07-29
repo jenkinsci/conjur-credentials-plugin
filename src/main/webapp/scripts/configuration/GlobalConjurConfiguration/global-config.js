@@ -18,7 +18,7 @@ function validateNumber(evt) {
 document.getElementById('listAuthenticator').addEventListener('change', changeAuthenticationOption);
 
 function getIdentityFormatToken() {
-    var listAuthenticator = document.getElementById('listAuthenticator');
+  var listAuthenticator = document.getElementById("listAuthenticator");
   var selectAuthenticator = listAuthenticator.dataset.authenticator;
     var selectIdentityFormatTokenValue = listAuthenticator.dataset.token;
 
