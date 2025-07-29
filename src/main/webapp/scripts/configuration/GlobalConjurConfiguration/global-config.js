@@ -2,7 +2,7 @@ function validateNumber(evt) {
     var theEvent = evt || window.event;
     var key;
 
-    if (theEvent.type === 'paste') {
+  if (theEvent.type === "paste") {
         key = event.clipboardData.getData('text/plain');
     } else {
         key = theEvent.keyCode || theEvent.which;
