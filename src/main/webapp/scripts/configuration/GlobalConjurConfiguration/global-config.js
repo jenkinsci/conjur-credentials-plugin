@@ -19,7 +19,7 @@ document.getElementById('listAuthenticator').addEventListener('change', changeAu
 
 function getIdentityFormatToken() {
     var listAuthenticator = document.getElementById('listAuthenticator');
-    var selectAuthenticator = listAuthenticator.dataset.authenticator;
+  var selectAuthenticator = listAuthenticator.dataset.authenticator;
     var selectIdentityFormatTokenValue = listAuthenticator.dataset.token;
 
     var selectedIdentityFormatFiledToken = document.getElementById("listIdentityFormatFieldsFromToken");
