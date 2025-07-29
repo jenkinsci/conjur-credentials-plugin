@@ -4,7 +4,7 @@ function validateNumber(evt) {
 
   if (theEvent.type === "paste") {
         key = event.clipboardData.getData('text/plain');
-    } else {
+  } else {
         key = theEvent.keyCode || theEvent.which;
         key = String.fromCharCode(key);
     }
