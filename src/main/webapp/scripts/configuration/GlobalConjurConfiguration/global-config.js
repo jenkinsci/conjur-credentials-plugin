@@ -20,18 +20,18 @@ document.getElementById('listAuthenticator').addEventListener('change', changeAu
 function getIdentityFormatToken() {
   var listAuthenticator = document.getElementById("listAuthenticator");
   var selectAuthenticator = listAuthenticator.dataset.authenticator;
-    var selectIdentityFormatTokenValue = listAuthenticator.dataset.token;
+  var selectIdentityFormatTokenValue = listAuthenticator.dataset.token;
 
-  var selectedIdentityFormatFiledToken = document.getElementById(
-    selectIdentityFormatTokenValue = selectIdentityFormatTokenValue ? selectIdentityFormatTokenValue : 'jenkins_full_name';
-    selectedIdentityFormatFiledToken.value = selectIdentityFormatTokenValue;
+  var selectedIdentityFormatFiledToken = document.getElementById("listIdentityFormatFieldsFromToken");
+  selectIdentityFormatTokenValue = selectIdentityFormatTokenValue ? selectIdentityFormatTokenValue : "jenkins_full_name";
+  selectedIdentityFormatFiledToken.value = selectIdentityFormatTokenValue;
 
 
-    for (var j = 0; j < listAuthenticator.length; j++) {
-    if (listAuthenticator.options[j].value == selectAuthenticator) {
-      listAuthenticator.options[j].selected = true;
-        }
-    }
+  for (var j = 0; j < listAuthenticator.length; j++) {
+      if (listAuthenticator.options[j].value == selectAuthenticator) {
+          listAuthenticator.options[j].selected = true;
+      }
+  }
 }
 
 getIdentityFormatToken();
