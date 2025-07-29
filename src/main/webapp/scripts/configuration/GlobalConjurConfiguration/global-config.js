@@ -48,7 +48,7 @@ function changeAuthenticationOption() {
         try {
       conjurGlobalJWTSection.style.display = "none";
             conjurLocalAPIKeyCredentials.style.display = "block";
-            conjurLocalTokenClaims.style.display = "none";
+      conjurLocalTokenClaims.style.display = "none";
             jwtBtn.style.display = "none";
         } catch (err) {
         }
