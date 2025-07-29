@@ -22,7 +22,7 @@ function getIdentityFormatToken() {
   var selectAuthenticator = listAuthenticator.dataset.authenticator;
     var selectIdentityFormatTokenValue = listAuthenticator.dataset.token;
 
-    var selectedIdentityFormatFiledToken = document.getElementById("listIdentityFormatFieldsFromToken");
+  var selectedIdentityFormatFiledToken = document.getElementById(
     selectIdentityFormatTokenValue = selectIdentityFormatTokenValue ? selectIdentityFormatTokenValue : 'jenkins_full_name';
     selectedIdentityFormatFiledToken.value = selectIdentityFormatTokenValue;
 
