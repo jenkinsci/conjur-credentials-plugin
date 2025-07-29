@@ -49,7 +49,7 @@ function changeAuthenticationOption() {
       conjurGlobalJWTSection.style.display = "none";
       conjurLocalAPIKeyCredentials.style.display = "block";
       conjurLocalTokenClaims.style.display = "none";
-            jwtBtn.style.display = "none";
+      jwtBtn.style.display = "none";
         } catch (err) {
         }
     } else if (optionText === 'JWT') {
