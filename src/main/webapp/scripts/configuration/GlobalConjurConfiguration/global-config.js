@@ -44,7 +44,7 @@ function changeAuthenticationOption() {
     var conjurLocalTokenClaims = document.getElementById('conjurLocalTokenClaims');
     var jwtBtn = document.getElementById('jwtValidateButton');
 
-    if (optionText === 'APIKey') {
+  if (optionText === "APIKey") {
         try {
       conjurGlobalJWTSection.style.display = "none";
       conjurLocalAPIKeyCredentials.style.display = "block";
