@@ -46,7 +46,7 @@ function changeAuthenticationOption() {
 
     if (optionText === 'APIKey') {
         try {
-            conjurGlobalJWTSection.style.display = "none";
+      conjurGlobalJWTSection.style.display = "none";
             conjurLocalAPIKeyCredentials.style.display = "block";
             conjurLocalTokenClaims.style.display = "none";
             jwtBtn.style.display = "none";
