@@ -1,0 +1,22 @@
+---
+- !policy
+  id: jenkins
+  annotations:
+    description: Policy for jenkins
+  body:
+  - !host
+    id: jenkins-connector
+    annotations:
+      description: connector for jenkins
+      authn/api-key: true
+
+  - &variables
+    - !variable db/password
+    - !variable db/dbuserName
+    - !variable db/dbpassWord
+    - !variable db/key
+
+  - !permit
+    role: !host jenkins-connector
+    privileges: [ read, execute ]
+    resource: *variables

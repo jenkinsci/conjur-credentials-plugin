@@ -1,0 +1,41 @@
+# Use the official Jenkins LTS image as the base
+FROM jenkins/jenkins:lts
+
+# Install dependencies for downloading the Jenkins CLI
+USER root
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    && apt-get clean
+
+RUN chown jenkins:jenkins /opt/java/openjdk/lib/security/cacerts && \
+    chmod 644 /opt/java/openjdk/lib/security/cacerts
+
+# Switch back to the Jenkins user
+USER jenkins
+
+WORKDIR /var/jenkins_home
+
+COPY --chown=jenkins:jenkins conjur.pem /var/jenkins_home
+
+COPY --chown=jenkins:jenkins tmp/* /tmp
+
+COPY --chown=jenkins:jenkins templates/plugins /tmp
+
+COPY --chown=jenkins:jenkins templates/jenkinsConfig.xml /tmp
+
+COPY --chown=jenkins:jenkins templates/add-bitbucket-token.xml /tmp
+
+COPY --chown=jenkins:jenkins templates/bitbucket-config.groovy /tmp
+
+COPY --chown=jenkins:jenkins templates/bitbucket-cred.xml /tmp
+
+COPY --chown=jenkins:jenkins test_job.sh /var/jenkins_home
+
+COPY --chown=jenkins:jenkins tmp/jobs/ /var/jenkins_home/jobs/
+
+COPY --chown=jenkins:jenkins tmp/org.conjur.jenkins.configuration.GlobalConjurConfiguration.xml /var/jenkins_home
+
+# Expose the Jenkins port
+EXPOSE 8080

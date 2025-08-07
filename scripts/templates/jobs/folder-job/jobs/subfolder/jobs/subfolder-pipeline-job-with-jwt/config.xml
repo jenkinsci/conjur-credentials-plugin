@@ -1,0 +1,45 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@1520.v56d65e3b_4566">
+    <keepDependencies>false</keepDependencies>
+    <properties>
+        <org.conjur.jenkins.configuration.ConjurJITJobProperty plugin="conjur-credentials@2.2.4">
+            <useJustInTime>false</useJustInTime>
+            <authWebServiceId></authWebServiceId>
+            <hostPrefix></hostPrefix>
+            <conjurConfiguration>
+                <inheritFromParent>true</inheritFromParent>
+                <applianceURL></applianceURL>
+                <account></account>
+                <credentialID></credentialID>
+                <certificateCredentialID></certificateCredentialID>
+            </conjurConfiguration>
+        </org.conjur.jenkins.configuration.ConjurJITJobProperty>
+    </properties>
+
+    <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@4106.v7a_8a_8176d450">
+        <script>
+            node {
+               stage(&apos;Retrieve secret&apos;) {
+                    withCredentials([conjurSecretCredential(credentialsId: &apos;folder-job-credential1&apos;, variable: &apos;CONJUR_SECRET&apos;)]) {
+                    sh &apos;&apos;&apos;#!/bin/bash
+
+                    # Echo the CONJUR_SECRET value
+                    echo &quot;CONJUR_SECRET: $CONJUR_SECRET&quot;
+
+                    # Check if the CONJUR_SECRET value
+                    if [ &quot;$CONJUR_SECRET&quot; == &quot;folder1&quot; ]; then
+                    echo &quot;Secret retrieved successfully&quot;
+                    else
+                    echo &quot;Unable to retrieve the secret&quot;
+                    exit 1
+                    fi
+                    &apos;&apos;&apos;
+                    }
+               }
+            }
+        </script>
+        <sandbox>true</sandbox>
+    </definition>
+    <triggers/>
+    <disabled>false</disabled>
+</flow-definition>
