@@ -61,7 +61,6 @@ import_ssl_certificate() {
 # Function to trigger Jenkins build and get the build status
 trigger_jenkins_build() {
       local job_name=$1
-      local job_type=$2
 
     echo "Triggering the Jenkins build..."
      # 1 = pipeline, 2 = freestyle, 3 = multibranch
@@ -153,7 +152,7 @@ process_jobs() {
         local job_dir=$(dirname "$config")
         local relative_path="${job_dir#/var/jenkins_home/jobs/}"
        # Replace intermediate "jobs/" with "/" to match Jenkins folder structure
-        local job_name=$(echo "$relative_path" | sed 's#/jobs/#/#g')
+        local job_name="${relative_path//\/jobs\//\/}"
         local specific_job=$(basename "$job_name")
 
         if grep -q "<definition" "$config"; then
