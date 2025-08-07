@@ -466,7 +466,7 @@ public class ConjurAPI {
 
                 // Intel request, we always create secret string credentials
 
-                ConjurSecretCredentials credential = new ConjurSecretCredentialsImpl(CredentialsScope.GLOBAL, variableId.replace("/", "-"), variableId, "CyberArk Conjur Provided");
+                ConjurSecretCredentials credential = new ConjurSecretCredentialsImpl(CredentialsScope.GLOBAL, variableId, variableId, "CyberArk Conjur Provided");
                 credential.setContext(context);
                 credential.setInheritedContext(context);
 
@@ -474,7 +474,7 @@ public class ConjurAPI {
 
                 switch (credentialType) {
                     case "usernamecredential":
-                        ConjurSecretUsernameCredentials usernameCredential = new ConjurSecretUsernameCredentialsImpl(CredentialsScope.GLOBAL, "username-" + variableId.replace("/", "-"), userName, variableId, "CyberArk Conjur Provided");
+                        ConjurSecretUsernameCredentials usernameCredential = new ConjurSecretUsernameCredentialsImpl(CredentialsScope.GLOBAL, "username-" + variableId, userName, variableId, "CyberArk Conjur Provided");
                         usernameCredential.setContext(context);
                         usernameCredential.setInheritedContext(context);
                         if (type.isInstance(usernameCredential)) {
@@ -482,7 +482,7 @@ public class ConjurAPI {
                         }
                         break;
                     case "stringcredential":
-                        ConjurSecretStringCredentials stringCredential = new ConjurSecretStringCredentialsImpl(CredentialsScope.GLOBAL, "string-" + variableId.replace("/", "-"), variableId, "CyberArk Conjur Provided");
+                        ConjurSecretStringCredentials stringCredential = new ConjurSecretStringCredentialsImpl(CredentialsScope.GLOBAL, "string-" + variableId, variableId, "CyberArk Conjur Provided");
                         stringCredential.setContext(context);
                         stringCredential.setInheritedContext(context);
                         if (type.isInstance(stringCredential)) {
@@ -490,7 +490,7 @@ public class ConjurAPI {
                         }
                         break;
                     case "usernamesshkeycredential":
-                        ConjurSecretUsernameSSHKeyCredentials usernameSSHKeyCredential = new ConjurSecretUsernameSSHKeyCredentialsImpl(CredentialsScope.GLOBAL, "usernamesshkey-" + variableId.replace("/", "-"), userName, variableId, null /* no passphrase yet */, "CyberArk Conjur Provided");
+                        ConjurSecretUsernameSSHKeyCredentials usernameSSHKeyCredential = new ConjurSecretUsernameSSHKeyCredentialsImpl(CredentialsScope.GLOBAL, "usernamesshkey-" + variableId, userName, variableId, null /* no passphrase yet */, "CyberArk Conjur Provided");
                         usernameSSHKeyCredential.setContext(context);
                         usernameSSHKeyCredential.setInheritedContext(context);
                         if (type.isInstance(usernameSSHKeyCredential)) {
@@ -500,7 +500,7 @@ public class ConjurAPI {
                     case "filecredential":
                         ConjurSecretFileCredentials fileCredential = new ConjurSecretFileCredentialsImpl(
                                 CredentialsScope.GLOBAL,
-                                "file-" + variableId.replace("/", "-"),
+                                "file-" + variableId,
                                 "CyberArk Conjur Provided",
                                 variableId);
                         fileCredential.setContext(context);
@@ -512,8 +512,8 @@ public class ConjurAPI {
                     case "dockercertcredential":
                         ConjurSecretDockerCertCredentials dockerCertCredential = new ConjurSecretDockerCertCredentialsImpl(
                                 CredentialsScope.GLOBAL,
-                                "docker-cert-" + variableId.replace("/", "-"),
-                                variableId.replace("/", "-"),
+                                "docker-cert-" + variableId,
+                                variableId,
                                 variableId + "/key",
                                 variableId + "/cert",
                                 variableId + "/ca"

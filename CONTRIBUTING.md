@@ -25,3 +25,10 @@ In the **Upload Plugin** section, browse for the .hpi and upload it to Jenkins:
 After installing the plugin, restart Jenkins:
 
 ![Install Plugin](docs/images/Plugin-Installing.png)
+
+### Release and Promote
+
+1. Before releasing a new version, update the version number in the `pom.xml` file. Change the `<version>` tag value to reflect the new version following semantic versioning principles (e.g., from `1.0.0` to `1.0.1`).
+1. Merging into main/master branches will automatically trigger a release. If successful, this release can be promoted at a later time.
+1. Jenkins build parameters can be utilized to promote a successful release or manually trigger additional releases as needed.
+1. Reference the [internal automated release doc](https://github.com/conjurinc/docs/blob/master/reference/infrastructure/automated_releases.md#release-and-promotion-process) for releasing and promoting.

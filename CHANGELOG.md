@@ -5,60 +5,84 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)an
 
 Please use documentation outlined in the GitHub Readme for this version.  Official CyberArk documentation pages will be updated to reflect these changes once available
 
+## [3.0.6] - 2025-08-05
+
+### Fixed
+No longer change secret ID when loading Conjur variable (CNJR-10588)
+
 ## [3.0.5] - 2025-06-18
-## What’s New
+
+### Added
 - Added support for docker certificates
 
 ## [3.0.4] - 2025-06-06
-## What’s New
+
+### Added
 - Added 'sub' entry  to JWTToken
 - File Credential added
 
 ## [3.0.3] - 2025-06-06
-## What’s New
+
+### Fixed
 - Fixed spotbugs
 
 ## [3.0.1] - 2025-06-02
-## What’s New
-- Fixed the issue where plugin couldn't find user credentials
+
+### Added
 - Added support for storing secrets in a secret file
 
+### Fixed
+- Fixed the issue where plugin couldn't find user credentials
+
 ## [3.0.0] - 2025-05-23
-## What’s New
+
+### Added
 - Global Credentials added
 - Added inheritance for Secrets and Configuration
-- Increased minimum Jenkins version to 2.455
-- Switched to new API - removed deprecated API calls and objects
 - Added telemetry headers
 
+### Changed
+- Increased minimum Jenkins version to 2.455
+
+### Removed
+- Switched to new API - removed deprecated API calls and objects
+
 ## [2.2.4] - 2025-02-18
-## What’s New
-- Jenkins Conjur Global Configuration UI:** Fixed the issue where toggling the Conjur JWT checkbox (checked/unchecked) with empty JWT input fields disabled/enabled the Save and Apply buttons.
+
+### Fixed
+- Issue where toggling Conjur JWT checkbox with empty JWT input fields disabled/enabled the Save and Apply buttons
 
 ## [2.2.3] - 2024-11-12
-## What’s New
-- Should not access to other Jenkins Job Conjur Credentials ID:** Fixed the Conjur Credential store for one folder Job could not be accessed from other folder-level Jobs.
-- Avoid unnecessary folder-level logging:** Eliminate unnecessary logging by removing all Jenkins Job Items.
-- MultiBranch Pipeline Feature Branches Credentials Stored Grayed Out :** Fixed the Jenkins MultBranch feature branches Conjur Credential stored list visibility Grayed Out.
+
+### Fixed
+- Fixed Conjur Credential store for one folder Job could not being accessible from other folder-level Jobs
+- Fixed Jenkins MultiBranch feature branches Conjur Credential stored list visibility being grayed out
+
+### Removed
+- Eliminate unnecessary logging by removing all Jenkins Job Items.
 
 ## [2.2.2] - 2024-10-08
-## What’s New
-- Subfolder Host Identity Mapping Issue:** Fixed an issue where credentials mapped to subfolder host identities were not injected during pipeline execution, despite being visible at the subfolder level.
-- Jenkins Credential Store Inheritance:** Fixed the issue with Jenkins credential store inheritance.
-- Credentials store list is randomly empty:** If the Conjur appliance account or appliance URL is empty, should fall back to the global configuration values.
-- Jenkins folder-level Job:** Skip JWT/API Key authentication if Jenkins folder credentials scope is null.
-- Folder-level Display Name:** Fixed the Jenkins folder-level display name.
+
+### Fixed
+- Credentials mapped to subfolder host identities are now injected during pipeline execution
+- Fixed issue with Jenkins credential store inheritance
+- If Conjur appliance account or URL is empty, plugin now falls back to the global configuration values
+- Skip JWT/API Key authentication if Jenkins folder credentials scope is null
+- Fixed the Jenkins folder-level display name
 
 ## [2.2.1] - 2024-06-29
-## What’s New
-- Fixed to support Jenkins folder-level system (non-global) credentials with Conjur API key authentication.
+
+### Fixed
+- Support Jenkins folder-level system (non-global) credentials with Conjur API key authentication.
 
 ## [2.2.0] - 2024-06-03
-## What’s New
-- Enhancement to support read/view permissions of Conjur Credentials for Jenkins users
+
+### Added
+- Support read/view permissions of Conjur Credentials for Jenkins users
 
 ## [2.1.0] - 2024-05-07
-## What’s New
+
+### Added
 - Support for multithreading access.
 
 ## [2.0.0] - 2024-03-04
@@ -115,10 +139,13 @@ We strongly recommend utilizing the default values recommended for fields that w
 - Fixed bindings for context aware store credentials
 
 ## [1.0.5] - 2021-09-23
-- Added JWT Authentication
-- Added Context Aware (Based on JWT) Credential Provider
-- Updated Doc
-- Misc fixes
+
+### Added
+- JWT Authentication
+- Context Aware (Based on JWT) Credential Provider
+
+### Fixed
+- Misc. fixes
 
 ## [1.0.4] - 2021-07-12
 - Incorporated changes for null certificate on slave
@@ -138,7 +165,10 @@ We strongly recommend utilizing the default values recommended for fields that w
 ### Added
 - Added Support for SSH Private Key
 
-[3.0.2]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.0.1...HEAD
+[3.0.6]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.0.5...v3.0.6
+[3.0.5]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.0.4...v3.0.5
+[3.0.4]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.0.3...v3.0.4
+[3.0.3]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.0.1...v3.0.3
 [3.0.1]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v2.2.4...v3.0.0
 [2.2.4]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v2.2.3...v2.2.4
