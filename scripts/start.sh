@@ -19,8 +19,8 @@ Conjur Credentials :: Dev Environment
 $0 [options]
 
 -e            Deploy Conjur Enterprise. (Default: Conjur Open Source)
--c            Deploy Conjur Cloud. (Developers should not use this option to start a local environment.)
--ed            Deploy Conjur Edge. (Developers should not use this option to start a local environment.)
+-c            Deploy Conjur Cloud. (Only for CI/CD pipelines, not for local development)
+-ed           Deploy Conjur Edge. (Only for CI/CD pipelines, not for local development)
 -h, --help    Print usage information.
 EOF
 }
@@ -30,14 +30,14 @@ while true ; do
     -e ) ENTERPRISE="true" ; shift ;;
     -c )  
       if [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "Cannot setup a local environment using Conjur Cloud"
+        echo "Cannot setup a local environment using Conjur Cloud - this option is intended for CI/CD pipelines only"
         exit 1
       fi
       CLOUD="true"
       shift ;;
     -ed )  
       if [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "Cannot setup a local environment using Conjur Edge"
+        echo "Cannot setup a local environment using Conjur Cloud - this option is intended for CI/CD pipelines only"
         exit 1
       fi
       EDGE="true"
@@ -194,14 +194,6 @@ function deploy_xml() {
 }
 
 function deploy_jobs() {
-#  for job in templates/jobs/*; do
-#    [[ -d "$job" && -f "$job/config.xml" ]] || continue
-#    job_name=$(basename "$job")
-#    mkdir -p tmp/jobs/$job_name
-#    sed -e "s|{{URL}}|$CONJUR_APPLIANCE_URL|g" \
-#      -e "s|{{ACCOUNT}}|$CONJUR_ACCOUNT|g" \
-#      "$job/config.xml" > "tmp/jobs/$job_name/config.xml"
-#  done
   find templates/jobs -type f -name config.xml | while IFS= read -r config; do
     # Extract job directory (parent of config.xml)
     job_dir=$(dirname "$config")
@@ -218,8 +210,6 @@ function deploy_jobs() {
         -e "s|{{ACCOUNT}}|$CONJUR_ACCOUNT|g" \
         "$config" > "$target_dir/config.xml"
   done
-
-
 }
 
 function rotate_host_api_key() {

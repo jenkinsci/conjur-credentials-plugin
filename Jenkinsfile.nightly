@@ -8,58 +8,6 @@ properties([
   dependencies([])
 ])
 
-// Performs release promotion.  No other stages will be run
-if (params.MODE == "PROMOTE") {
-  target_version = ""
-  // This call will create non-draft github release once the closure has completed
-  release.promote(params.VERSION_TO_PROMOTE) { infrapool, sourceVersion, targetVersion, assetDirectory ->
-    // Any assets from sourceVersion Github release are available in assetDirectory
-    // Any version number updates from sourceVersion to targetVersion occur here
-    // Any publishing of targetVersion artifacts occur here
-    // Anything added to assetDirectory will be attached to the Github Release
-
-    // assetDirectory is on the infrapool node.
-
-    target_version = targetVersion
-
-    // Build plugin with target version
-    infrapool.agentSh "VERSION=\"${targetVersion}\" scripts/update-version.sh"
-    infrapool.agentSh('scripts/compile.sh')
-    infrapool.agentSh('scripts/build.sh')
-
-    // Copy built plugin to assetDirectory, so it will be attached to the Github Release
-    infrapool.agentSh("sudo cp target/*.hpi \"${assetDirectory}\"")
-
-    // Do upstream release. This pushes plugin to jenkinsci project maven
-    // and the plugin index.
-    infrapool.agentSh('scripts/promote.sh')
-
-  }
-  // Github release has been created so now we can copy it
-  //  from: github.cyberng.com/conjur-enterprise/conjur-credentials-plugin
-  //  to:   github.com/jenkinsci/conjur-credentials-plugin
-  // Note SOURCE_TAG is set to target_version as that version is created
-  // when the promote call completes. This is the final release version, but its
-  // created on internal github (github enterprise) so its the source for the
-  // copy to github.com.
-
-  // TODO: Switch back to production release publication once PR merges. https://github.cyberng.com/Conjur-Enterprise/self-services/pull/5
-  //job="Conjur-Enterprise/conjur-enterprise-self-services/services/internal-github-release-publication/github-release-publication"
-  job="Conjur-Enterprise/conjur-enterprise-self-services/services/internal-github-release-publication/CNJR-1442_allow_upstream_cause"
-  build(
-      job: job,
-      parameters: [
-        string(name: 'SOURCE_ORGANIZATION', value: 'conjur-enterprise'),
-        string(name: 'SOURCE_REPOSITORY', value: 'conjur-credentials-plugin'),
-        string(name: 'SOURCE_TAG', value: "v${target_version}"),
-        string(name: 'DESTINATION_ORGANIZATION', value: 'jenkinsci'),
-        string(name: 'DESTINATION_REPOSITORY', value: 'conjur-credentials-plugin'),
-        string(name: 'DESTINATION_BRANCH', value: 'master')
-      ]
-  )
-  return
-}
-
 pipeline {
   agent { label 'conjur-enterprise-common-agent' }
 

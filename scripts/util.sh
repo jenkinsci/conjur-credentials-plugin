@@ -21,7 +21,6 @@ function compose_major_version {
   docker compose version --short | cut -d "." -f 1
 }
 
-
 function set_cli_cid {
   echo "$1" > "$(dev_dir)/tmp/cli_cid"
 }
@@ -99,7 +98,7 @@ function ensure_tool(){
   if command -v apt-get; then
     sudo apt-get update; sudo apt-get -y install ${package}
   else
-    echo "Unable to install ${cmd}, apt-get not detected if you're on a mac, use 'brew install ${package}'"
+    echo "Unable to install ${cmd}: apt-get not detected. If you're on a Mac, use 'brew install ${package}'"
     return 1
   fi
 }
