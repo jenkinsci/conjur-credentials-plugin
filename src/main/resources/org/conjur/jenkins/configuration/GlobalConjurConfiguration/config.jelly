@@ -11,7 +11,8 @@
   <f:section title="${%CyberArk Secrets Manager Conjur Configuration}">
    <div id="divListAuthenticator">
         <f:entry title="${%Select Conjur Authentication Type}" name="selectAuthenticatorEntry" field="selectAuthenticatorEntryField">
-            <select id="listAuthenticator" name="selectAuthenticator" class="jenkins-select_input">
+            <select id="listAuthenticator" name="selectAuthenticator" class="jenkins-select_input" data-authenticator="${instance.selectAuthenticator}"
+            data-token="${instance.selectIdentityFormatToken}">
                 <option value="APIKey">APIKey</option>
                 <option value="JWT">JWT</option>
             </select>
@@ -60,81 +61,7 @@
    method="obtainJwtToken" />
     </div>
 </div>
-
-  <script type="text/javascript">
-
-      function validateNumber(evt) {
-          var theEvent = evt || window.event;
-
-          // Handle paste
-          if (theEvent.type === 'paste') {
-              key = event.clipboardData.getData('text/plain');
-          } else {
-              // Handle key press
-              var key = theEvent.keyCode || theEvent.which;
-              key = String.fromCharCode(key);
-          }
-          var regex = /[0-9]|\./;
-          if( !regex.test(key) ) {
-              theEvent.returnValue = false;
-              if(theEvent.preventDefault) theEvent.preventDefault();
-          }
-      }
-
-      // Function to set value based on checkbox state
-      //document.getElementById('listIdentityFieldsSeparator').addEventListener('change', selectedFieldSeparator);
-      document.getElementById('listAuthenticator').addEventListener('change', changeAuthenticationOption);
-
-      function getIdentityFormatToken() {
-          var selectAuthenticator ='${instance.selectAuthenticator}';
-          var listAuthenticator = document.getElementById('listAuthenticator');
-          var selectIdentityFormatTokenValue ='${instance.selectIdentityFormatToken}';
-
-          var selectedIdentityFormatFiledToken = document.getElementById("listIdentityFormatFieldsFromToken");
-          selectIdentityFormatTokenValue =selectIdentityFormatTokenValue ? selectIdentityFormatTokenValue : 'jenkins_full_name';
-          selectedIdentityFormatFiledToken.value=selectIdentityFormatTokenValue;
-
-
-          for(var j=0;j &lt; listAuthenticator.length;j++)
-          {
-              if(listAuthenticator.options[j].value == selectAuthenticator )
-              {
-                  listAuthenticator.options[j].selected=true;
-              }
-          }
-      }
-      // Call the function initially to set the initial state based on checkbox
-       getIdentityFormatToken();
-
-        function changeAuthenticationOption()
-        {
-            var listAuthenticator = document.getElementById('listAuthenticator');
-            var selectedAuthenticator = listAuthenticator.value;
-            var optionText = listAuthenticator.options[listAuthenticator.selectedIndex].text;
-            var conjurGlobalJWTSection = document.getElementById('conjurGlobalJWTSection');
-            var conjurLocalAPIKeyCredentials = document.getElementById('conjurLocalAPIKeyCredentials');
-            var conjurLocalTokenClaims = document.getElementById('conjurLocalTokenClaims');
-
-            if( optionText === 'APIKey')
-            {
-                try {
-                    conjurGlobalJWTSection.style.display = "none";
-                    conjurLocalAPIKeyCredentials.style.display = "block";
-                    conjurLocalTokenClaims.style.display = "none";
-                    document.getElementById('jwtValidateButton').style.display = "none";
-                }catch(err) {}
-            }
-            else if( optionText === 'JWT')
-            {
-                conjurGlobalJWTSection.style.display = "block";
-                conjurLocalAPIKeyCredentials.style.display = "none";
-                conjurLocalTokenClaims.style.display = "block";
-                document.getElementById('jwtValidateButton').style.display = "none";
-            }
-        }
-
-         changeAuthenticationOption();
-  </script>
+    <script src="${resURL}/plugin/conjur-credentials/scripts/configuration/GlobalConjurConfiguration/global-config.js" type="text/javascript"/>
 
        <style type="text/css">
            .jenkins-select_input {
@@ -150,7 +77,5 @@
              transition: var(--standard-transition);
              width: 100% !important;
            }
-
-
    </style>
 </j:jelly>
