@@ -207,7 +207,6 @@
 				<artifactId>maven-site-plugin</artifactId>
 				<version>3.7.1</version><!--$NO-MVN-MAN-VER$-->
 			</plugin>
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-project-info-reports-plugin</artifactId>
@@ -217,7 +216,6 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
-
 					<argLine>${jacoco.agent.argLine} --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/sun.reflect.generics.parser=ALL-UNNAMED</argLine>
 					<systemPropertyVariables>
 						<org.slf4j.simpleLogger.defaultLogLevel>DEBUG</org.slf4j.simpleLogger.defaultLogLevel>

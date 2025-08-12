@@ -1,0 +1,21 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<org.conjur.jenkins.configuration.GlobalConjurConfiguration plugin="conjur-credentials">
+  <conjurConfiguration>
+    <applianceURL>{{URL}}</applianceURL>
+    <account>{{ACCOUNT}}</account>
+    <credentialID></credentialID>
+    <certificateCredentialID></certificateCredentialID>
+  </conjurConfiguration>
+  <selectAuthenticator>JWT</selectAuthenticator>
+  <enableJWKS>true</enableJWKS>
+  <authWebServiceId>jenkins</authWebServiceId>
+  <jwtAudience>cyberark-conjur</jwtAudience>
+  <keyLifetimeInMinutes>60</keyLifetimeInMinutes>
+  <tokenDurarionInSeconds>120</tokenDurarionInSeconds>
+  <enableContextAwareCredentialStore>true</enableContextAwareCredentialStore>
+  <enableIdentityFormatFieldsFromToken>false</enableIdentityFormatFieldsFromToken>
+  <identityFormatFieldsFromToken>jenkins_full_name</identityFormatFieldsFromToken>
+  <selectIdentityFormatToken>jenkins_full_name</selectIdentityFormatToken>
+  <selectIdentityFieldsSeparator>-</selectIdentityFieldsSeparator>
+  <identityFieldName>identity</identityFieldName>
+</org.conjur.jenkins.configuration.GlobalConjurConfiguration>

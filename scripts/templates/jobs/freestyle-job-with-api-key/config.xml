@@ -1,0 +1,57 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>testing</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <org.conjur.jenkins.configuration.ConjurJITJobProperty plugin="conjur-credentials">
+      <useJustInTime>false</useJustInTime>
+      <authWebServiceId></authWebServiceId>
+      <hostPrefix></hostPrefix>
+      <conjurConfiguration>
+        <inheritFromParent>false</inheritFromParent>
+        <applianceURL>{{URL}}</applianceURL>
+        <account>{{ACCOUNT}}</account>
+        <credentialID>conjur</credentialID>
+        <certificateCredentialID></certificateCredentialID>
+      </conjurConfiguration>
+    </org.conjur.jenkins.configuration.ConjurJITJobProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+
+# Echo the CONJUR_SECRET value
+echo &quot;CONJUR_SECRET: $CONJUR_SECRET&quot;
+
+# Check if the CONJUR_SECRET value
+if [ &quot;$CONJUR_SECRET&quot; == &quot;db_password&quot; ]; then
+    echo &quot;Secret retrieved successfully&quot;
+else
+    echo &quot;Unable to retrieve the secret&quot;
+    exit 1
+fi</command>
+      <configuredLocalRules/>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers>
+    <org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper plugin="credentials-binding">
+      <bindings>
+        <org.conjur.jenkins.conjursecrets.ConjurSecretCredentialsBinding plugin="conjur-credentials">
+          <credentialsId>secret</credentialsId>
+          <variable>CONJUR_SECRET</variable>
+          <credentialsId defined-in="org.conjur.jenkins.conjursecrets.ConjurSecretCredentialsBinding">secret</credentialsId>
+          <isParent>false</isParent>
+        </org.conjur.jenkins.conjursecrets.ConjurSecretCredentialsBinding>
+      </bindings>
+    </org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper>
+  </buildWrappers>
+</project>

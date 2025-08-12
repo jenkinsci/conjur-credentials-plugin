@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-. "$(git rev-parse --show-toplevel)/scripts/utils.sh"
+. "$(git rev-parse --show-toplevel)/scripts/util.sh"
 
 ensure_mvn
 set -x

@@ -2,63 +2,9 @@
 @Library("product-pipelines-shared-library") _
 // Automated release, promotion and dependencies
 properties([
-  // Include the automated release parameters for the build
-  release.addParams(),
   // Dependencies of the project that should trigger builds
   dependencies([])
 ])
-
-// Performs release promotion.  No other stages will be run
-if (params.MODE == "PROMOTE") {
-  target_version = ""
-  // This call will create non-draft github release once the closure has completed
-  release.promote(params.VERSION_TO_PROMOTE) { infrapool, sourceVersion, targetVersion, assetDirectory ->
-    // Any assets from sourceVersion Github release are available in assetDirectory
-    // Any version number updates from sourceVersion to targetVersion occur here
-    // Any publishing of targetVersion artifacts occur here
-    // Anything added to assetDirectory will be attached to the Github Release
-
-    // assetDirectory is on the infrapool node.
-
-    target_version = targetVersion
-
-    // Build plugin with target version
-    infrapool.agentSh "VERSION=\"${targetVersion}\" scripts/update-version.sh"
-    infrapool.agentSh('scripts/compile.sh')
-    infrapool.agentSh('scripts/build.sh')
-
-    // Copy built plugin to assetDirectory, so it will be attached to the Github Release
-    infrapool.agentSh("sudo cp target/*.hpi \"${assetDirectory}\"")
-
-    // Do upstream release. This pushes plugin to jenkinsci project maven
-    // and the plugin index.
-    infrapool.agentSh('scripts/promote.sh')
-
-  }
-  // Github release has been created so now we can copy it
-  //  from: github.cyberng.com/conjur-enterprise/conjur-credentials-plugin
-  //  to:   github.com/jenkinsci/conjur-credentials-plugin
-  // Note SOURCE_TAG is set to target_version as that version is created
-  // when the promote call completes. This is the final release version, but its
-  // created on internal github (github enterprise) so its the source for the
-  // copy to github.com.
-
-  // TODO: Switch back to production release publication once PR merges. https://github.cyberng.com/Conjur-Enterprise/self-services/pull/5
-  //job="Conjur-Enterprise/conjur-enterprise-self-services/services/internal-github-release-publication/github-release-publication"
-  job="Conjur-Enterprise/conjur-enterprise-self-services/services/internal-github-release-publication/CNJR-1442_allow_upstream_cause"
-  build(
-      job: job,
-      parameters: [
-        string(name: 'SOURCE_ORGANIZATION', value: 'conjur-enterprise'),
-        string(name: 'SOURCE_REPOSITORY', value: 'conjur-credentials-plugin'),
-        string(name: 'SOURCE_TAG', value: "v${target_version}"),
-        string(name: 'DESTINATION_ORGANIZATION', value: 'jenkinsci'),
-        string(name: 'DESTINATION_REPOSITORY', value: 'conjur-credentials-plugin'),
-        string(name: 'DESTINATION_BRANCH', value: 'master')
-      ]
-  )
-  return
-}
 
 pipeline {
   agent { label 'conjur-enterprise-common-agent' }
@@ -171,6 +117,86 @@ pipeline {
       }
     }
 
+    stage('Run Conjur Cloud tests') {
+      stages {
+        stage('Create a Tenant') {
+          steps {
+            script {
+              TENANT = getConjurCloudTenant()
+            }
+          }
+        }
+        stage('Authenticate') {
+          steps {
+            script {
+              def id_token = getConjurCloudTenant.tokens(
+                infrapool: infrapool,
+                identity_url: "${TENANT.identity_information.idaptive_tenant_fqdn}",
+                username: "${TENANT.login_name}"
+              )
+
+              def conj_token = getConjurCloudTenant.tokens(
+                infrapool: infrapool,
+                conjur_url: "${TENANT.conjur_cloud_url}",
+                identity_token: "${id_token}"
+                )
+
+              env.conj_token = conj_token
+            }
+          }
+        }
+        stage('Get Edge Token') {
+          steps {
+            script {
+              def edge_token = getConjurCloudTenant.tokens(
+                infrapool: infrapool,
+                conjur_url: "${TENANT.conjur_cloud_url}",
+                edge_name: "${TENANT.conjur_edge_name}",
+                conjur_token: "${conj_token}"
+              )
+
+              def deploy_edge = getConjurCloudTenant.edge(
+                infrapool: infrapool,
+                conjur_url: "${TENANT.conjur_cloud_url}",
+                edge_name: "edge-test",
+                edge_token: "${edge_token}",
+                common_name: "edge-test",
+                subject_alt_names: "edge-test"
+              )
+
+              env.edge_token = edge_token
+            }
+          }
+        }
+        stage('Run tests against Cloud') {
+          environment {
+            INFRAPOOL_CONJUR_APPLIANCE_URL="${TENANT.conjur_cloud_url}"
+            INFRAPOOL_CONJUR_AUTHN_LOGIN="${TENANT.login_name}"
+            INFRAPOOL_CONJUR_AUTHN_TOKEN="${env.conj_token}"
+            INFRAPOOL_TEST_CLOUD=true
+          }
+          steps {
+            script {
+              infrapool.agentSh "scripts/start.sh -c"
+            }
+          }
+        }
+        stage('Run tests against Edge') {
+          environment {
+            INFRAPOOL_CONJUR_APPLIANCE_URL="${TENANT.conjur_cloud_url}"
+            INFRAPOOL_CONJUR_AUTHN_LOGIN="${TENANT.login_name}"
+            INFRAPOOL_CONJUR_AUTHN_TOKEN="${env.conj_token}"
+            INFRAPOOL_TEST_CLOUD=true
+          }
+          steps {
+            script {
+              infrapool.agentSh "scripts/start.sh -ed"
+            }
+          }
+        }
+      }
+    }
+
     stage('Report Test Coverage to Codacy') {
       steps {
           script {
@@ -194,26 +220,12 @@ pipeline {
       }
      }
     }
-    stage('Release') {
-      when {
-        expression {
-          MODE == "RELEASE"
-        }
-      }
-
-      steps {
-        script {
-          release(infrapool, { billOfMaterialsDirectory, assetDirectory ->
-            // Publish release artifacts to all the appropriate locations
-            // Copy any artifacts to assetDirectory to attach them to the Github release
-            infrapool.agentSh "cp target/conjur-credentials.jar target/conjur-credentials.hpi ${assetDirectory}"
-          })
-        }
-      }
-    }
   }
   post {
     always {
+      script {
+        deleteConjurCloudTenant("${TENANT.id}")
+      }
       releaseInfraPoolAgent(".infrapool/release_agents")
     }
   }
