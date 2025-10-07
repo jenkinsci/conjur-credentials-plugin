@@ -1,4 +1,4 @@
-# Contributing to the conjur credentials plugin
+# Contributing to the CyberArk Secrets Manager Credentials Plugin
 
 ## Building from Source
 
