@@ -44,8 +44,7 @@ if (params.MODE == "PROMOTE") {
   // copy to github.com.
 
   // TODO: Switch back to production release publication once PR merges. https://github.cyberng.com/Conjur-Enterprise/self-services/pull/5
-  //job="Conjur-Enterprise/conjur-enterprise-self-services/services/internal-github-release-publication/github-release-publication"
-  job="Conjur-Enterprise/conjur-enterprise-self-services/services/internal-github-release-publication/CNJR-1442_allow_upstream_cause"
+  job="conjur-enterprise-self-services/services/internal-github-release-publication/CNJR-1442_allow_upstream_cause"
   build(
       job: job,
       parameters: [
