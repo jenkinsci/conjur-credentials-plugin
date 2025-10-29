@@ -35,15 +35,7 @@ if (params.MODE == "PROMOTE") {
     infrapool.agentSh('scripts/promote.sh')
 
   }
-  // Github release has been created so now we can copy it
-  //  from: github.cyberng.com/conjur-enterprise/conjur-credentials-plugin
-  //  to:   github.com/jenkinsci/conjur-credentials-plugin
-  // Note SOURCE_TAG is set to target_version as that version is created
-  // when the promote call completes. This is the final release version, but its
-  // created on internal github (github enterprise) so its the source for the
-  // copy to github.com.
-
-  // TODO: Switch back to production release publication once PR merges. https://github.cyberng.com/Conjur-Enterprise/self-services/pull/5
+  
   job="conjur-enterprise-self-services/services/internal-github-release-publication/CNJR-1442_allow_upstream_cause"
   build(
       job: job,
@@ -88,6 +80,14 @@ pipeline {
         script {
           currentBuild.result = 'ABORTED'
           error("Aborting build because this build was triggered from upstream, but no release was built")
+        }
+      }
+    }
+
+    stage('Scan for internal URLs') {
+      steps {
+        script {
+          detectInternalUrls()
         }
       }
     }
