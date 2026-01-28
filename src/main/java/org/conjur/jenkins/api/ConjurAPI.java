@@ -25,6 +25,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.kohsuke.stapler.Stapler;
+import org.kohsuke.stapler.StaplerRequest;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
 import java.io.IOException;
@@ -639,7 +640,10 @@ public class ConjurAPI {
 
         if (context == null) {
             LOGGER.log(Level.FINEST, "No context set for function getSecretWithInheritance");
-            context = Stapler.getCurrentRequest().findAncestorObject(ModelObject.class);
+            StaplerRequest currentRequest = Stapler.getCurrentRequest();
+            if (currentRequest != null) {
+                context = currentRequest.findAncestorObject(ModelObject.class);
+            }
 
             if (context == null) {
                 LOGGER.log(Level.FINEST, "No context available for current request");

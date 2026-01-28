@@ -12,6 +12,7 @@ import org.conjur.jenkins.conjursecrets.ConjurSecretCredentials;
 import org.conjur.jenkins.conjursecrets.ConjurSecretUsernameSSHKeyCredentials;
 import org.conjur.jenkins.exceptions.InvalidConjurSecretException;
 import org.kohsuke.stapler.Stapler;
+import org.kohsuke.stapler.StaplerRequest;
 
 import javax.net.ssl.*;
 import java.net.URI;
@@ -198,10 +199,18 @@ public class ConjurAPIUtils {
 	 * Extracts the full job path from the referer URL and uses it to locate the corresponding Item.
 	 *
 	 * @return Jenkins Item obtained from the referer URL, or null if the Item cannot be found
+	 *         or if there is no current HTTP request (e.g., when called from a background thread)
 	 * @throws URISyntaxException if the referer URL is malformed
 	 */
 	public static Item getItemFromReferer() throws URISyntaxException {
-		String referer = Stapler.getCurrentRequest().getReferer();
+		StaplerRequest currentRequest = Stapler.getCurrentRequest();
+		if (currentRequest == null) {
+			return null;
+		}
+		String referer = currentRequest.getReferer();
+		if (referer == null) {
+			return null;
+		}
 		String jobPath = extractJobPathFromUrl(new URI(referer).getPath());
 		return Jenkins.get().getItemByFullName(jobPath);
 	}
