@@ -18,6 +18,7 @@ import org.jenkins.ui.icon.Icon;
 import org.jenkins.ui.icon.IconSet;
 import org.jenkins.ui.icon.IconType;
 import org.kohsuke.stapler.Stapler;
+import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.export.ExportedBean;
 import org.springframework.security.core.Authentication;
 
@@ -124,7 +125,8 @@ public class ConjurCredentialStore extends CredentialsStore {
 		if(!hasCredentialsView && !isAdmin)
 		{
 			//Get the current item from the context
-			Item currentItem = Stapler.getCurrentRequest().findAncestorObject(Item.class);
+			StaplerRequest currentRequest = Stapler.getCurrentRequest();
+			Item currentItem = currentRequest != null ? currentRequest.findAncestorObject(Item.class) : null;
 			if(currentItem == null) {
 				LOGGER.log(Level.WARNING, "Unable to determine the current item for permission check ");
 				return false;
@@ -163,7 +165,8 @@ public class ConjurCredentialStore extends CredentialsStore {
 		// if storage is global we have to return global credentials
 		// current context from which call was done
 		// context is context assigned to ConjurStorage
-		Item currentContext = Stapler.getCurrentRequest().findAncestorObject(Item.class);
+		StaplerRequest currentStaplerRequest = Stapler.getCurrentRequest();
+		Item currentContext = currentStaplerRequest != null ? currentStaplerRequest.findAncestorObject(Item.class) : null;
 
 				// if we are on the top then we always return global credentials if avaiable
 		if( context instanceof hudson.model.Hudson || currentContext == null )

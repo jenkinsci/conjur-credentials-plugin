@@ -12,6 +12,7 @@ import org.conjur.jenkins.conjursecrets.ConjurSecretCredentials;
 import org.conjur.jenkins.conjursecrets.ConjurSecretUsernameSSHKeyCredentials;
 import org.conjur.jenkins.exceptions.InvalidConjurSecretException;
 import org.kohsuke.stapler.Stapler;
+import org.kohsuke.stapler.StaplerRequest;
 
 import javax.net.ssl.*;
 import java.net.URI;
@@ -201,9 +202,13 @@ public class ConjurAPIUtils {
 	 * @throws URISyntaxException if the referer URL is malformed
 	 */
 	public static Item getItemFromReferer() throws URISyntaxException {
-		String referer = Stapler.getCurrentRequest().getReferer();
-		String jobPath = extractJobPathFromUrl(new URI(referer).getPath());
-		return Jenkins.get().getItemByFullName(jobPath);
+		StaplerRequest currentRequest = Stapler.getCurrentRequest();
+		if (currentRequest != null) {
+			String referer = currentRequest.getReferer();
+			String jobPath = extractJobPathFromUrl(new URI(referer).getPath());
+			return Jenkins.get().getItemByFullName(jobPath);
+		}
+		return null;
 	}
 
 	protected static String extractJobPathFromUrl(String urlPath) {
