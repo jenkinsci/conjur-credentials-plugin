@@ -629,6 +629,4 @@ public class ConjurAPITest {
             // No-op: not needed for test handler
         }
     }
-
-
 }
