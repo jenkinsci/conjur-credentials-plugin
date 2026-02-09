@@ -664,7 +664,7 @@ public class ConjurAPI {
             // we go through item to the folder on the top and try to get credentials
             while (true) {
                 try {
-                    LOGGER.log(Level.FINEST, String.format("Get config context %s", context.getDisplayName()));
+                    LOGGER.log(Level.FINEST, String.format("Get config context %s", contextName));
                     conjurConfiguration = getConfigurationFromContext(context);
                     ConjurAuthnInfo conjurAuthn;
                     conjurAuthn = getConjurAuthnInfo(conjurConfiguration, context);
