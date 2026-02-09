@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)an
 
 Please use documentation outlined in the GitHub Readme for this version.  Official CyberArk documentation pages will be updated to reflect these changes once available
 
+## [3.0.9] - 2026-02-09
+
+### Fixed
+- null pointer reported by spotbugs
+
 ## [3.0.8] - 2026-02-01
 
 ### Fixed
