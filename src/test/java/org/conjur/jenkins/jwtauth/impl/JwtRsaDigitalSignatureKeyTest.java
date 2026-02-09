@@ -16,7 +16,7 @@ class JwtRsaDigitalSignatureKeyTest {
     private JwtRsaDigitalSignatureKey key;
 
     @BeforeEach
-    void setUp() {
+    void beforeEach() {
         key = new JwtRsaDigitalSignatureKey(TEST_ID);
     }
 
@@ -37,7 +37,7 @@ class JwtRsaDigitalSignatureKeyTest {
     @Test
     void testToSigningKeyReturnsPrivateKey() {
         RSAPrivateKey privatekey = key.toSigningKey();
-        assertNotNull(privatekey, "toSigningKey() should return a priavte key (or null if it is not initialized");
+        assertNotNull(privatekey, "toSigningKey() should return a private key (or null if it is not initialized");
     }
 
 }

@@ -11,18 +11,19 @@ import hudson.security.ACL;
 import jenkins.model.Jenkins;
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.conjursecrets.ConjurSecretCredentialsImpl;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.security.core.Authentication;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Handler;
@@ -30,14 +31,13 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-import static org.junit.Assert.*;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SuppressWarnings("deprecation")
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class ConjurCredentialStoreTest {
 
-public class ConjurCredentialStoreTest {
     @Mock
     private ConjurCredentialProvider provider;
 
@@ -72,8 +72,8 @@ public class ConjurCredentialStoreTest {
     private TestLogHandler handler;
 
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void beforeEach() {
         store = mock(ConjurCredentialStore.class);
         authMock = mock(Authentication.class);
         aclMock = mock(ACL.class);
@@ -82,13 +82,13 @@ public class ConjurCredentialStoreTest {
         LOGGER.setLevel(Level.FINEST);
     }
 
-    @After
-    public void tearDownLogger() {
+    @AfterEach
+    void afterEach() {
         LOGGER.removeHandler(handler);
     }
 
     @Test
-    public void mockAddCredential() throws IOException {
+    void mockAddCredential() {
         mockStatic(ConjurCredentialStore.class);
         ConjurCredentialStore conjurCredentialStore = mock(ConjurCredentialStore.class);
         ConjurSecretCredentialsImpl conjurSecretCredentialsImplAdd = new ConjurSecretCredentialsImpl(
@@ -100,7 +100,7 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    public void getContext() {
+    void getContext() {
         ConjurCredentialStore conjurCreStore = new ConjurCredentialStore(provider, context);
         ModelObject actualContext = conjurCreStore.getContext();
 
@@ -111,7 +111,7 @@ public class ConjurCredentialStoreTest {
 
 
     @Test
-    public void mockRemoveCredential() {
+    void mockRemoveCredential() {
         mock(ConjurCredentialStore.class);
         ConjurCredentialStore conjurCredentialStore = mock(ConjurCredentialStore.class);
         ConjurSecretCredentialsImpl conjurSecretCredentialsImplRemove = new ConjurSecretCredentialsImpl(
@@ -122,7 +122,7 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    public void mockUpdateCredential() {
+    void mockUpdateCredential() {
         mock(ConjurCredentialStore.class);
         ConjurCredentialStore conjurCredentialStoreUpdate = mock(ConjurCredentialStore.class);
         ConjurSecretCredentialsImpl oldCredentials = new ConjurSecretCredentialsImpl(
@@ -136,7 +136,7 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    public void testIsVisibleStoreActionNull() {
+    void testIsVisibleStoreActionNull() {
         CredentialsStoreAction action = new CredentialsStoreAction() {
             @Override
             public boolean isVisible() {
@@ -158,7 +158,7 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    public void testIsVisibleTrueStoreActionNotNull() {
+    void testIsVisibleTrueStoreActionNotNull() {
         CredentialsStoreAction action = new CredentialsStoreAction() {
             private CredentialsStore store;
 
@@ -182,7 +182,7 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    public void testIsVisibleStoreActionNotNull() {
+    void testIsVisibleStoreActionNotNull() {
         CredentialsStoreAction action = new CredentialsStoreAction() {
             @Override
             public boolean isVisible() {
@@ -199,12 +199,12 @@ public class ConjurCredentialStoreTest {
         CredentialsStore storeMock = mock(CredentialsStore.class);
 
         assertNull(storeMock.getStoreAction());
-        assertEquals(action.getIconFileName(), null);
+        assertNull(action.getIconFileName());
         assertFalse(action.isVisible());
     }
 
     @Test
-    public void testIsVisibleNoViewPermission() {
+    void testIsVisibleNoViewPermission() {
         CredentialsStoreAction action = new CredentialsStoreAction() {
             private CredentialsStore store;
 
@@ -228,7 +228,7 @@ public class ConjurCredentialStoreTest {
 
 
     @Test
-    public void testGetStoreAction() {
+    void testGetStoreAction() {
         ConjurCredentialStore conjurCreStore = new ConjurCredentialStore(provider, context);
         CredentialsStoreAction result = conjurCreStore.getStoreAction();
 
@@ -236,33 +236,33 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    public void testGetDisplayName() {
+    void testGetDisplayName() {
         store = new ConjurCredentialStore(provider, context);
         String result = store.getDisplayName();
 
         assertEquals("Conjur Credential Storage", result);
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void testAddCredentialThrowsException() throws Exception {
+    @Test
+    void testAddCredentialThrowsException() {
         store = new ConjurCredentialStore(provider, context);
-        store.addCredentials(domainMock, credentialsMock);
-    }
-
-    @Test(expected = UnsupportedOperationException.class)
-    public void testRemoveCredentialThrowsException() throws Exception {
-        store = new ConjurCredentialStore(provider, context);
-        store.removeCredentials(domainMock, credentialsMock);
-    }
-
-    @Test(expected = UnsupportedOperationException.class)
-    public void testUpdateCredentialsThrowsException() throws Exception {
-        store = new ConjurCredentialStore(provider, context);
-        store.updateCredentials(domainMock, credentialsMock, mock(Credentials.class));
+        assertThrows(UnsupportedOperationException.class, () -> store.addCredentials(domainMock, credentialsMock));
     }
 
     @Test
-    public void testHasPermission2AdminAccessReturnsTrue() {
+    void testRemoveCredentialThrowsException() {
+        store = new ConjurCredentialStore(provider, context);
+        assertThrows(UnsupportedOperationException.class, () -> store.removeCredentials(domainMock, credentialsMock));
+    }
+
+    @Test
+    void testUpdateCredentialsThrowsException() {
+        store = new ConjurCredentialStore(provider, context);
+        assertThrows(UnsupportedOperationException.class, () -> store.updateCredentials(domainMock, credentialsMock, mock(Credentials.class)));
+    }
+
+    @Test
+    void testHasPermission2AdminAccessReturnsTrue() {
         store = new ConjurCredentialStore(provider, context);
         try (MockedStatic<Jenkins> mockStaticJenkins = mockStatic(Jenkins.class)) {
 
@@ -278,7 +278,7 @@ public class ConjurCredentialStoreTest {
 
 
     @Test
-    public void testHasPermission2NonViewAccessReturnsTrue() {
+    void testHasPermission2NonViewAccessReturnsTrue() {
         store = new ConjurCredentialStore(provider, context);
         try (MockedStatic<Jenkins> mockStaticJenkins = mockStatic(Jenkins.class)) {
             when(jenkinsMock.getACL()).thenReturn(aclMock);
@@ -292,7 +292,7 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    public void testHasPermission2NonAdminWithAccessReturnsTrue() {
+    void testHasPermission2NonAdminWithAccessReturnsTrue() {
         store = new ConjurCredentialStore(provider, context);
         try (MockedStatic<Jenkins> mockStaticJenkins = mockStatic(Jenkins.class);
              MockedStatic<Stapler> mockStaticStapler = mockStatic(Stapler.class)) {
@@ -309,7 +309,7 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    public void testHasPermission2NonAdminWithoutAccessReturnsTrue() {
+    void testHasPermission2NonAdminWithoutAccessReturnsTrue() {
         store = new ConjurCredentialStore(provider, context);
         try (MockedStatic<Jenkins> mockStaticJenkins = mockStatic(Jenkins.class);
              MockedStatic<Stapler> mockStaticStapler = mockStatic(Stapler.class)) {
@@ -329,7 +329,7 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    public void testGetCredentialsUserLacksCredentialViewPermission() {
+    void testGetCredentialsUserLacksCredentialViewPermission() {
         try (MockedStatic<Jenkins> jenkinsStaticMock = mockStatic(Jenkins.class)) {
             jenkinsStaticMock.when(Jenkins::getAuthentication2).thenReturn(authMock);
             when(authMock.getName()).thenReturn("user1");
@@ -343,7 +343,7 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    public void testGetCredentialsReturnsGlobalCredentials() {
+    void testGetCredentialsReturnsGlobalCredentials() {
         try (MockedStatic<Jenkins> jenkinsStaticMock = mockStatic(Jenkins.class);
              MockedStatic<Stapler> mockStaticStapler = mockStatic(Stapler.class)) {
             jenkinsStaticMock.when(Jenkins::getAuthentication2).thenReturn(authMock);
@@ -362,7 +362,7 @@ public class ConjurCredentialStoreTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void testGetCredentials() {
+    void testGetCredentials() {
         AbstractFolder<?> folderContext = mock(AbstractFolder.class);
         AbstractFolder<?> parentFolder = mock(AbstractFolder.class);
         Item mockItem = mock(Item.class);
@@ -384,7 +384,7 @@ public class ConjurCredentialStoreTest {
             when(mockItem.getParent()).thenReturn((ItemGroup) parentFolder);
             when(parentFolder.getFullName()).thenReturn("folder1"); // must match storePath
             when(parentFolder.getFullDisplayName()).thenReturn("parent display");
-            when(((Item) parentFolder).getFullName()).thenReturn("folder1");
+            when(parentFolder.getFullName()).thenReturn("folder1");
 
             // Inheritance
             conjurApiMock.when(() -> ConjurAPI.isInheritanceOn(mockItem)).thenReturn(true);
@@ -404,8 +404,7 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    public void testGetCredentialsInheritanceOffReturnsEmptyListWithLog() {
+    void testGetCredentialsInheritanceOffReturnsEmptyListWithLog() {
         AbstractFolder<?> folderContext = mock(AbstractFolder.class);
         Item mockItem = mock(Item.class);
         try (MockedStatic<Jenkins> jenkinsMock = mockStatic(Jenkins.class);
@@ -427,7 +426,7 @@ public class ConjurCredentialStoreTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void testGetCredentialsInheritanceOfParentReturnsEmptyListWithLog() {
+    void testGetCredentialsInheritanceOfParentReturnsEmptyListWithLog() {
         AbstractFolder<?> folderContext = mock(AbstractFolder.class);
         AbstractFolder<?> parentFolder = mock(AbstractFolder.class);
         Item mockItem = mock(Item.class);
@@ -450,7 +449,7 @@ public class ConjurCredentialStoreTest {
             when(mockItem.getParent()).thenReturn((ItemGroup) parentFolder);
             when(parentFolder.getFullName()).thenReturn("folder1"); // must match storePath
             when(parentFolder.getFullDisplayName()).thenReturn("parent display");
-            when(((Item) parentFolder).getFullName()).thenReturn("folder1");
+            when(parentFolder.getFullName()).thenReturn("folder1");
 
             // Inheritance
             conjurApiMock.when(() -> ConjurAPI.isInheritanceOn(mockItem)).thenReturn(true);
@@ -466,7 +465,7 @@ public class ConjurCredentialStoreTest {
 
 
     @Test
-    public void testConjurCredentialStoreAction() {
+    void testConjurCredentialStoreAction() {
         ConjurCredentialStore mockStore = mock(ConjurCredentialStore.class);
         ModelObject mockContext = mock(ModelObject.class);
         ConjurCredentialStore.ConjurCredentialStoreAction action = new ConjurCredentialStore.ConjurCredentialStoreAction(mockStore, mockContext);
@@ -493,7 +492,7 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    public void testGetIconFileNameWhenVisible() throws Exception {
+    void testGetIconFileNameWhenVisible() {
         ConjurCredentialStore store = mock(ConjurCredentialStore.class);
         ModelObject context = mock(ModelObject.class);
         ConjurCredentialStore.ConjurCredentialStoreAction action =
@@ -504,7 +503,7 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    public void testGetIconFileNameWhenNotVisible() throws Exception {
+    void testGetIconFileNameWhenNotVisible() {
         ConjurCredentialStore store = mock(ConjurCredentialStore.class);
         ModelObject context = mock(ModelObject.class);
         ConjurCredentialStore.ConjurCredentialStoreAction action =
@@ -514,7 +513,7 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    public void testGetIconClassNameWhenVisible() throws Exception {
+    void testGetIconClassNameWhenVisible() {
         ConjurCredentialStore store = mock(ConjurCredentialStore.class);
         ModelObject context = mock(ModelObject.class);
         ConjurCredentialStore.ConjurCredentialStoreAction action =
@@ -524,7 +523,7 @@ public class ConjurCredentialStoreTest {
     }
 
     @Test
-    public void testGetIconClassNameWhenNotVisible() throws Exception {
+    void testGetIconClassNameWhenNotVisible() {
         ConjurCredentialStore store = mock(ConjurCredentialStore.class);
         ModelObject context = mock(ModelObject.class);
         ConjurCredentialStore.ConjurCredentialStoreAction action =

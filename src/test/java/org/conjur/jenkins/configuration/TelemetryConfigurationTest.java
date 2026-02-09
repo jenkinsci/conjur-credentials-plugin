@@ -19,7 +19,7 @@ class TelemetryConfigurationTest {
         assertTrue(isBase64Encoded(header), "Telemetry header should be Base64 encoded");
     }
 
-    private boolean isBase64Encoded(String str) {
+    private static boolean isBase64Encoded(String str) {
         try {
             Base64.getUrlDecoder().decode(str);
             return true;
@@ -29,7 +29,7 @@ class TelemetryConfigurationTest {
     }
 
     @Test
-    public void testBuildTelemetryHeaderEncodesCorrectly() {
+    void testBuildTelemetryHeaderEncodesCorrectly() {
         String encodedHeader = TelemetryConfiguration.buildTelemetryHeader();
         String decodedHeader = new String(Base64.getUrlDecoder().decode(encodedHeader));
 
@@ -39,7 +39,7 @@ class TelemetryConfigurationTest {
     }
 
     @Test
-    public void testGetTelemetryCachesHeader() {
+    void testGetTelemetryCachesHeader() {
         String header1 = TelemetryConfiguration.getTelemetryHeader();
         String header2 = TelemetryConfiguration.getTelemetryHeader();
 
@@ -47,14 +47,14 @@ class TelemetryConfigurationTest {
     }
 
     @Test
-    public void testGetPluginVersionFindsVersion() {
+    void testGetPluginVersionFindsVersion() {
         String version = TelemetryConfiguration.getPluginVersion();
 
         assertNotEquals("unknown", version);
     }
 
     @Test
-    public void testGetPluginVersionReturnsUnknown() {
+    void testGetPluginVersionReturnsUnknown() {
         try (MockedStatic<TelemetryConfiguration> mockedTelemetry = mockStatic(TelemetryConfiguration.class)) {
             mockedTelemetry.when(TelemetryConfiguration::getPluginVersion)
                     .thenReturn("unknown");

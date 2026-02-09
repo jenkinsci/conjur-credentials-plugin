@@ -14,12 +14,14 @@ import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -27,27 +29,27 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
 @ExtendWith(MockitoExtension.class)
-public class ConjurSecretUsernameSSHKeyCredentialsBindingTest {
+@MockitoSettings(strictness = Strictness.LENIENT)
+@WithJenkins
+class ConjurSecretUsernameSSHKeyCredentialsBindingTest {
 
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+    private JenkinsRule j;
 
     private BindingDescriptor<ConjurSecretUsernameSSHKeyCredentials> bindCred = null;
 
-    @Before
-    public void init() {
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        j = rule;
         bindCred = new ConjurSecretUsernameSSHKeyCredentialsBinding.DescriptorImpl();
     }
 
     @Test
-    public void testBind() throws Exception {
+    void testBind() throws Exception {
         ConjurSecretUsernameSSHKeyCredentialsBinding bind = new ConjurSecretUsernameSSHKeyCredentialsBinding(
                 "Dev-Team-1");
         File file = new File("/var/jenkins_home/workspace/Dev-Team-1/test-pipeline");
@@ -69,7 +71,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsBindingTest {
     }
 
     @Test
-    public void testUsernameVariable() throws SecurityException {
+    void testUsernameVariable() {
         final ConjurSecretUsernameSSHKeyCredentialsBinding userNameCredentials = new ConjurSecretUsernameSSHKeyCredentialsBinding(
                 "Test pipeline");
         String usernameVariable = "userName";
@@ -81,7 +83,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsBindingTest {
     }
 
     @Test
-    public void testVariables() {
+    void testVariables() {
         ConjurSecretUsernameSSHKeyCredentialsBinding bind = new ConjurSecretUsernameSSHKeyCredentialsBinding(
                 "Dev-Team-1");
         String userNameVar = "test";
@@ -95,24 +97,24 @@ public class ConjurSecretUsernameSSHKeyCredentialsBindingTest {
     }
 
     @Test
-    public void testGetDisplayName() {
+    void testGetDisplayName() {
         assertNotNull(bindCred.getDisplayName());
     }
 
     @Test
-    public void testRequiresWorkspace() {
+    void testRequiresWorkspace() {
         assertFalse(bindCred.requiresWorkspace());
     }
 
     @Test
-    public void testtype() {
+    void testtype() {
         ConjurSecretUsernameSSHKeyCredentialsBinding bind = new ConjurSecretUsernameSSHKeyCredentialsBinding(
                 "Dev-Team-1");
         assertNotNull(bind.type());
     }
 
     @Test
-    public void testCredentialsAreMaskedInLogs() throws Exception {
+    void testCredentialsAreMaskedInLogs() throws Exception {
         ConjurSecretUsernameSSHKeyCredentials cred = new ConjurSecretUsernameSSHKeyCredentialsImpl(
                 CredentialsScope.GLOBAL, "usernamesshkey", "testUser", "usernamesshkeym", Secret.fromString("test"), "desc");
         SystemCredentialsProvider.getInstance().getCredentials().add(cred);
@@ -133,7 +135,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsBindingTest {
         WorkflowRun run = job.scheduleBuild2(0).get();
         String log = JenkinsRule.getLog(run);
 
-        assertFalse("User credential should be masked", log.contains("testUser"));
+        assertFalse(log.contains("testUser"), "User credential should be masked");
     }
 
 }

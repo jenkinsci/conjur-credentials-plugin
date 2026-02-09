@@ -5,13 +5,13 @@ import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.conjur.jenkins.conjursecrets.ConjurSecretStringCredentialsBinding.DescriptorImpl;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class ConjurSecretStringCredentialsBindingTest {
+class ConjurSecretStringCredentialsBindingTest {
 
     private static final String VARIABLE_NAME = "MY_SECRET";
     private static final String CREDENTIAL_ID = "cred-id";
@@ -33,18 +33,18 @@ public class ConjurSecretStringCredentialsBindingTest {
     @Mock
     private ConjurSecretStringCredentials mockCredentials;
 
-    @Before
-    public void setUp() throws Exception, SecurityException {
+    @BeforeEach
+    void beforeEach() {
         binding = new ConjurSecretStringCredentialsBinding(VARIABLE_NAME, CREDENTIAL_ID);
     }
 
     @Test
-    public void testType() {
+    void testType() {
         assertNotNull(binding.type());
     }
 
     @Test
-    public void testDescriptorImplReturnsCorrectDisplayNameAndType() {
+    void testDescriptorImplReturnsCorrectDisplayNameAndType() {
         DescriptorImpl descriptor = new DescriptorImpl();
 
         assertEquals("Secret String Credential", descriptor.getDisplayName());

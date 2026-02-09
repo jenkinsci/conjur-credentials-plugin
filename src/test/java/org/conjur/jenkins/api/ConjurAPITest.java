@@ -17,13 +17,15 @@ import org.conjur.jenkins.authenticator.ConjurAPIKeyAuthenticator;
 import org.conjur.jenkins.configuration.*;
 import org.conjur.jenkins.exceptions.AuthenticationConjurException;
 import org.conjur.jenkins.jwtauth.impl.JwtToken;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -34,20 +36,19 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class ConjurAPITest {
 
-public class ConjurAPITest {
-
-    public OkHttpClient client;
-    public ModelObject context;
-    public ConjurConfiguration conjurConfiguration;
-    public Call remoteCall;
-    public ConjurAPI api;
-    public List<UsernamePasswordCredentials> availableCredential;
+    private OkHttpClient client;
+    private ModelObject context;
+    private ConjurConfiguration conjurConfiguration;
+    private Call remoteCall;
+    private ConjurAPI api;
+    private List<UsernamePasswordCredentials> availableCredential;
 
     private static final Logger LOGGER = Logger.getLogger(ConjurAPI.class.getName());
     private AbstractFolder<?> folderMock;
@@ -82,8 +83,8 @@ public class ConjurAPITest {
     @Mock
     private ResponseBody mockBody;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void beforeEach() {
         mock(ConjurAPI.class);
         conjurConfiguration = new ConjurConfiguration("https://conjur_server:8083", "myConjurAccount");
         client = ConjurAPIUtils.getHttpClient(new ConjurConfiguration("https://conjur_server:8083", "myConjurAccount"));
@@ -107,13 +108,13 @@ public class ConjurAPITest {
         LOGGER.setLevel(Level.FINEST);
     }
 
-    @After
-    public void tearDownLogger() {
+    @AfterEach
+    void afterEach() {
         LOGGER.removeHandler(handler);
     }
 
     @Test
-    public void getConjurAuthnInfo() {
+    void getConjurAuthnInfo() {
 
         try (MockedStatic<ConjurAPI> conjurAPIMockStatic = mockStatic(ConjurAPI.class)) {
             ConjurAuthnInfo conjurAuthn = new ConjurAuthnInfo();
@@ -123,7 +124,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void checkAuthentication() throws IOException {
+    void checkAuthentication() throws Exception {
         try (MockedStatic<JwtToken> jwtTokenMockStatic = mockStatic(JwtToken.class)) {
             jwtTokenMockStatic.when(() -> JwtToken.getToken((context), globalConfig)).thenReturn(
                     "jwtToken.test");
@@ -140,7 +141,7 @@ public class ConjurAPITest {
     // Check if ConjurAPI return secret
     //
     @Test
-    public void checkSecretVal() throws IOException {
+    void checkSecretVal() throws Exception {
         try (MockedStatic<ConjurAPI> mockedStaticConjurAPI = mockStatic(ConjurAPI.class)) {
             mockedStaticConjurAPI.when(
                             () -> ConjurAPI.getConjurSecret(client, conjurConfiguration, "auth-token".getBytes(), "host/frontend/frontend-01"))
@@ -154,7 +155,7 @@ public class ConjurAPITest {
     // Check if required config fields are set
     //
     @Test
-    public void conjurAuthnInfoEmptyFieldsShouldUseGlobalConfig() throws IOException {
+    void conjurAuthnInfoEmptyFieldsShouldUseGlobalConfig() {
         // Arrange
         ConjurAuthnInfo conjurAuthn = new ConjurAuthnInfo();
         // Initialize mocks
@@ -173,7 +174,7 @@ public class ConjurAPITest {
 
 
     @Test
-    public void testGetConjurSecretHandlesNullResponse() throws IOException {
+    void testGetConjurSecretHandlesNullResponse() throws Exception {
         try (MockedStatic<ConjurAPI> mockedStaticConjurAPI = mockStatic(ConjurAPI.class)) {
             mockedStaticConjurAPI.when(() ->
                             ConjurAPI.getConjurSecret(client, conjurConfiguration, "auth-token".getBytes(), "host/frontend/frontend-01"))
@@ -186,8 +187,7 @@ public class ConjurAPITest {
 
     @SuppressWarnings("unlikely-arg-type")
     @Test
-    public void testDefaultToEnvironment() throws SecurityException, IllegalArgumentException {
-
+    void testDefaultToEnvironment() {
         ConjurAuthnInfo conjurAuthn = new ConjurAuthnInfo();
 
         Map<String, String> env = new HashMap<>();
@@ -229,7 +229,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void logConjurConfiguration() {
+    void logConjurConfiguration() {
         assertEquals("https://conjur_server:8083", conjurConfiguration.getApplianceURL());
         assertEquals("myConjurAccount", conjurConfiguration.getAccount());
         conjurConfiguration.setCredentialID("credentialId");
@@ -246,7 +246,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testGetAuthorizationTokenWhenAuthenticatorIsNullSetsDefault() throws Exception {
+    void testGetAuthorizationTokenWhenAuthenticatorIsNullSetsDefault() throws Exception {
         try (MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class)) {
 
             ExtensionList<GlobalConfiguration> mockExtension = mock(ExtensionList.class);
@@ -271,7 +271,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testGetAuthorizationTokenWhenAuthenticatorSetsDefault() throws Exception {
+    void testGetAuthorizationTokenWhenAuthenticatorSetsDefault() throws Exception {
         try (MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class)) {
 
             when(globalConfig.getSelectAuthenticator()).thenReturn("APIKey");
@@ -297,13 +297,13 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testGetAuthorizationTokenThrowsRuntimeException() throws Exception {
+    void testGetAuthorizationTokenThrowsRuntimeException() throws Exception {
         try (MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class)) {
             when(globalConfig.getSelectAuthenticator()).thenReturn("APIKey");
             ExtensionList<GlobalConfiguration> mockExtension = mock(ExtensionList.class);
             when(mockExtension.get(GlobalConjurConfiguration.class)).thenReturn(globalConfig);
             globalConfigStatic.when(GlobalConfiguration::all).thenReturn(mockExtension);
-            when(api.getAuthorizationToken(mockAuthnInfo, mockContext)).thenThrow(new RuntimeException("Test runtime exception"));
+            when(ConjurAPI.getAuthorizationToken(mockAuthnInfo, mockContext)).thenThrow(new RuntimeException("Test runtime exception"));
             RuntimeException thrown = assertThrows(RuntimeException.class, () -> ConjurAPI.getAuthorizationToken(mockAuthnInfo, mockContext));
 
             assertEquals("Test runtime exception", thrown.getMessage());
@@ -315,7 +315,7 @@ public class ConjurAPITest {
     // Test if proper authenticator was selected
     //
     @Test
-    public void testSelectedAuthenticator() {
+    void testSelectedAuthenticator() {
         AbstractAuthenticator tokenAuth = ConjurAPI.getAuthenticatorByName("APIKey");
         String tokenAuthSelected = tokenAuth.getName();
 
@@ -327,7 +327,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testGetConjurSecretSuccess() throws IOException {
+    void testGetConjurSecretSuccess() throws Exception {
         try (MockedStatic<TelemetryConfiguration> mockTel = mockStatic(TelemetryConfiguration.class)) {
             when(mockConfiguration.getApplianceURL()).thenReturn("http://conjur_server");
             when(mockConfiguration.getAccount()).thenReturn("cucumber");
@@ -351,7 +351,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testGetConjurSecretThrowsAuthenticationException() throws IOException {
+    void testGetConjurSecretThrowsAuthenticationException() throws Exception {
         try (MockedStatic<TelemetryConfiguration> mockTel = mockStatic(TelemetryConfiguration.class)) {
             when(mockConfiguration.getApplianceURL()).thenReturn("http://conjur_server");
             when(mockConfiguration.getAccount()).thenReturn("cucumber");
@@ -375,7 +375,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testGetConjurSecretThrowsIOException() throws IOException {
+    void testGetConjurSecretThrowsIOException() throws Exception {
         try (MockedStatic<TelemetryConfiguration> mockTel = mockStatic(TelemetryConfiguration.class)) {
             when(mockConfiguration.getApplianceURL()).thenReturn("http://conjur_server");
             when(mockConfiguration.getAccount()).thenReturn("cucumber");
@@ -400,7 +400,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testGetConjurConfigReturnsMergedConfigurationWhenFolderConfigExistsAndInherits() {
+    void testGetConjurConfigReturnsMergedConfigurationWhenFolderConfigExistsAndInherits() {
         when(folderMock.getProperties()).thenReturn(mock(DescribableList.class));
         when(folderMock.getProperties().get(FolderConjurConfiguration.class)).thenReturn(folderConjurConfigMock);
         when(folderConjurConfigMock.getConjurConfiguration()).thenReturn(folderConjurConfiguration);
@@ -433,7 +433,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testStopsAtFolderConfigurationWhenInheritIsFalse() {
+    void testStopsAtFolderConfigurationWhenInheritIsFalse() {
         when(folderMock.getProperties()).thenReturn(mock(DescribableList.class));
         when(folderMock.getProperties().get(FolderConjurConfiguration.class)).thenReturn(folderConjurConfigMock);
         when(folderConjurConfigMock.getConjurConfiguration()).thenReturn(folderConjurConfiguration);
@@ -446,7 +446,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testUsesGlobalConfigurationWhenNoFolderConfig() {
+    void testUsesGlobalConfigurationWhenNoFolderConfig() {
         when(folderMock.getProperties()).thenReturn(mock(DescribableList.class));
         when(folderMock.getProperties().get(FolderConjurConfiguration.class)).thenReturn(null);
         when(folderMock.getParent()).thenReturn(null);
@@ -472,7 +472,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testLogsErrorsWhenMissingGlobalConfig() {
+    void testLogsErrorsWhenMissingGlobalConfig() {
         when(folderMock.getProperties()).thenReturn(mock(DescribableList.class));
         when(folderMock.getProperties().get(FolderConjurConfiguration.class)).thenReturn(null);
 
@@ -490,7 +490,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testLogsErrorsWhenMissingRequiredFields() {
+    void testLogsErrorsWhenMissingRequiredFields() {
         when(folderMock.getProperties()).thenReturn(mock(DescribableList.class));
         when(folderMock.getProperties().get(FolderConjurConfiguration.class)).thenReturn(null);
 
@@ -510,7 +510,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testGetConfigurationFromContextHudsonContextReturnsGlobalConfig() {
+    void testGetConfigurationFromContextHudsonContextReturnsGlobalConfig() {
         Hudson hudsonMock = mock(Hudson.class);
 
         try (MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class)) {
@@ -527,7 +527,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testGetConfigurationFromContextRunContextWithJobProperty() {
+    void testGetConfigurationFromContextRunContextWithJobProperty() {
         Run runMock = mock(Run.class);
         Job jobMock = mock(Job.class);
 
@@ -546,7 +546,7 @@ public class ConjurAPITest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testIsInheritanceOn() {
+    void testIsInheritanceOn() {
         when(mockJob.getProperty(ConjurJITJobProperty.class)).thenReturn(mockProperty);
         when(mockProperty.getConjurConfiguration()).thenReturn(jobConjurConfiguration);
         when(jobConjurConfiguration.getInheritFromParent()).thenReturn(true);
@@ -559,7 +559,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testIsInheritanceOnWithContextAsFolder() {
+    void testIsInheritanceOnWithContextAsFolder() {
         when(folderMock.getProperties()).thenReturn(mockDescribableList);
         when(folderMock.getProperties().get(FolderConjurConfiguration.class)).thenReturn(folderConjurConfigMock);
         when(folderConjurConfigMock.getInheritFromParent()).thenReturn(true);
@@ -570,7 +570,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testIsInheritanceOnWithContextAsJobThrowsException() {
+    void testIsInheritanceOnWithContextAsJobThrowsException() {
         when(mockJob.getProperty(ConjurJITJobProperty.class)).thenThrow(new RuntimeException());
 
         boolean result = ConjurAPI.isInheritanceOn(mockJob);
@@ -582,7 +582,7 @@ public class ConjurAPITest {
     }
 
     @Test
-    public void testIsInheritanceOnWithContextAsFolderThrowsException() {
+    void testIsInheritanceOnWithContextAsFolderThrowsException() {
         when(folderMock.getProperties()).thenReturn(mockDescribableList);
         when(folderMock.getProperties().get(FolderConjurConfiguration.class)).thenThrow(new RuntimeException("Testing the Exception"));
 
@@ -597,7 +597,7 @@ public class ConjurAPITest {
 
 
     @Test
-    public void testSimpleSecretMocking() {
+    void testSimpleSecretMocking() {
         Secret mockSecret = mock(Secret.class);
         when(mockSecret.getPlainText()).thenReturn("mySecretValue");
         assertEquals("mySecretValue", mockSecret.getPlainText());

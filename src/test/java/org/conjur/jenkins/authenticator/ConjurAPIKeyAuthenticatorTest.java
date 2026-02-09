@@ -26,20 +26,16 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
-@SuppressWarnings("unused")
-public class ConjurAPIKeyAuthenticatorTest {
+class ConjurAPIKeyAuthenticatorTest {
 
     private ConjurAPIKeyAuthenticator authenticator;
     private ModelObject mockContext;
     private ConjurAuthnInfo authnInfo;
 
-
     @BeforeEach
-    public void setup() {
+    void beforeEach() {
         authenticator = new ConjurAPIKeyAuthenticator();
         mockContext = mock(ModelObject.class);
         authnInfo = new ConjurAuthnInfo();
@@ -52,12 +48,12 @@ public class ConjurAPIKeyAuthenticatorTest {
     }
 
     @Test
-    public void testGetName() {
+    void testGetName() {
         assertEquals("APIKey", authenticator.getName());
     }
 
     @Test
-    public void testGetAuthorizationTokenSuccess() throws Exception {
+    void testGetAuthorizationTokenSuccess() throws Exception {
         try (MockedStatic<ConjurAPIUtils> utilsMock = mockStatic(ConjurAPIUtils.class)) {
             OkHttpClient mockClient = mock(OkHttpClient.class);
             Call mockCall = mock(Call.class);
@@ -84,7 +80,7 @@ public class ConjurAPIKeyAuthenticatorTest {
     }
 
     @Test
-    public void testGetAuthorizationToken401ThrowsAuthenticationConjurException() throws Exception {
+    void testGetAuthorizationToken401ThrowsAuthenticationConjurException() throws Exception {
         try (MockedStatic<ConjurAPIUtils> utilsMock = mockStatic(ConjurAPIUtils.class)) {
             OkHttpClient mockClient = mock(OkHttpClient.class);
             Call mockCall = mock(Call.class);
@@ -107,7 +103,7 @@ public class ConjurAPIKeyAuthenticatorTest {
     }
 
     @Test
-    public void testGetAuthorizationTokenOtherErrorThrowsIOException() throws Exception {
+    void testGetAuthorizationTokenOtherErrorThrowsIOException() throws Exception {
         try (MockedStatic<ConjurAPIUtils> utilsMock = mockStatic(ConjurAPIUtils.class)) {
             OkHttpClient mockClient = mock(OkHttpClient.class);
             Call mockCall = mock(Call.class);
@@ -130,14 +126,14 @@ public class ConjurAPIKeyAuthenticatorTest {
     }
 
     @Test
-    public void testGetAuthorizationTokenNullRequestReturnsNull() throws Exception {
+    void testGetAuthorizationTokenNullRequestReturnsNull() throws Exception {
         authnInfo.setApiKey(null);
         byte[] token = authenticator.getAuthorizationToken(authnInfo, mockContext);
         assertNull(token);
     }
 
     @Test
-    public void testFillAuthnInfoWithMatchingCredential() {
+    void testFillAuthnInfoWithMatchingCredential() {
         try (MockedStatic<ConjurAPI> conjurApiMock = mockStatic(ConjurAPI.class);
              MockedStatic<CredentialsProvider> credentialsProviderMock = mockStatic(CredentialsProvider.class);
              MockedStatic<CredentialsMatchers> credentialsMatchersMock = mockStatic(CredentialsMatchers.class);
@@ -155,7 +151,7 @@ public class ConjurAPIKeyAuthenticatorTest {
             SystemCredentialsProvider mockSystemProvider = mock(SystemCredentialsProvider.class);
             mockSystemCredentialProvider.when(SystemCredentialsProvider::getInstance).thenReturn(mockSystemProvider);
 
-            Map<Domain, List<Credentials>> mockMapOfCredentials = new HashMap<Domain, List<Credentials>>();
+            Map<Domain, List<Credentials>> mockMapOfCredentials = new HashMap<>();
             when(mockSystemProvider.getDomainCredentialsMap()).thenReturn(mockMapOfCredentials);
 
             mockDomainCredentials.when(() -> DomainCredentials.getCredentials(mockMapOfCredentials, UsernamePasswordCredentials.class, Collections.emptyList(), mockCredentialsMatcher)).thenReturn(List.of(mockCredential));
@@ -185,7 +181,7 @@ public class ConjurAPIKeyAuthenticatorTest {
     }
 
     @Test
-    public void testFillAuthnInfoNoCredentialFound() {
+    void testFillAuthnInfoNoCredentialFound() {
         // Reset authnInfo fields
         authnInfo.setLogin(null);
         authnInfo.setApiKey(null);
@@ -209,7 +205,7 @@ public class ConjurAPIKeyAuthenticatorTest {
             SystemCredentialsProvider mockSystemProvider = mock(SystemCredentialsProvider.class);
             mockSystemCredentialProvider.when(SystemCredentialsProvider::getInstance).thenReturn(mockSystemProvider);
 
-            Map<Domain, List<Credentials>> mockMapOfCredentials = new HashMap<Domain, List<Credentials>>();
+            Map<Domain, List<Credentials>> mockMapOfCredentials = new HashMap<>();
             when(mockSystemProvider.getDomainCredentialsMap()).thenReturn(mockMapOfCredentials);
 
             mockDomainCredentials.when(() -> DomainCredentials.getCredentials(mockMapOfCredentials, UsernamePasswordCredentials.class, Collections.emptyList(), mockCredentialsMatcher)).thenReturn(Collections.emptyList());

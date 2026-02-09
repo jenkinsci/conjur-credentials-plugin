@@ -10,7 +10,8 @@ import org.mockito.Mock;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.spy;
 
-public class ConjurSecretCredentialsTest {
+class ConjurSecretCredentialsTest {
+
     @Mock
     private Jenkins jenkins = null;
 
@@ -19,7 +20,7 @@ public class ConjurSecretCredentialsTest {
 
 
     @BeforeEach
-    public void init() {
+    void beforeEach() {
         secretCredentials = spy(ConjurSecretCredentials.class);
         provider = new ConjurSecretCredentials.NameProvider();
     }

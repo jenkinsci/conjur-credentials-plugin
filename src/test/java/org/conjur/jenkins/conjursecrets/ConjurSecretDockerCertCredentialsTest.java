@@ -4,16 +4,14 @@ import hudson.model.ModelObject;
 import hudson.util.Secret;
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.conjursecrets.ConjurSecretDockerCertCredentials.NameProvider;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.*;
 
-public class ConjurSecretDockerCertCredentialsTest {
+class ConjurSecretDockerCertCredentialsTest {
 
     public static class DummyConjurSecretDockerCertCredentials extends ConjurSecretDockerCertCredentials {
         DummyConjurSecretDockerCertCredentials() {
@@ -91,7 +89,7 @@ public class ConjurSecretDockerCertCredentialsTest {
     }
 
     @Test
-    public void testGetNameWithDescription() {
+    void testGetNameWithDescription() {
         ConjurSecretDockerCertCredentials mockCred = mock(ConjurSecretDockerCertCredentials.class);
         when(mockCred.getDisplayName()).thenReturn("conjur-secret");
         when(mockCred.getDescription()).thenReturn("used for DB connection");
@@ -102,7 +100,7 @@ public class ConjurSecretDockerCertCredentialsTest {
     }
 
     @Test
-    public void testGetNameWithoutDescription() {
+    void testGetNameWithoutDescription() {
         ConjurSecretDockerCertCredentials mockCred = mock(ConjurSecretDockerCertCredentials.class);
         when(mockCred.getDisplayName()).thenReturn("conjur-secret");
         when(mockCred.getDescription()).thenReturn(null); // or ""
@@ -113,7 +111,7 @@ public class ConjurSecretDockerCertCredentialsTest {
     }
 
     @Test
-    public void testGetClientKeySecret() {
+    void testGetClientKeySecret() {
         DummyConjurSecretDockerCertCredentials creds = new DummyConjurSecretDockerCertCredentials();
         Secret mockSecret = mock(Secret.class);
         when(mockSecret.getPlainText()).thenReturn("some-key");
@@ -126,7 +124,7 @@ public class ConjurSecretDockerCertCredentialsTest {
     }
 
     @Test
-    public void testGetClientCertificateReturnsPlainText() {
+    void testGetClientCertificateReturnsPlainText() {
         DummyConjurSecretDockerCertCredentials creds = new DummyConjurSecretDockerCertCredentials();
         Secret mockSecret = mock(Secret.class);
         when(mockSecret.getPlainText()).thenReturn("cert-plain-text");
@@ -139,7 +137,7 @@ public class ConjurSecretDockerCertCredentialsTest {
     }
 
     @Test
-    public void testGetClientCertificateReturnsNullIfNoSecret() {
+    void testGetClientCertificateReturnsNullIfNoSecret() {
         DummyConjurSecretDockerCertCredentials creds = new DummyConjurSecretDockerCertCredentials();
         try (MockedStatic<ConjurAPI> apiMock = mockStatic(ConjurAPI.class)) {
             apiMock.when(() -> ConjurAPI.getSecretFromConjurWithInheritance(any(), eq(creds), eq("cert-id")))
@@ -150,7 +148,7 @@ public class ConjurSecretDockerCertCredentialsTest {
     }
 
     @Test
-    public void testGetServerCaCertificateReturnsPlainText() {
+    void testGetServerCaCertificateReturnsPlainText() {
         DummyConjurSecretDockerCertCredentials creds = new DummyConjurSecretDockerCertCredentials();
         Secret mockSecret = mock(Secret.class);
         when(mockSecret.getPlainText()).thenReturn("ca-cert-plain-text");
@@ -163,7 +161,7 @@ public class ConjurSecretDockerCertCredentialsTest {
     }
 
     @Test
-    public void testGetServerCaCertificateReturnsNullIfNoSecret() {
+    void testGetServerCaCertificateReturnsNullIfNoSecret() {
         DummyConjurSecretDockerCertCredentials creds = new DummyConjurSecretDockerCertCredentials();
         try (MockedStatic<ConjurAPI> apiMock = mockStatic(ConjurAPI.class)) {
             apiMock.when(() -> ConjurAPI.getSecretFromConjurWithInheritance(any(), eq(creds), eq("ca-id")))

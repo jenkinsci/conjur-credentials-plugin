@@ -8,7 +8,7 @@ import org.mockito.Mock;
 import static org.junit.jupiter.api.Assertions.*;
 
 
-public class ConjurAuthnInfoTest {
+class ConjurAuthnInfoTest {
 
     @Mock
     private ConjurConfiguration conjurConfiguration;
@@ -16,7 +16,7 @@ public class ConjurAuthnInfoTest {
     private ConjurAuthnInfo conjurAuthnInfo;
 
     @BeforeEach
-    void setUp() {
+    void beforeEach() {
         conjurAuthnInfo = new ConjurAuthnInfo();
         conjurAuthnInfo.setConjurConfiguration(conjurConfiguration);
         conjurAuthnInfo.setApplianceUrl("http://conjur_server");

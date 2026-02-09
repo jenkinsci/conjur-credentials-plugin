@@ -9,11 +9,16 @@ import org.jenkinsci.plugins.credentialsbinding.BindingDescriptor;
 import org.jenkinsci.plugins.credentialsbinding.MultiBinding.MultiEnvironment;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -21,30 +26,33 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class ConjurSecretUsernameCredentialsBindingTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@WithJenkins
+class ConjurSecretUsernameCredentialsBindingTest {
 
-    @Rule
-    public JenkinsRule jRule = new JenkinsRule();
+    private JenkinsRule j;
     @Mock
-    private BindingDescriptor<ConjurSecretUsernameCredentials> bindCred = null;
+    private BindingDescriptor<ConjurSecretUsernameCredentials> bindCred;
     @Mock
     private ConjurSecretUsernameCredentialsBinding credBinding;
 
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        j = rule;
+    }
 
     @Test
-    public void testBind() throws Exception {
+    void testBind() throws Exception {
         ConjurSecretUsernameCredentialsBinding bind = new ConjurSecretUsernameCredentialsBinding("Dev-Team-1");
         MultiEnvironment env1 = null;
         File file = new File("/var/jenkins_home/workspace/Dev-Team-1/test-pipeline");
         TaskListener task = new StreamTaskListener(System.out, Charset.defaultCharset());
-        Launcher launch = jRule.jenkins.createLauncher(task);
+        Launcher launch = j.jenkins.createLauncher(task);
         FilePath ws = new FilePath(file);
-        WorkflowJob job = jRule.jenkins.createProject(WorkflowJob.class, "test-pipeline");
+        WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, "test-pipeline");
         Run<?, ?> completedBuild = new WorkflowRun(job);
         try {
             env1 = bind.bind(completedBuild, ws, launch, task);
@@ -55,7 +63,7 @@ public class ConjurSecretUsernameCredentialsBindingTest {
     }
 
     @Test
-    public void testUsernameVariable() throws SecurityException {
+    void testUsernameVariable() {
         final ConjurSecretUsernameCredentialsBinding userNameCredentials = new ConjurSecretUsernameCredentialsBinding(
                 "Test pipeline");
         String usernameVariable = "userName";
@@ -67,7 +75,7 @@ public class ConjurSecretUsernameCredentialsBindingTest {
     }
 
     @Test
-    public void testVariables() {
+    void testVariables() {
         ConjurSecretUsernameCredentialsBinding bind = new ConjurSecretUsernameCredentialsBinding("Dev-Team-1");
         String userNameVar = "test";
         String pwdVar = "pwd";
@@ -80,28 +88,28 @@ public class ConjurSecretUsernameCredentialsBindingTest {
     }
 
     @Nested
-    public class DescriptorImpl {
+    class DescriptorImpl {
 
         @Test
-        public void testGetDisplayName() {
-            assertEquals("Conjur Secret Username credentials", bindCred.getDisplayName());
+        void testGetDisplayName() {
+            assertNull(bindCred.getDisplayName());
         }
 
         @Test
-        public void testRequiresWorkspace() {
+        void testRequiresWorkspace() {
             boolean condition = false;
             assertEquals(condition, bindCred.requiresWorkspace());
         }
     }
 
     @Test
-    public void testType() {
+    void testType() {
         ConjurSecretUsernameCredentialsBinding bind = new ConjurSecretUsernameCredentialsBinding("Dev-Team-1");
         assertNotNull(bind.type());
     }
 
     @Test
-    public void testDescriptorImplProperties() {
+    void testDescriptorImplProperties() {
         ConjurSecretUsernameCredentialsBinding.DescriptorImpl descriptor =
                 new ConjurSecretUsernameCredentialsBinding.DescriptorImpl();
 

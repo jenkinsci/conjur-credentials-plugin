@@ -7,24 +7,26 @@ import hudson.model.ModelObject;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 import org.conjur.jenkins.api.ConjurAPIUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ConjurSecretDockerCertCredentialsImplTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class ConjurSecretDockerCertCredentialsImplTest {
 
     @Mock
     private ModelObject mockStoreContext;
 
     @Test
-    public void testStoredInConjurStorage() {
+    void testStoredInConjurStorage() {
         ConjurSecretDockerCertCredentialsImpl conjurSecretDockerCertCredentials = mock(ConjurSecretDockerCertCredentialsImpl.class);
         when(conjurSecretDockerCertCredentials.storedInConjurStorage()).thenReturn(true);
 
@@ -32,7 +34,7 @@ public class ConjurSecretDockerCertCredentialsImplTest {
     }
 
     @Test
-    public void testSetStoredInConjurStorage() {
+    void testSetStoredInConjurStorage() {
         ConjurSecretDockerCertCredentialsImpl conjurSecretDockerCertCredentials = new ConjurSecretDockerCertCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "key-id", "cert-id", "ca-certid");
         conjurSecretDockerCertCredentials.setStoredInConjurStorage(true);
@@ -41,7 +43,7 @@ public class ConjurSecretDockerCertCredentialsImplTest {
     }
 
     @Test
-    public void testGetSecret() {
+    void testGetSecret() {
         Secret mockSecret = mock(Secret.class);
         ConjurSecretDockerCertCredentialsImpl conjurSecretDockerCertCredentials = spy(new ConjurSecretDockerCertCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "key-id", "cert-id", "ca-certid"));
@@ -52,7 +54,7 @@ public class ConjurSecretDockerCertCredentialsImplTest {
     }
 
     @Test
-    public void testSetContext() {
+    void testSetContext() {
         ConjurSecretDockerCertCredentialsImpl conjurSecretDockerCertCredentials = new ConjurSecretDockerCertCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "key-id", "cert-id", "ca-certid");
         conjurSecretDockerCertCredentials.setContext(mockStoreContext);
@@ -61,7 +63,7 @@ public class ConjurSecretDockerCertCredentialsImplTest {
     }
 
     @Test
-    public void testSetInheritedContext() {
+    void testSetInheritedContext() {
         ConjurSecretDockerCertCredentialsImpl conjurSecretDockerCertCredentials = new ConjurSecretDockerCertCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "key-id", "cert-id", "ca-certid");
         conjurSecretDockerCertCredentials.setInheritedContext(mockStoreContext);
@@ -70,7 +72,7 @@ public class ConjurSecretDockerCertCredentialsImplTest {
     }
 
     @Test
-    public void testTagName() {
+    void testTagName() {
         ConjurSecretDockerCertCredentialsImpl conjurSecretDockerCertCredentials = new ConjurSecretDockerCertCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "key-id", "cert-id", "ca-certid");
         String expectedResult = "";
@@ -79,7 +81,7 @@ public class ConjurSecretDockerCertCredentialsImplTest {
     }
 
     @Test
-    public void testGetDisplayName() {
+    void testGetDisplayName() {
         ConjurSecretDockerCertCredentialsImpl conjurSecretDockerCertCredentials = new ConjurSecretDockerCertCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "key-id", "cert-id", "ca-certid");
         String testVariableId = "DevTeam-1";
@@ -89,7 +91,7 @@ public class ConjurSecretDockerCertCredentialsImplTest {
     }
 
     @Test
-    public void testGetClientKeyId() {
+    void testGetClientKeyId() {
         ConjurSecretDockerCertCredentialsImpl conjurSecretDockerCertCredentials = new ConjurSecretDockerCertCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "key-id", "cert-id", "ca-certid");
 
@@ -97,7 +99,7 @@ public class ConjurSecretDockerCertCredentialsImplTest {
     }
 
     @Test
-    public void testGetClientCertificateId() {
+    void testGetClientCertificateId() {
         ConjurSecretDockerCertCredentialsImpl conjurSecretDockerCertCredentials = new ConjurSecretDockerCertCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "key-id", "cert-id", "ca-certid");
 
@@ -105,7 +107,7 @@ public class ConjurSecretDockerCertCredentialsImplTest {
     }
 
     @Test
-    public void testGetCaCertificateId() {
+    void testGetCaCertificateId() {
         ConjurSecretDockerCertCredentialsImpl conjurSecretDockerCertCredentials = new ConjurSecretDockerCertCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "key-id", "cert-id", "ca-certid");
 
@@ -113,7 +115,7 @@ public class ConjurSecretDockerCertCredentialsImplTest {
     }
 
     @Test
-    public void testGetDisplayNameOfDescriptor() {
+    void testGetDisplayNameOfDescriptor() {
         ConjurSecretDockerCertCredentialsImpl.DescriptorImpl descriptor = new ConjurSecretDockerCertCredentialsImpl.DescriptorImpl();
 
         assertEquals("Conjur Secret Docker Client Certificate", descriptor.getDisplayName());
@@ -121,7 +123,7 @@ public class ConjurSecretDockerCertCredentialsImplTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testDoTestConnectionReturnsErrorIfVariableIdIsEmpty() {
+    void testDoTestConnectionReturnsErrorIfVariableIdIsEmpty() {
         ConjurSecretDockerCertCredentialsImpl.DescriptorImpl descriptor = new ConjurSecretDockerCertCredentialsImpl.DescriptorImpl();
         ItemGroup<Item> mockContext = mock(ItemGroup.class);
         FormValidation result = descriptor.doTestConnection(mockContext, "cred-id", null, null);
@@ -131,7 +133,7 @@ public class ConjurSecretDockerCertCredentialsImplTest {
     }
 
     @Test
-    public void testDoTestConnectionReturnsOk() {
+    void testDoTestConnectionReturnsOk() {
         ConjurSecretDockerCertCredentialsImpl.DescriptorImpl descriptor = new ConjurSecretDockerCertCredentialsImpl.DescriptorImpl();
         @SuppressWarnings("unchecked")
         ItemGroup<Item> mockContext = mock(ItemGroup.class);

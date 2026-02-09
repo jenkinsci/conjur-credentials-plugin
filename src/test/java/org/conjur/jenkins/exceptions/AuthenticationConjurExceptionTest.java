@@ -1,18 +1,21 @@
 package org.conjur.jenkins.exceptions;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 
-@RunWith(MockitoJUnitRunner.class)
-public class AuthenticationConjurExceptionTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class AuthenticationConjurExceptionTest {
 
     @Test
-    public void testConstructorWithErrorMessageAndThrowable() {
+    void testConstructorWithErrorMessageAndThrowable() {
         String errorMessage = "Unauthorized";
         Throwable throwable = mock(Throwable.class);
         AuthenticationConjurException exception = new AuthenticationConjurException(errorMessage, throwable);
@@ -21,7 +24,7 @@ public class AuthenticationConjurExceptionTest {
     }
 
     @Test
-    public void testConstructorWithErrorMessage() {
+    void testConstructorWithErrorMessage() {
         String errorMessage = "Unauthorized";
         AuthenticationConjurException exception = new AuthenticationConjurException(errorMessage);
 
@@ -29,7 +32,7 @@ public class AuthenticationConjurExceptionTest {
     }
 
     @Test
-    public void testConstructorWithErrorCode() {
+    void testConstructorWithErrorCode() {
         int errorCode = 401;
         AuthenticationConjurException exception = new AuthenticationConjurException(errorCode);
 
@@ -37,7 +40,7 @@ public class AuthenticationConjurExceptionTest {
     }
 
     @Test
-    public void testgetErrorcode() {
+    void testgetErrorcode() {
         int errorCode = 501;
         AuthenticationConjurException exception = new AuthenticationConjurException(errorCode);
 

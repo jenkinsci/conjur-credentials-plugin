@@ -11,28 +11,29 @@ import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.api.ConjurAPIUtils;
-import org.junit.Rule;
-import org.junit.Test;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@WithJenkins
+class ConjurSecretUsernameSSHKeyCredentialsImplTest {
 
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+    private JenkinsRule j;
 
     @Mock
     private ConjurSecretUsernameSSHKeyCredentialsImpl secretcredentials;
@@ -47,25 +48,24 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
 
     private ModelObject context;
     private ModelObject storeContext;
-    private String id = "test-id";
-    private String username = "test-username";
-    private String credentialID = "test-credential-id";
-    private String description = "test-description";
+    private final String id = "test-id";
+    private final String username = "test-username";
+    private final String credentialID = "test-credential-id";
+    private final String description = "test-description";
 
-    @SuppressWarnings("deprecation")
     @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
+    void beforeEach(JenkinsRule rule) {
+        j = rule;
     }
 
     @Test
-    public void getDisplayName() {
+    void getDisplayName() {
         assertEquals("Conjur Secret Username SSHKey Credential",
                 ConjurSecretUsernameSSHKeyCredentialsImpl.getDescriptorDisplayName());
     }
 
     @Test
-    public void testDoFillCredentialIDItems() {
+    void testDoFillCredentialIDItems() {
         ConjurSecretUsernameSSHKeyCredentialsImpl.DescriptorImpl descriptor = new ConjurSecretUsernameSSHKeyCredentialsImpl.DescriptorImpl();
         Item item = mock(Item.class);
         ListBoxModel listBoxModel = descriptor.doFillCredentialIDItems(item, "uri");
@@ -74,7 +74,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
     }
 
     @Test
-    public void testStoredInConjurStorage() {
+    void testStoredInConjurStorage() {
         ConjurSecretUsernameSSHKeyCredentialsImpl conjurSecretUsernameSSHCredentials = mock(ConjurSecretUsernameSSHKeyCredentialsImpl.class);
         when(conjurSecretUsernameSSHCredentials.storedInConjurStorage()).thenReturn(true);
 
@@ -82,7 +82,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
     }
 
     @Test
-    public void testSetStoredInConjurStorage() {
+    void testSetStoredInConjurStorage() {
         ConjurSecretUsernameSSHKeyCredentialsImpl conjurSecretUsernameSSHCredentials = new ConjurSecretUsernameSSHKeyCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", mock(Secret.class), "description");
         conjurSecretUsernameSSHCredentials.setStoredInConjurStorage(true);
@@ -92,7 +92,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
 
 
     @Test
-    public void testGetNameTag() {
+    void testGetNameTag() {
         ConjurSecretUsernameSSHKeyCredentialsImpl conjurSecretUsernameSSHCredentials = new ConjurSecretUsernameSSHKeyCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", mock(Secret.class), "description");
 
@@ -100,7 +100,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
     }
 
     @Test
-    public void testGetSecret() {
+    void testGetSecret() {
         ConjurSecretUsernameSSHKeyCredentialsImpl conjurSecretUsernameSSHCredentials = new ConjurSecretUsernameSSHKeyCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", mock(Secret.class), "description");
 
@@ -108,7 +108,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
     }
 
     @Test
-    public void testGetContext() {
+    void testGetContext() {
         ConjurSecretUsernameSSHKeyCredentialsImpl conjurSecretUsernameSSHCredentials = mock(ConjurSecretUsernameSSHKeyCredentialsImpl.class);
         when(conjurSecretUsernameSSHCredentials.getContext()).thenReturn(mockStoreContext);
 
@@ -116,7 +116,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
     }
 
     @Test
-    public void testSetContext() {
+    void testSetContext() {
         ConjurSecretUsernameSSHKeyCredentialsImpl conjurSecretUsernameSSHCredentials = new ConjurSecretUsernameSSHKeyCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", mock(Secret.class), "description");
         conjurSecretUsernameSSHCredentials.setContext(mockStoreContext);
@@ -125,7 +125,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
     }
 
     @Test
-    public void testSetInheritedContext() {
+    void testSetInheritedContext() {
         ConjurSecretUsernameSSHKeyCredentialsImpl conjurSecretUsernameSSHCredentials = new ConjurSecretUsernameSSHKeyCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", mock(Secret.class), "description");
         conjurSecretUsernameSSHCredentials.setInheritedContext(mockStoreContext);
@@ -134,7 +134,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
     }
 
     @Test
-    public void testDisplayName() {
+    void testDisplayName() {
         ConjurSecretUsernameSSHKeyCredentialsImpl conjurSecretUsernameSSHCredentials = new ConjurSecretUsernameSSHKeyCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", mock(Secret.class), "description");
         String result = conjurSecretUsernameSSHCredentials.getDisplayName();
@@ -143,7 +143,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
     }
 
     @Test
-    public void testGetPassphrase() {
+    void testGetPassphrase() {
         ConjurSecretUsernameSSHKeyCredentialsImpl conjurSecretUsernameSSHCredentials = new ConjurSecretUsernameSSHKeyCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", mock(Secret.class), "description");
         Secret secretMock = mock(Secret.class);
@@ -154,7 +154,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
     }
 
     @Test
-    public void testGetCredentialID() {
+    void testGetCredentialID() {
         ConjurSecretUsernameSSHKeyCredentialsImpl conjurSecretUsernameSSHCredentials = new ConjurSecretUsernameSSHKeyCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", mock(Secret.class), "description");
         conjurSecretUsernameSSHCredentials.setCredentialID("mock-cred");
@@ -164,7 +164,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
     }
 
     @Test
-    public void testGetPrivateKey() {
+    void testGetPrivateKey() {
         Jenkins jenkinsMock = mock(Jenkins.class);
         String credentialId = "test-cred-id";
         ConjurSecretCredentials mockCredentials = mock(ConjurSecretCredentials.class);
@@ -185,7 +185,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
     }
 
     @Test
-    public void testGetPrivateKeyWhenCredentialNotFound() {
+    void testGetPrivateKeyWhenCredentialNotFound() {
         Jenkins jenkinsMock = mock(Jenkins.class);
         String credentialId = "test-cred-id";
         try (MockedStatic<Jenkins> staticMockJenkins = mockStatic(Jenkins.class);
@@ -201,7 +201,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
     }
 
     @Test
-    public void testGetPrivateKeys() {
+    void testGetPrivateKeys() {
         Jenkins jenkinsMock = mock(Jenkins.class);
         String credentialId = "test-cred-id";
         ConjurSecretCredentials mockCredentials = mock(ConjurSecretCredentials.class);
@@ -224,7 +224,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testDoTestConnectionReturnsErrorIfVariableIdIsEmpty() {
+    void testDoTestConnectionReturnsErrorIfVariableIdIsEmpty() {
         ConjurSecretUsernameSSHKeyCredentialsImpl.DescriptorImpl descriptor = new ConjurSecretUsernameSSHKeyCredentialsImpl.DescriptorImpl();
         ItemGroup<Item> mockContext = mock(ItemGroup.class);
         FormValidation result = descriptor.doTestConnection(mockContext, "var-id", null, null);
@@ -235,7 +235,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testDoTestConnectionReturnsOk() {
+    void testDoTestConnectionReturnsOk() {
         ConjurSecretUsernameSSHKeyCredentialsImpl.DescriptorImpl descriptor = new ConjurSecretUsernameSSHKeyCredentialsImpl.DescriptorImpl();
         try (MockedStatic<ConjurAPIUtils> mockedStatic = mockStatic(ConjurAPIUtils.class)) {
             ItemGroup<Item> mockContext = mock(ItemGroup.class);

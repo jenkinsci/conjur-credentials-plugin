@@ -7,24 +7,29 @@ import hudson.model.ItemGroup;
 import hudson.model.ModelObject;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import jenkins.model.Jenkins;
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.api.ConjurAPIUtils;
 import org.conjur.jenkins.configuration.ConjurConfiguration;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-import static org.junit.Assert.*;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-
-public class ConjurSecretStringCredentialsImplTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@WithJenkins
+class ConjurSecretStringCredentialsImplTest {
 
     @Rule
     public JenkinsRule j = new JenkinsRule();
@@ -40,14 +45,14 @@ public class ConjurSecretStringCredentialsImplTest {
     private ModelObject context;
 
 
-    @Before
-    public void setUp() {
-        context = j.jenkins.getInstance();
-        MockitoAnnotations.initMocks(this);
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        j = rule;
+        context = Jenkins.get();
     }
 
     @Test
-    public void testConstructor() {
+    void testConstructor() {
         Object expectedObj = new ConjurSecretStringCredentialsImpl(CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1",
                 "Test pipeline");
         ConjurSecretStringCredentialsImpl conjurSecretCredentials = mock(ConjurSecretStringCredentialsImpl.class);
@@ -56,7 +61,7 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testTagName() {
+    void testTagName() {
         ConjurSecretStringCredentialsImpl conjurSecretStringCredentials = new ConjurSecretStringCredentialsImpl(CredentialsScope.GLOBAL,
                 "testPipeline", "DevTeam-1", "Test pipeline");
         String expectedResult = "";
@@ -65,7 +70,7 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testUsernameVariable() throws SecurityException {
+    void testUsernameVariable() {
         final ConjurSecretStringCredentialsImpl conjurSecretCredentials = new ConjurSecretStringCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline");
         conjurSecretCredentials.setContext(context);
@@ -74,7 +79,7 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testSecretFromStringValidSecret() {
+    void testSecretFromStringValidSecret() {
         String SecretString = "valid_secret_string";
         Secret result = ConjurSecretStringCredentialsImpl.secretFromString(SecretString);
 
@@ -83,7 +88,7 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testVariablePath() throws SecurityException {
+    void testVariablePath() {
         final ConjurSecretStringCredentialsImpl conjurSecretStringCredentials = new ConjurSecretStringCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline");
         String expectedPath = "DevTeam-1";
@@ -93,7 +98,7 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void mockGetSecret() {
+    void mockGetSecret() {
         ConjurSecretStringCredentialsImpl conjurSecretStringCredentials = mock(ConjurSecretStringCredentialsImpl.class);
         Secret secret = mock(Secret.class);
         when(conjurSecretStringCredentials.getSecret()).thenReturn(secret);
@@ -104,7 +109,7 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testGetDisplayName() {
+    void testGetDisplayName() {
         ConjurSecretStringCredentialsImpl conjurSecretStringCredentials = new ConjurSecretStringCredentialsImpl(CredentialsScope.GLOBAL,
                 "testPipeline", "DevTeam-1", "Test pipeline");
         String testVariablePath = "DevTeam-1";
@@ -114,7 +119,7 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testStoredInConjurStorage() {
+    void testStoredInConjurStorage() {
         ConjurSecretStringCredentialsImpl conjurSecretStringCredentials = mock(ConjurSecretStringCredentialsImpl.class);
         when(conjurSecretStringCredentials.storedInConjurStorage()).thenReturn(true);
 
@@ -122,7 +127,7 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testSetStoredInConjurStorage() {
+    void testSetStoredInConjurStorage() {
         ConjurSecretStringCredentialsImpl conjurSecretStringCredentials = new ConjurSecretStringCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline");
         conjurSecretStringCredentials.setStoredInConjurStorage(true);
@@ -131,7 +136,7 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testGetContext() {
+    void testGetContext() {
         ConjurSecretStringCredentialsImpl conjurSecretStringCredentials = mock(ConjurSecretStringCredentialsImpl.class);
         when(conjurSecretStringCredentials.getContext()).thenReturn(mockStoreContext);
 
@@ -139,7 +144,7 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testSetContext() {
+    void testSetContext() {
         ConjurSecretStringCredentialsImpl conjurSecretStringCredentials = new ConjurSecretStringCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline");
         conjurSecretStringCredentials.setContext(mockStoreContext);
@@ -148,7 +153,7 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testSetInheritedContext() {
+    void testSetInheritedContext() {
         ConjurSecretStringCredentialsImpl conjurSecretCredentials = new ConjurSecretStringCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline");
         conjurSecretCredentials.setInheritedContext(mockStoreContext);
@@ -157,7 +162,7 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testGetSecretReturnsSecret() {
+    void testGetSecretReturnsSecret() {
         ConjurSecretStringCredentialsImpl conjurSecretCredentials = new ConjurSecretStringCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline");
         conjurSecretCredentials.setStoredInConjurStorage(true);
@@ -171,7 +176,7 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testGetSecretReturnsSecretWithInheritance() {
+    void testGetSecretReturnsSecretWithInheritance() {
         ConjurSecretStringCredentialsImpl conjurSecretCredentials = new ConjurSecretStringCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline");
         conjurSecretCredentials.setStoredInConjurStorage(false);
@@ -185,14 +190,14 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testGetDisplayNameOfDescriptor() {
+    void testGetDisplayNameOfDescriptor() {
         ConjurSecretStringCredentialsImpl.DescriptorImpl descriptor = new ConjurSecretStringCredentialsImpl.DescriptorImpl();
         assertEquals("Conjur Secret String Credential", descriptor.getDisplayName());
     }
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testDoTestConnectionReturnsErrorIfVariableIdIsEmpty() {
+    void testDoTestConnectionReturnsErrorIfVariableIdIsEmpty() {
         ConjurSecretStringCredentialsImpl.DescriptorImpl descriptor = new ConjurSecretStringCredentialsImpl.DescriptorImpl();
         ItemGroup<Item> mockContext = mock(ItemGroup.class);
         FormValidation result = descriptor.doTestConnection(mockContext, "cred-id", "");
@@ -203,7 +208,7 @@ public class ConjurSecretStringCredentialsImplTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testDoTestConnectionReturnsOk() {
+    void testDoTestConnectionReturnsOk() {
         ConjurSecretStringCredentialsImpl.DescriptorImpl descriptor = new ConjurSecretStringCredentialsImpl.DescriptorImpl();
         ItemGroup<Item> mockContext = mock(ItemGroup.class);
         try (MockedStatic<ConjurAPIUtils> mockedStatic = mockStatic(ConjurAPIUtils.class)) {
@@ -218,7 +223,7 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testSelfContainedReturnsClonedSecret() {
+    void testSelfContainedReturnsClonedSecret() {
         ConjurSecretStringCredentialsImpl base = mock(ConjurSecretStringCredentialsImpl.class);
         Secret mockSecret = mock(Secret.class);
         when(mockSecret.getPlainText()).thenReturn("mocked-secret");
@@ -235,13 +240,13 @@ public class ConjurSecretStringCredentialsImplTest {
     }
 
     @Test
-    public void testTypeReturnsCorrectClass() {
+    void testTypeReturnsCorrectClass() {
         ConjurSecretStringCredentialsImpl.SnapshotTaker taker = new ConjurSecretStringCredentialsImpl.SnapshotTaker();
         assertEquals(ConjurSecretStringCredentialsImpl.class, taker.type());
     }
 
     @Test
-    public void testSnapshotReturnsNewInstance() {
+    void testSnapshotReturnsNewInstance() {
         ConjurSecretStringCredentialsImpl mockCred = mock(ConjurSecretStringCredentialsImpl.class);
         when(mockCred.getSecret()).thenReturn(Secret.fromString("secret"));
         when(mockCred.getId()).thenReturn("id");

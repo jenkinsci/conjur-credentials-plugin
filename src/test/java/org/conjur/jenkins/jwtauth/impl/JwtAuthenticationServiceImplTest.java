@@ -4,24 +4,24 @@ import hudson.ExtensionList;
 import jenkins.model.GlobalConfiguration;
 import org.conjur.jenkins.configuration.GlobalConjurConfiguration;
 import org.json.JSONObject;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class JwtAuthenticationServiceImplTest {
+class JwtAuthenticationServiceImplTest {
 
     private JwtAuthenticationServiceImpl service;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void beforeEach() {
         service = new JwtAuthenticationServiceImpl();
     }
 
     @Test
-    public void testGetJwkSetReturnsJwkSet() throws Exception {
+    void testGetJwkSetReturnsJwkSet() throws Exception {
         GlobalConjurConfiguration mockConfig = mock(GlobalConjurConfiguration.class);
         ExtensionList<GlobalConfiguration> extensionListMock = mock(ExtensionList.class);
         MockedStatic<GlobalConfiguration> globalConfigMockedStatic = mockStatic(GlobalConfiguration.class);
@@ -43,7 +43,7 @@ public class JwtAuthenticationServiceImplTest {
     }
 
     @Test
-    public void testGetJwkSetReturnsNullWhenNoConfig() throws Exception {
+    void testGetJwkSetReturnsNullWhenNoConfig() throws Exception {
         ExtensionList<GlobalConfiguration> extensionListMock = mock(ExtensionList.class);
         MockedStatic<GlobalConfiguration> globalConfigMockedStatic = mockStatic(GlobalConfiguration.class);
         globalConfigMockedStatic.when(GlobalConfiguration::all).thenReturn(extensionListMock);
@@ -57,17 +57,17 @@ public class JwtAuthenticationServiceImplTest {
     }
 
     @Test
-    public void testGetIconFileNameReturnsNull() {
+    void testGetIconFileNameReturnsNull() {
         assertNull(service.getIconFileName());
     }
 
     @Test
-    public void testGetDisplayNameReturnsValue() {
+    void testGetDisplayNameReturnsValue() {
         assertEquals("Conjur JWT endpoint", service.getDisplayName());
     }
 
     @Test
-    public void testGetJwkSetHandlesException() throws Exception {
+    void testGetJwkSetHandlesException() throws Exception {
         GlobalConjurConfiguration mockConfig = mock(GlobalConjurConfiguration.class);
         ExtensionList<GlobalConfiguration> extensionListMock = mock(ExtensionList.class);
         MockedStatic<GlobalConfiguration> globalConfigMockedStatic = mockStatic(GlobalConfiguration.class);

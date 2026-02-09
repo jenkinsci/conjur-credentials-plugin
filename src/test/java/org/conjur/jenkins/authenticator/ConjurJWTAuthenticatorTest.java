@@ -28,11 +28,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@MockitoSettings(strictness = Strictness.LENIENT)
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ConjurJWTAuthenticatorTest {
 
     @InjectMocks
@@ -59,7 +58,7 @@ class ConjurJWTAuthenticatorTest {
     private ConjurAuthnInfo conjurAuthn;
 
     @BeforeEach
-    void setUp() {
+    void beforeEach() {
         conjurAuthn = new ConjurAuthnInfo();
         conjurAuthn.setApplianceUrl("https://conjur.example.com");
         conjurAuthn.setAccount("myaccount");
@@ -73,7 +72,7 @@ class ConjurJWTAuthenticatorTest {
     }
 
     @Test
-    void testGetAuthorizationTokenSuccessfulAuthentication() throws IOException {
+    void testGetAuthorizationTokenSuccessfulAuthentication() throws Exception {
         String responseMessage = "dummy-token";
         String expectedBase64Token = Base64.getEncoder().withoutPadding()
                 .encodeToString(responseMessage.getBytes(StandardCharsets.UTF_8));
@@ -105,7 +104,7 @@ class ConjurJWTAuthenticatorTest {
     }
 
     @Test
-    void testGetAuthorizationTokenUnauthorizedResponse() throws IOException {
+    void testGetAuthorizationTokenUnauthorizedResponse() throws Exception {
         try (MockedStatic<ConjurAPIUtils> utilsStatic = mockStatic(ConjurAPIUtils.class)) {
             utilsStatic.when(() -> ConjurAPIUtils.getHttpClient(any()))
                     .thenReturn(mockHttpClient);
@@ -125,7 +124,7 @@ class ConjurJWTAuthenticatorTest {
     }
 
     @Test
-    void testGetAuthorizationTokenOtherErrorResponse() throws IOException {
+    void testGetAuthorizationTokenOtherErrorResponse() throws Exception {
         try (MockedStatic<ConjurAPIUtils> utilsStatic = mockStatic(ConjurAPIUtils.class)) {
             utilsStatic.when(() -> ConjurAPIUtils.getHttpClient(any()))
                     .thenReturn(mockHttpClient);
@@ -145,7 +144,7 @@ class ConjurJWTAuthenticatorTest {
     }
 
     @Test
-    void testGetAuthorizationTokenNullRequest() throws IOException {
+    void testGetAuthorizationTokenNullRequest() throws Exception {
         conjurAuthn.setApiKey(null);
 
         byte[] result = authenticator.getAuthorizationToken(conjurAuthn, mockContext);

@@ -1,34 +1,37 @@
 package org.conjur.jenkins.conjursecrets;
 
 import org.conjur.jenkins.conjursecrets.ConjurSecretDockerCertCredentialsBinding.DescriptorImpl;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ConjurSecretDockerCertCredentialsBindingTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class ConjurSecretDockerCertCredentialsBindingTest {
 
     private static final String CREDENTIAL_ID = "cred-id";
     private ConjurSecretDockerCertCredentialsBinding binding;
 
-    @Before
-    public void setUp() throws Exception, SecurityException {
+    @BeforeEach
+    void beforeEach() {
         binding = new ConjurSecretDockerCertCredentialsBinding(CREDENTIAL_ID);
     }
 
     @Test
-    public void testType() {
+    void testType() {
         assertNotNull(binding.type());
     }
 
     @Test
-    public void testDescriptorImplReturnsCorrectDisplayNameAndType() {
+    void testDescriptorImplReturnsCorrectDisplayNameAndType() {
         DescriptorImpl descriptor = new DescriptorImpl();
 
         assertEquals("Conjur Secret Docker Certificate credentials", descriptor.getDisplayName());
@@ -37,29 +40,29 @@ public class ConjurSecretDockerCertCredentialsBindingTest {
     }
 
     @Test
-    public void testGetClientKeyVariable() {
+    void testGetClientKeyVariable() {
         binding.setClientKeyVariable("key-id");
 
         assertEquals("key-id", binding.getClientKeyVariable());
     }
 
     @Test
-    public void testGetClientCertVariable() {
+    void testGetClientCertVariable() {
         binding.setClientCertVariable("cert-id");
 
         assertEquals("cert-id", binding.getClientCertVariable());
     }
 
     @Test
-    public void testGetCaCertificateVariable() {
+    void testGetCaCertificateVariable() {
         binding.setCaCertificateVariable("certca-id");
 
         assertEquals("certca-id", binding.getCaCertificateVariable());
     }
 
     @Test
-    public void testVariables() {
-        Set<String> varSet = new HashSet<String>();
+    void testVariables() {
+        Set<String> varSet = new HashSet<>();
         String clientKeyVariable = "key-id";
         String clientCertVariable = "cert-id";
         String caCertificateVariable = "certca-id";

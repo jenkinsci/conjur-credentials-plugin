@@ -4,19 +4,20 @@ import com.cloudbees.hudson.plugins.folder.AbstractFolder;
 import hudson.model.Item;
 import hudson.util.DescribableList.Owner;
 import jenkins.model.Jenkins;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 
 import java.lang.reflect.Field;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class FolderConjurConfigurationTest {
+@WithJenkins
+class FolderConjurConfigurationTest {
 
     @Mock
     private Jenkins mockJenkins;
@@ -28,25 +29,24 @@ public class FolderConjurConfigurationTest {
     @Mock
     private Owner mockOwner;
 
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+    private JenkinsRule j;
 
     private ConjurConfiguration testConjurConfig;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        j = rule;
         testConjurConfig = new ConjurConfiguration("https://example.com", "test-account");
-
     }
 
     @Test
-    public void testConstructorAndGetter() {
+    void testConstructorAndGetter() {
         FolderConjurConfiguration folderConfig = new FolderConjurConfiguration(testConjurConfig);
         assertEquals(testConjurConfig, folderConfig.getConjurConfiguration());
     }
 
     @Test
-    public void testSetConjurConfiguration() {
+    void testSetConjurConfiguration() {
         FolderConjurConfiguration folderConfig = new FolderConjurConfiguration(testConjurConfig);
         ConjurConfiguration newConfig = new ConjurConfiguration("https://new-url.com", "new-account");
 
@@ -55,15 +55,15 @@ public class FolderConjurConfigurationTest {
     }
 
     @Test
-    public void testGetInheritFromParentWhenNullDefaultsToTrue() {
+    void testGetInheritFromParentWhenNullDefaultsToTrue() {
         testConjurConfig.setInheritFromParent(null);
         FolderConjurConfiguration folderConfig = new FolderConjurConfiguration(testConjurConfig);
 
-        assertTrue("Expected inheritFromParent to default to true when null", folderConfig.getInheritFromParent());
+        assertTrue(folderConfig.getInheritFromParent(), "Expected inheritFromParent to default to true when null");
     }
 
     @Test
-    public void testGetInheritFromParentWhenSetToFalse() {
+    void testGetInheritFromParentWhenSetToFalse() {
         testConjurConfig.setInheritFromParent(false);
         FolderConjurConfiguration folderConfig = new FolderConjurConfiguration(testConjurConfig);
 
@@ -71,7 +71,7 @@ public class FolderConjurConfigurationTest {
     }
 
     @Test
-    public void testGetInheritFromParentWhenSetToTrue() {
+    void testGetInheritFromParentWhenSetToTrue() {
         testConjurConfig.setInheritFromParent(true);
         FolderConjurConfiguration folderConfig = new FolderConjurConfiguration(testConjurConfig);
 
@@ -79,7 +79,7 @@ public class FolderConjurConfigurationTest {
     }
 
     @Test
-    public void testSetInheritFromParent() {
+    void testSetInheritFromParent() {
         FolderConjurConfiguration folderConfig = new FolderConjurConfiguration(testConjurConfig);
         folderConfig.setInheritFromParent(false);
         assertFalse(testConjurConfig.getInheritFromParent());
@@ -89,13 +89,13 @@ public class FolderConjurConfigurationTest {
     }
 
     @Test
-    public void testDescriptorImplExists() {
+    void testDescriptorImplExists() {
         FolderConjurConfiguration.DescriptorImpl descriptor = new FolderConjurConfiguration.DescriptorImpl();
-        assertNotNull(String.valueOf(descriptor), "DescriptorImpl should be instantiated without exceptions");
+        assertNotNull(descriptor, "DescriptorImpl should be instantiated without exceptions");
     }
 
     @Test
-    public void testGetItem() throws NoSuchFieldException, IllegalAccessException {
+    void testGetItem() throws Exception {
         ConjurConfiguration conjurConfiguration = mock(ConjurConfiguration.class);
         FolderConjurConfiguration jobProperty = new FolderConjurConfiguration(conjurConfiguration);
         Jenkins mockJenkins = mock(Jenkins.class);

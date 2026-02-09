@@ -5,14 +5,16 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import hudson.model.ModelObject;
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.conjursecrets.ConjurSecretCredentials;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,11 +24,12 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mockStatic;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ConjurCredentialsSupplierTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class ConjurCredentialsSupplierTest {
 
     private TestLogHandler handler;
 
@@ -39,22 +42,22 @@ public class ConjurCredentialsSupplierTest {
     @Mock
     private StandardCredentials otherCred;
 
-    Logger actualLogger = Logger.getLogger(ConjurCredentialsSupplier.class.getName());
+    private static final Logger actualLogger = Logger.getLogger(ConjurCredentialsSupplier.class.getName());
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void beforeEach() {
         handler = new TestLogHandler();
         actualLogger.setLevel(Level.ALL);
         actualLogger.addHandler(handler);
     }
 
-    @After
-    public void tearDownLogger() {
+    @AfterEach
+    void afterEach() {
         actualLogger.removeHandler(handler);
     }
 
     @Test
-    public void testGetReturnsEmptyListContextIsNull() {
+    void testGetReturnsEmptyListContextIsNull() {
         Supplier<Collection<StandardCredentials>> baseSupplier = ConjurCredentialsSupplier.standard(null);
         ConjurCredentialsSupplier spySupplier = Mockito.spy((ConjurCredentialsSupplier) baseSupplier);
         Collection<StandardCredentials> result = spySupplier.get();
@@ -64,7 +67,7 @@ public class ConjurCredentialsSupplierTest {
     }
 
     @Test
-    public void testGetReturnsStandardCredentials() {
+    void testGetReturnsStandardCredentials() {
         Collection<StandardCredentials> mockCredentials = new ArrayList<>();
         mockCredentials.add(conjurCred);
         mockCredentials.add(otherCred);
@@ -82,7 +85,7 @@ public class ConjurCredentialsSupplierTest {
     }
 
     @Test
-    public void testGetConjurAPIThrowsExceptionReturnsEmptyListLogsError() {
+    void testGetConjurAPIThrowsExceptionReturnsEmptyListLogsError() {
         Supplier<Collection<StandardCredentials>> supplier = ConjurCredentialsSupplier.standard(mockContext);
         try (MockedStatic<ConjurAPI> conjurApiMock = mockStatic(ConjurAPI.class)) {
             conjurApiMock.when(() ->

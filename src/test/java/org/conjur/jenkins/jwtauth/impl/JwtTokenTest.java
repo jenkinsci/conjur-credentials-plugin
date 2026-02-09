@@ -2,34 +2,37 @@
 package org.conjur.jenkins.jwtauth.impl;
 
 import hudson.model.ModelObject;
+import jenkins.model.Jenkins;
 import org.acegisecurity.Authentication;
 import org.conjur.jenkins.configuration.GlobalConjurConfiguration;
 import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.lang.JoseException;
 import org.json.JSONObject;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 
-@RunWith(MockitoJUnitRunner.class)
-public class JwtTokenTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@WithJenkins
+class JwtTokenTest {
 
-    @Rule
-    public JenkinsRule jenkinsRule = new JenkinsRule();
+    private JenkinsRule j;
 
     @Mock
     private GlobalConjurConfiguration globalConfigMock;
@@ -38,8 +41,9 @@ public class JwtTokenTest {
     @Mock
     private Authentication authentication;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        j = rule;
         GlobalConjurConfiguration mockConfig = mock(GlobalConjurConfiguration.class);
         when(mockConfig.getJwtAudience()).thenReturn("test-audience");
         when(mockConfig.getTokenDurationInSeconds()).thenReturn(600L);
@@ -47,7 +51,7 @@ public class JwtTokenTest {
     }
 
     @Test
-    public void mockSign() {
+    void mockSign() {
         JwtToken jwtToken = mock(JwtToken.class);
         when(jwtToken.sign()).thenReturn("Signing Token");
         assertEquals("Signing Token", jwtToken.sign());
@@ -55,7 +59,7 @@ public class JwtTokenTest {
     }
 
     @Test
-    public void mockGetToken() {
+    void mockGetToken() {
         try (MockedStatic<JwtToken> jwtTokenTestMockedStatic = mockStatic(JwtToken.class)) {
             mock(JwtToken.class);
             Object context = "secretId";
@@ -66,7 +70,7 @@ public class JwtTokenTest {
     }
 
     @Test
-    public void mockGetUnsignedToken() {
+    void mockGetUnsignedToken() {
         try (MockedStatic<JwtToken> jwtTokenTestMockedStatic = mockStatic(JwtToken.class)) {
             JwtToken jwtToken2 = mock(JwtToken.class);
             String pluginAction = " sdfghjkl";
@@ -78,7 +82,7 @@ public class JwtTokenTest {
     }
 
     @Test
-    public void getUnsignedTokenNull() {
+    void getUnsignedTokenNull() {
         try (MockedStatic<JwtToken> jwtTokenTestMockedStatic = mockStatic(JwtToken.class)) {
             JwtToken jwtToken2 = null;
             String pluginAction = " testAction";
@@ -91,8 +95,8 @@ public class JwtTokenTest {
 
 
     @Test
-    public void testTokenFields() {
-        ModelObject mockContext = jenkinsRule.jenkins.getInstance();
+    void testTokenFields() {
+        ModelObject mockContext = Jenkins.get();
         JwtToken jwtToken = JwtToken.getUnsignedToken("test", mockContext, globalConfigMock);
 
         assertEquals("GlobalCredentials", jwtToken.claim.get("jenkins_full_name"));
@@ -100,13 +104,13 @@ public class JwtTokenTest {
 
 
     @Test
-    public void testGetUnsignedTokenReturnsNullIfGlobalConfigIsNull() {
+    void testGetUnsignedTokenReturnsNullIfGlobalConfigIsNull() {
         JwtToken token = JwtToken.getUnsignedToken("TestAction", new Object(), null);
         assertNull(token);
     }
 
     @Test
-    public void testGetCurrentSigningKeyGeneratesNewKey() {
+    void testGetCurrentSigningKeyGeneratesNewKey() {
         JwtToken token = new JwtToken();
         token.claim.put("exp", System.currentTimeMillis() / 1000 + 600);
         JwtRsaDigitalSignatureKey key = JwtToken.getCurrentSigningKey(token);
@@ -115,31 +119,34 @@ public class JwtTokenTest {
         assertNotNull(key.getId());
     }
 
+    @SuppressWarnings("static-access")
     @Test
-    public void testGetToken() {
+    void testGetToken() {
         JwtToken mockToken = spy(new JwtToken());
         ModelObject mockObject = mock(ModelObject.class);
         assertNull(mockToken.getToken("testAction", null, globalConfigMock));
     }
 
+    @SuppressWarnings("static-access")
     @Test
-    public void testGetTokenWithDifferntParameters() {
+    void testGetTokenWithDifferentParameters() {
         JwtToken mockToken = spy(new JwtToken());
 
         assertNull(mockToken.getToken(null, globalConfigMock));
     }
 
     @Test
-    public void testGetJwkSet() {
-        JwtToken mockToken = spy(new JwtToken());
-        JSONObject jwks = new JSONObject();
-        doReturn(jwks).when(mockToken).getJwkset();
+    void testGetJwkSet() {
+        try (MockedStatic<JwtToken> mockToken = mockStatic(JwtToken.class)) {
+            JSONObject jwks = new JSONObject();
+            when(JwtToken.getJwkset()).thenReturn(jwks);
 
-        assertNotNull(mockToken.getJwkset());
+            assertNotNull(JwtToken.getJwkset());
+        }
     }
 
     @Test
-    public void testSignReturnsString() throws JoseException {
+    void testSignReturnsString() throws Exception {
         JwtToken mockToken = spy(new JwtToken());
         JsonWebSignature mockSignature = mock(JsonWebSignature.class);
         when(mockSignature.getCompactSerialization()).thenReturn("signed");
@@ -149,7 +156,7 @@ public class JwtTokenTest {
     }
 
     @Test
-    public void testSign_ReturnsSignedJwtToken() throws Exception {
+    void testSign_ReturnsSignedJwtToken() throws Exception {
         // Generate real RSA keypair (2048-bit)
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
         keyGen.initialize(2048);

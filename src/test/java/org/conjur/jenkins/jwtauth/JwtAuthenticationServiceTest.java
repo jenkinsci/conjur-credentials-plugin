@@ -1,14 +1,13 @@
 package org.conjur.jenkins.jwtauth;
 
-import org.junit.Test;
-import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class JwtAuthenticationServiceTest {
+class JwtAuthenticationServiceTest {
 
     @Test
-    public void testGetUrlName() {
+    void testGetUrlName() {
         JwtAuthenticationService authService = new JwtAuthenticationService() {
 
             @Override
@@ -34,11 +33,11 @@ public class JwtAuthenticationServiceTest {
 
 
     @Test
-    public void testGetJwkSet() throws HttpRequestMethodNotSupportedException {
+    void testGetJwkSet() throws Exception {
         JwtAuthenticationService authService = new JwtAuthenticationService() {
 
             @Override
-            public String getJwkSet() throws HttpRequestMethodNotSupportedException {
+            public String getJwkSet() {
                 return "Mocked JWK Set";
             }
 

@@ -6,21 +6,26 @@ import hudson.model.Item;
 import hudson.model.ModelObject;
 import hudson.util.FormValidation;
 import org.conjur.jenkins.jwtauth.impl.JwtToken;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 
-@RunWith(MockitoJUnitRunner.class)
-public class GlobalConjurConfigurationTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@WithJenkins
+class GlobalConjurConfigurationTest {
 
     @Mock
     private GlobalConjurConfiguration config;
@@ -28,38 +33,41 @@ public class GlobalConjurConfigurationTest {
     @Mock
     private AbstractItem abstractItem;
 
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+    private JenkinsRule j;
+
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        j = rule;
+    }
 
     @Test
-    public void testGetConjurConfiguration() {
+    void testGetConjurConfiguration() {
         assertNull(config.getConjurConfiguration());
     }
 
     @Test
-    public void testGetAuthWebServiceId() {
+    void testGetAuthWebServiceId() {
         assertNull(config.getAuthWebServiceId());
     }
 
     @Test
-    public void testGetJwtAudience() {
+    void testGetJwtAudience() {
         assertNull(config.getJwtAudience());
     }
 
     @Test
-    public void testKeyLifetimeInMinutes() {
+    void testKeyLifetimeInMinutes() {
         assertEquals(0, config.getKeyLifetimeInMinutes());
     }
 
-
     @Test
-    public void testGetJwtAudienceReturnsValue() {
+    void testGetJwtAudienceReturnsValue() {
         GlobalConjurConfiguration conf = new GlobalConjurConfiguration();
         assertEquals("cyberark-conjur", conf.getJwtAudience());
     }
 
     @Test
-    public void testSetConjurConfiguration() {
+    void testSetConjurConfiguration() {
         ConjurConfiguration mockConjurConfig = mock(ConjurConfiguration.class);
         GlobalConjurConfiguration globalConfig = new GlobalConjurConfiguration();
         globalConfig.setConjurConfiguration(mockConjurConfig);
@@ -68,7 +76,7 @@ public class GlobalConjurConfigurationTest {
     }
 
     @Test
-    public void doCheckAuthWebServiceId() {
+    void doCheckAuthWebServiceId() {
         try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
                 GlobalConjurConfiguration.class)) {
             String authWebServiceId = "jenkins";
@@ -80,7 +88,7 @@ public class GlobalConjurConfigurationTest {
     }
 
     @Test
-    public void doCheckAuthWebServiceIdEmpty() {
+    void doCheckAuthWebServiceIdEmpty() {
         try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(
                 GlobalConjurConfiguration.class)) {
             String authWebServiceId = "";
@@ -95,7 +103,7 @@ public class GlobalConjurConfigurationTest {
 
 
     @Test
-    public void testDoCheckAuthWebServiceIdEmpty() {
+    void testDoCheckAuthWebServiceIdEmpty() {
         GlobalConjurConfiguration getConfigMockStatic = new GlobalConjurConfiguration();
         String authWebServiceId = "";
         FormValidation result = getConfigMockStatic.doCheckAuthWebServiceId(abstractItem, authWebServiceId);
@@ -106,7 +114,7 @@ public class GlobalConjurConfigurationTest {
     }
 
     @Test
-    public void testDoCheckAuthWebServiceIdBlank() {
+    void testDoCheckAuthWebServiceIdBlank() {
         GlobalConjurConfiguration getConfigMockStatic = new GlobalConjurConfiguration();
         String authWebServiceId = "   ";
         FormValidation result = getConfigMockStatic.doCheckAuthWebServiceId(abstractItem, authWebServiceId);
@@ -117,7 +125,7 @@ public class GlobalConjurConfigurationTest {
     }
 
     @Test
-    public void testDoCheckAuthWebServiceIdValid() {
+    void testDoCheckAuthWebServiceIdValid() {
         GlobalConjurConfiguration getConfigMockStatic = new GlobalConjurConfiguration();
         String authWebServiceId = "jenkinsValidId";
         FormValidation result = getConfigMockStatic.doCheckAuthWebServiceId(abstractItem, authWebServiceId);
@@ -126,7 +134,7 @@ public class GlobalConjurConfigurationTest {
     }
 
     @Test
-    public void testSetAuthWebServiceId() {
+    void testSetAuthWebServiceId() {
         GlobalConjurConfiguration getConfigMockStatic = new GlobalConjurConfiguration();
         String testAuthWebServiceId = "test-Auth-id";
         getConfigMockStatic.setAuthWebServiceId(testAuthWebServiceId);
@@ -135,7 +143,7 @@ public class GlobalConjurConfigurationTest {
     }
 
     @Test
-    public void testSetKeyLifetimeInMinutes() {
+    void testSetKeyLifetimeInMinutes() {
         GlobalConjurConfiguration getConfigMockStatic = new GlobalConjurConfiguration();
         long expectedLifetime = 120L;
         getConfigMockStatic.setKeyLifetimeInMinutes(expectedLifetime);
@@ -144,7 +152,7 @@ public class GlobalConjurConfigurationTest {
     }
 
     @Test
-    public void testSetTokenDurationInSeconds() {
+    void testSetTokenDurationInSeconds() {
         GlobalConjurConfiguration getConfigMockStatic = new GlobalConjurConfiguration();
         long tokenDurationInSeconds = 120L;
         getConfigMockStatic.setTokenDurationInSeconds(tokenDurationInSeconds);
@@ -153,7 +161,7 @@ public class GlobalConjurConfigurationTest {
     }
 
     @Test
-    public void testSetSelectAuthenticator() {
+    void testSetSelectAuthenticator() {
         GlobalConjurConfiguration getConfigMockStatic = new GlobalConjurConfiguration();
         String auth = "JWT";
         getConfigMockStatic.setSelectAuthenticator(auth);
@@ -162,7 +170,7 @@ public class GlobalConjurConfigurationTest {
     }
 
     @Test
-    public void testDoObtainJwtToken() {
+    void testDoObtainJwtToken() {
         try (MockedStatic<GlobalConjurConfiguration> getConfigMockStatic = mockStatic(GlobalConjurConfiguration.class)) {
             ModelObject item = mock(ModelObject.class);
             FormValidation expectedValidation = FormValidation.ok("JWT Token: { \"test\": \"value\" }");
@@ -175,7 +183,7 @@ public class GlobalConjurConfigurationTest {
     }
 
     @Test
-    public void testDoObtainJwtTokenWithoutMock() {
+    void testDoObtainJwtTokenWithoutMock() {
         GlobalConjurConfiguration globalConfig = GlobalConjurConfiguration.get();
         JwtToken mockToken = mock(JwtToken.class);
         Item mockItem = mock(Item.class);
@@ -188,7 +196,7 @@ public class GlobalConjurConfigurationTest {
     }
 
     @Test
-    public void testDoObtainJwtTokenWithoutMockToken() {
+    void testDoObtainJwtTokenWithoutMockToken() {
         GlobalConjurConfiguration globalConfig = GlobalConjurConfiguration.get();
         Item mockItem = mock(Item.class);
         try (MockedStatic<JwtToken> token = mockStatic(JwtToken.class)) {

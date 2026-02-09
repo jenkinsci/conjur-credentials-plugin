@@ -3,22 +3,26 @@ package org.conjur.jenkins.configuration;
 import hudson.model.Item;
 import hudson.model.Job;
 import jenkins.model.Jenkins;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.lang.reflect.Field;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
-
-public class ConjurJITJobPropertyTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@WithJenkins
+class ConjurJITJobPropertyTest {
 
     @Mock
     private ConjurConfiguration conjurConfiguration;
@@ -26,11 +30,15 @@ public class ConjurJITJobPropertyTest {
     @Mock
     private ConjurJITJobProperty<Job<?, ?>> conjurJITJobProperty;
 
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+    private JenkinsRule j;
+
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        j = rule;
+    }
 
     @Test
-    public void testSetters() {
+    void testSetters() {
         ConjurJITJobProperty<Job<?, ?>> property = new ConjurJITJobProperty<>(conjurConfiguration);
         property.setConjurConfiguration(null);
         assertNull(property.getConjurConfiguration());
@@ -47,7 +55,7 @@ public class ConjurJITJobPropertyTest {
     }
 
     @Test
-    public void testGetInheritFromParent() {
+    void testGetInheritFromParent() {
         ConjurConfiguration newConjurConfiguration = spy(new ConjurConfiguration());
         doReturn(null).when(newConjurConfiguration).getInheritFromParent();
         ConjurJITJobProperty jobProperty = new ConjurJITJobProperty(newConjurConfiguration);
@@ -56,7 +64,7 @@ public class ConjurJITJobPropertyTest {
     }
 
     @Test
-    public void testConjurConfigurationGetterAndSetter() {
+    void testConjurConfigurationGetterAndSetter() {
         ConjurConfiguration newConjurConfiguration = new ConjurConfiguration();
         conjurJITJobProperty.setConjurConfiguration(newConjurConfiguration);
 
@@ -64,21 +72,21 @@ public class ConjurJITJobPropertyTest {
     }
 
     @Test
-    public void testJobPropertyDescriptorDisplayName() {
+    void testJobPropertyDescriptorDisplayName() {
         ConjurJITJobProperty.ConjurJITJobPropertyDescriptorImpl descriptor = new ConjurJITJobProperty.ConjurJITJobPropertyDescriptorImpl();
 
         assertEquals("Conjur Just-In-Time Access", descriptor.getDisplayName());
     }
 
     @Test
-    public void testJobPropertyDescriptorApplicable() {
+    void testJobPropertyDescriptorApplicable() {
         ConjurJITJobProperty.ConjurJITJobPropertyDescriptorImpl descriptor = new ConjurJITJobProperty.ConjurJITJobPropertyDescriptorImpl();
 
         assertTrue(descriptor.isApplicable(Job.class));
     }
 
     @Test
-    public void testGetItem() throws NoSuchFieldException, IllegalAccessException {
+    void testGetItem() throws Exception {
         ConjurJITJobProperty jobProperty = new ConjurJITJobProperty(conjurConfiguration);
         Jenkins mockJenkins = mock(Jenkins.class);
         Item mockItem = mock(Item.class);

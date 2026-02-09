@@ -6,7 +6,6 @@ import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
@@ -15,29 +14,32 @@ import org.conjur.jenkins.credentials.ConjurCredentialProvider;
 import org.conjur.jenkins.credentials.ConjurCredentialStore;
 import org.conjur.jenkins.jwtauth.impl.JwtToken;
 import org.json.JSONObject;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.io.IOException;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ConjurConfigurationTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@WithJenkins
+class ConjurConfigurationTest {
 
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+    private JenkinsRule j;
 
     @Mock
     private GlobalConjurConfiguration globalConfig;
@@ -68,8 +70,9 @@ public class ConjurConfigurationTest {
 
     private ConjurConfiguration config;
 
-    @Before
-    public void setupConjur() throws Descriptor.FormException {
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        j = rule;
         globalConfig = mock(GlobalConjurConfiguration.class);
         CredentialsStore store = CredentialsProvider.lookupStores(j.jenkins).iterator().next();
         // Setup Conjur login credentials
@@ -85,7 +88,7 @@ public class ConjurConfigurationTest {
     }
 
     @Test
-    public void checkOwnerFullName() {
+    void checkOwnerFullName() {
         ConjurConfiguration conjurConfiguration = new ConjurConfiguration();
 
         conjurConfiguration.setOwnerFullName("Owner");
@@ -96,7 +99,7 @@ public class ConjurConfigurationTest {
     }
 
     @Test
-    public void doCheckConjurConfiguration() {
+    void doCheckConjurConfiguration() {
         ConjurConfiguration conjurConfiguration = new ConjurConfiguration("https://conjur-master.local:8443/",
                 "myConjurAccount");
 
@@ -113,7 +116,7 @@ public class ConjurConfigurationTest {
     }
 
     @Test
-    public void testDoFillCertificateCredentialIDItemsAdministerPermissionReturnsEmptyModel() {
+    void testDoFillCertificateCredentialIDItemsAdministerPermissionReturnsEmptyModel() {
         ConjurConfiguration.DescriptorImpl descriptor = new ConjurConfiguration.DescriptorImpl();
         ListBoxModel expected = new ListBoxModel();
         expected.add("- none -", "");
@@ -135,7 +138,7 @@ public class ConjurConfigurationTest {
     }
 
     @Test
-    public void testDoFillCredentialIDItems() {
+    void testDoFillCredentialIDItems() {
         ConjurConfiguration.DescriptorImpl descriptor = new ConjurConfiguration.DescriptorImpl();
         ListBoxModel expected = new ListBoxModel();
         expected.add("- none -", "");
@@ -164,7 +167,7 @@ public class ConjurConfigurationTest {
     }
 
     @Test
-    public void addConjurCredential() {
+    void addConjurCredential() {
         setGlobalConfiguration();
         CredentialsStore store = CredentialsProvider.lookupStores(j.jenkins).iterator().next();
         ConjurSecretCredentialsImpl cred = new ConjurSecretCredentialsImpl(CredentialsScope.GLOBAL, "DB_SECRET",
@@ -180,25 +183,25 @@ public class ConjurConfigurationTest {
     }
 
     @Test
-    public void testSetInheritFromParentNullDefaultsToTrue() {
+    void testSetInheritFromParentNullDefaultsToTrue() {
         config.setInheritFromParent(null);
         assertNull(config.getInheritFromParent());
     }
 
     @Test
-    public void testSetInheritFromParentFalse() {
+    void testSetInheritFromParentFalse() {
         config.setInheritFromParent(false);
         assertFalse(config.getInheritFromParent());
     }
 
     @Test
-    public void testSetCredentialID() {
+    void testSetCredentialID() {
         config.setCredentialID("sample-credId");
         assertEquals("sample-credId", config.getCredentialID());
     }
 
     @Test
-    public void testMergeWithParentMergesMissingValues() {
+    void testMergeWithParentMergesMissingValues() {
         ConjurConfiguration parentConfig = new ConjurConfiguration("https://parent.com", "parent-account");
         parentConfig.setCredentialID("parent-cred");
         parentConfig.setCertificateCredentialID("parent-cert-cred");
@@ -214,13 +217,13 @@ public class ConjurConfigurationTest {
     }
 
     @Test
-    public void testApplianceUrlTrailingSlashRemoval() {
+    void testApplianceUrlTrailingSlashRemoval() {
         ConjurConfiguration withSlash = new ConjurConfiguration("https://jenkins/", "test-account");
         assertEquals("https://jenkins", withSlash.getApplianceURL());
     }
 
     @Test
-    public void testDoFillCertificateCredentialIDItems() {
+    void testDoFillCertificateCredentialIDItems() {
         String credentialsId = "test-credentials-id";
         ConjurConfiguration.DescriptorImpl descriptor = new ConjurConfiguration.DescriptorImpl();
         ListBoxModel result = descriptor.doFillCertificateCredentialIDItems(item, credentialsId);
@@ -228,19 +231,19 @@ public class ConjurConfigurationTest {
     }
 
     @Test
-    public void testGetDisplayName() {
+    void testGetDisplayName() {
         ConjurConfiguration.DescriptorImpl descriptor = new ConjurConfiguration.DescriptorImpl();
         assertEquals("Conjur Configuration", descriptor.getDisplayName());
     }
 
     @Test
-    public void testGetGlobalAuthenticator() {
+    void testGetGlobalAuthenticator() {
         ConjurConfiguration config = new ConjurConfiguration();
         assertEquals("APIKey", config.getGlobalAuthenticator());
     }
 
     @Test
-    public void testDoObtainJwtToken() {
+    void testDoObtainJwtToken() {
         GlobalConjurConfiguration globalConfig = GlobalConjurConfiguration.get();
         JwtToken mockToken = mock(JwtToken.class);
         Item mockItem = mock(Item.class);

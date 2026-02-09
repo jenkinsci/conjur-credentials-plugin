@@ -1,16 +1,16 @@
 package org.conjur.jenkins.conjursecrets;
 
 import org.conjur.jenkins.conjursecrets.ConjurSecretStringCredentials.NameProvider;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ConjurSecretStringCredentialsTest {
+class ConjurSecretStringCredentialsTest {
 
     @Test
-    public void testGetNameWithDescription() {
+    void testGetNameWithDescription() {
         ConjurSecretStringCredentials mockCred = mock(ConjurSecretStringCredentials.class);
         when(mockCred.getDisplayName()).thenReturn("conjur-secret");
         when(mockCred.getDescription()).thenReturn("used for DB connection");
@@ -21,7 +21,7 @@ public class ConjurSecretStringCredentialsTest {
     }
 
     @Test
-    public void testGetNameWithoutDescription() {
+    void testGetNameWithoutDescription() {
         ConjurSecretStringCredentials mockCred = mock(ConjurSecretStringCredentials.class);
         when(mockCred.getDisplayName()).thenReturn("conjur-secret");
         when(mockCred.getDescription()).thenReturn(null); // or ""

@@ -13,29 +13,28 @@ import okhttp3.OkHttpClient;
 import org.conjur.jenkins.configuration.ConjurConfiguration;
 import org.conjur.jenkins.conjursecrets.ConjurSecretCredentials;
 import org.conjur.jenkins.exceptions.InvalidConjurSecretException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import javax.security.auth.x500.X500Principal;
-import java.io.IOException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
-public class ConjurAPIUtilsTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class ConjurAPIUtilsTest {
 
     @Mock
     private ACL aclSystem;
@@ -69,30 +68,30 @@ public class ConjurAPIUtilsTest {
 
     private MockedStatic<Jenkins> jenkinsStaticMock;
 
-    private MockedStatic<Stapler> StaplerMock;
+    private MockedStatic<Stapler> staplerMock;
 
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void beforeEach() {
         when(jenkinsMock.hasPermission(Jenkins.ADMINISTER)).thenReturn(true);
         jenkinsStaticMock = mockStatic(Jenkins.class);
         when(Jenkins.get()).thenReturn(jenkinsMock);
-        StaplerMock = mockStatic(Stapler.class);
+        staplerMock = mockStatic(Stapler.class);
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void afterEach() {
         if (jenkinsStaticMock != null) {
             jenkinsStaticMock.close();
         }
-        if (StaplerMock != null) {
-            StaplerMock.close();
+        if (staplerMock != null) {
+            staplerMock.close();
         }
     }
 
     @SuppressWarnings("static-access")
     @Test
-    public void testGetHttpClient() {
+    void testGetHttpClient() {
         ConjurConfiguration configuration = mock(ConjurConfiguration.class);
         ConjurAPIUtils conjurAPIUtilsSpy = spy(new ConjurAPIUtils());
         when(conjurAPIUtilsSpy.getHttpClient(configuration)).thenReturn(null);
@@ -102,7 +101,7 @@ public class ConjurAPIUtilsTest {
     }
 
     @Test
-    public void testCertificateFromConfigurationNegative() {
+    void testCertificateFromConfigurationNegative() {
         ConjurConfiguration configuration = new ConjurConfiguration();
         configuration.setCertificateCredentialID(null);
 
@@ -111,19 +110,19 @@ public class ConjurAPIUtilsTest {
         assertNull(result);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testHttpClientWithCertificateNegative() throws Exception {
+    @Test
+    void testHttpClientWithCertificateNegative() throws Exception {
         CertificateCredentials certificate = mock(CertificateCredentials.class);
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         keyStore.load(null, null);
         when(certificate.getKeyStore()).thenReturn(keyStore);
+        assertThrows(IllegalArgumentException.class, () ->
 
-        ConjurAPIUtils.httpClientWithCertificate(certificate);
+            ConjurAPIUtils.httpClientWithCertificate(certificate));
     }
 
     @Test
-    public void testHttpClientWithCertificateSuccess()
-            throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
+    void testHttpClientWithCertificateSuccess() throws Exception {
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         keyStore.load(null, null);
         when(certificate.getKeyStore()).thenReturn(keyStore);
@@ -145,7 +144,7 @@ public class ConjurAPIUtilsTest {
 
 
     @Test
-    public void testHttpClientWithCertificateKeyManagerFailure() {
+    void testHttpClientWithCertificateKeyManagerFailure() {
         KeyStore keyStore = mock(KeyStore.class);
         when(certificate.getKeyStore()).thenReturn(keyStore);
         when(certificate.getPassword()).thenReturn(mock(Secret.class));
@@ -156,25 +155,25 @@ public class ConjurAPIUtilsTest {
     }
 
     @Test
-    public void testDefaultIFBlankReturnsDefaultValue() {
+    void testDefaultIFBlankReturnsDefaultValue() {
         String value = ConjurAPIUtils.defaultIfBlank(null, "default");
         assertEquals("default", value);
     }
 
     @Test
-    public void testDefaultIFBlankReturnsValue() {
+    void testDefaultIFBlankReturnsValue() {
         String value = ConjurAPIUtils.defaultIfBlank("sample-value", "default");
         assertEquals("sample-value", value);
     }
 
     @Test
-    public void testDefaultIFBlankValueReturnsDefaultValue() {
+    void testDefaultIFBlankValueReturnsDefaultValue() {
         String value = ConjurAPIUtils.defaultIfBlank("", "default");
         assertEquals("default", value);
     }
 
     @Test
-    public void testGetStringFromException() {
+    void testGetStringFromException() {
         Exception exception = new Exception("Test Exception");
         StringBuffer result = ConjurAPIUtils.getStringFromException(exception);
         System.out.println(result);
@@ -184,7 +183,7 @@ public class ConjurAPIUtilsTest {
     }
 
     @Test
-    public void testGetItemFromReferer() throws Exception {
+    void testGetItemFromReferer() throws Exception {
         String referer = "http://localhost:8080/folder-a/job/folder-b/job/pipeline-job/";
         mockStaticStaplerWithReferer(referer);
 
@@ -195,7 +194,7 @@ public class ConjurAPIUtilsTest {
     }
 
     @Test
-    public void testExtractJobPathFromUrl() {
+    void testExtractJobPathFromUrl() {
         String urlPath = "/job/folder1/job/myJob/";
         String result = ConjurAPIUtils.extractJobPathFromUrl(urlPath);
 
@@ -203,7 +202,7 @@ public class ConjurAPIUtilsTest {
     }
 
     @Test
-    public void testExtractJobPathFromUrlThrowsException() {
+    void testExtractJobPathFromUrlThrowsException() {
         String urlPath = "folder1/myJob/";
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> ConjurAPIUtils.extractJobPathFromUrl(urlPath));
 
@@ -211,7 +210,7 @@ public class ConjurAPIUtilsTest {
     }
 
     @Test
-    public void testValidateCredentialWithSecret() {
+    void testValidateCredentialWithSecret() {
         Secret mockSecret = mock(Secret.class);
         when(mockSecret.getPlainText()).thenReturn("mocked-secret");
         when(secretCredentials.getContext()).thenReturn(context);
@@ -224,7 +223,7 @@ public class ConjurAPIUtilsTest {
     }
 
     @Test
-    public void testValidateCredentialWithInvalidConjurException() throws Exception {
+    void testValidateCredentialWithInvalidConjurException() {
         when(secretCredentials.getSecret())
                 .thenThrow(new InvalidConjurSecretException("Secret Error"))
                 .thenThrow(new InvalidConjurSecretException("Secret Error"));
@@ -239,7 +238,7 @@ public class ConjurAPIUtilsTest {
     }
 
     @Test
-    public void testValidateCredentialWithInvalidConjurExceptionReturnsSecretFromParent() throws Exception {
+    void testValidateCredentialWithInvalidConjurExceptionReturnsSecretFromParent() {
         Secret mockSecret = mock(Secret.class);
         when(mockSecret.getPlainText()).thenReturn("mocked-secret");
         when(secretCredentials.getSecret())
@@ -256,7 +255,7 @@ public class ConjurAPIUtilsTest {
 
     }
 
-    private void mockStaticStaplerWithReferer(String refererUrl) throws Exception {
+    private void mockStaticStaplerWithReferer(String refererUrl) {
         when(mockedStaplerRequest.getReferer()).thenReturn(refererUrl);
         when(Stapler.getCurrentRequest()).thenReturn(mockedStaplerRequest);
         when(jenkinsMock.getItemByFullName(any())).thenReturn(item);

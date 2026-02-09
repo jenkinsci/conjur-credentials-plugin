@@ -10,11 +10,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.spy;
 
 class ConjurSecretUsernameSSHKeyCredentialsTest {
+
     private ConjurSecretUsernameSSHKeyCredentials secretCredentials = null;
     private CredentialsNameProvider<StandardUsernameCredentials> provider = null;
 
     @BeforeEach
-    public void init() {
+    void beforeEach() {
         secretCredentials = spy(ConjurSecretUsernameSSHKeyCredentials.class);
         provider = new ConjurSecretUsernameSSHKeyCredentials.NameProvider();
     }

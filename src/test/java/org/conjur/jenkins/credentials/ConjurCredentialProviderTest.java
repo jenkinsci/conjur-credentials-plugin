@@ -3,11 +3,13 @@ package org.conjur.jenkins.credentials;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import hudson.model.ModelObject;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -15,12 +17,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
-import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
-public class ConjurCredentialProviderTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class ConjurCredentialProviderTest {
 
     @Mock
     public ConjurCredentialProvider provider;
@@ -31,14 +33,14 @@ public class ConjurCredentialProviderTest {
     private Supplier<String> memoizedSupplier;
 
     @Test
-    public void getStoreTest() {
+    void getStoreTest() {
         ConjurCredentialStore store = null;
         when(provider.getStore(any())).thenReturn(store);
         assertFalse(provider.getStore(any()) instanceof ConjurCredentialStore);
     }
 
     @Test
-    public void getCredentialsTest() throws Exception {
+    void getCredentialsTest() {
         String classname1 = "icon-conjur-credentials-store";
         classname1 = null;
 
@@ -47,8 +49,8 @@ public class ConjurCredentialProviderTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void getAllCredentialSuppliersTest() {
-        ConcurrentMap<String, Supplier<Collection<StandardCredentials>>> credentialSuppliers = new ConcurrentHashMap<String, Supplier<Collection<StandardCredentials>>>();
+    void getAllCredentialSuppliersTest() {
+        ConcurrentMap<String, Supplier<Collection<StandardCredentials>>> credentialSuppliers = new ConcurrentHashMap<>();
         try (@SuppressWarnings("rawtypes")
              MockedStatic mockVar = mockStatic(ConjurCredentialProvider.class)) {
             mockVar.when(ConjurCredentialProvider::getAllCredentialSuppliers).thenReturn(credentialSuppliers);
@@ -59,7 +61,7 @@ public class ConjurCredentialProviderTest {
     }
 
     @Test
-    public void testGetAllCredentialSuppliers() {
+    void testGetAllCredentialSuppliers() {
         ConcurrentMap<String, Supplier<Collection<StandardCredentials>>> result = ConjurCredentialProvider
                 .getAllCredentialSuppliers();
 
@@ -67,7 +69,7 @@ public class ConjurCredentialProviderTest {
     }
 
     @Test
-    public void getIconClassNameTest() {
+    void getIconClassNameTest() {
         String iconClassName = "icon-conjur-credentials-store";
         when(provider.getIconClassName()).thenReturn(iconClassName);
         String actualIconClassName = provider.getIconClassName();
@@ -76,7 +78,7 @@ public class ConjurCredentialProviderTest {
     }
 
     @Test
-    public void testMemoizeWithExpiration() throws InterruptedException {
+    void testMemoizeWithExpiration() throws Exception {
         Supplier<String> baseSupplier = () -> "Value at " + System.currentTimeMillis();
         Supplier<String> memoizedSupplier = ConjurCredentialProvider.memoizeWithExpiration(baseSupplier,
                 Duration.ofMillis(100));
@@ -92,14 +94,14 @@ public class ConjurCredentialProviderTest {
     }
 
     @Test
-    public void testGetDisplayName() {
+    void testGetDisplayName() {
         ConjurCredentialStore store = new ConjurCredentialStore(provider, mock(ModelObject.class));
         String result = store.getDisplayName();
         assertEquals("Conjur Credential Storage", result);
     }
 
     @Test
-    public void testPutCredentials() {
+    void testPutCredentials() {
         ConjurCredentialProvider mockProvider = mock(ConjurCredentialProvider.class);
         ModelObject mockObject = mock(ModelObject.class);
         String key = "test-key";

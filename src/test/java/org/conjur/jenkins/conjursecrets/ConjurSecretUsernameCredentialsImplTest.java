@@ -1,7 +1,6 @@
 package org.conjur.jenkins.conjursecrets;
 
 import com.cloudbees.plugins.credentials.CredentialsScope;
-import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
 import hudson.model.ModelObject;
@@ -11,23 +10,26 @@ import jenkins.model.Jenkins;
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.api.ConjurAPIUtils;
 import org.conjur.jenkins.configuration.ConjurConfiguration;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SuppressWarnings("serial")
-public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxModel {
+@WithJenkins
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class ConjurSecretUsernameCredentialsImplTest {
 
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+    private JenkinsRule j;
 
     @Mock
     private ConjurConfiguration conjurConfiguration;
@@ -47,16 +49,16 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
     @Mock
     private ModelObject mockStoreContext;
 
-    private ConjurConfiguration config = new ConjurConfiguration();
+    private final ConjurConfiguration config = new ConjurConfiguration();
 
-    @Before
-    public void setup() {
-        MockitoAnnotations.openMocks(this);
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        j = rule;
         doNothing().when(jenkins).checkPermission(Jenkins.ADMINISTER);
     }
 
     @Test
-    public void testGetDisplayName() {
+    void testGetDisplayName() {
         ConjurSecretUsernameCredentialsImpl.DescriptorImpl descriptorImpl = new ConjurSecretUsernameCredentialsImpl.DescriptorImpl();
         String name = ConjurSecretUsernameCredentialsImpl.getDescriptorDisplayName();
 
@@ -64,20 +66,20 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
     }
 
     @Test
-    public void testGetDescriptorDisplayName() {
+    void testGetDescriptorDisplayName() {
         assertEquals("Conjur Secret Username Credential",
                 ConjurSecretUsernameCredentialsImpl.getDescriptorDisplayName());
     }
 
     @Test
-    public void testGetNameTag() {
+    void testGetNameTag() {
         ConjurSecretUsernameCredentialsImpl conjurSecretUserNameCredentials = new ConjurSecretUsernameCredentialsImpl(CredentialsScope.GLOBAL, "var-id", "username", "var/id", "description");
 
         assertTrue(conjurSecretUserNameCredentials.getNameTag().isEmpty());
     }
 
     @Test
-    public void testGetSecret() {
+    void testGetSecret() {
         ConjurSecretUsernameCredentialsImpl conjurSecretUserNameCredentials = spy(new ConjurSecretUsernameCredentialsImpl(CredentialsScope.GLOBAL, "var-id", "username", "var/id", "description"));
         doReturn(mock(Secret.class)).when(conjurSecretUserNameCredentials).getPassword();
 
@@ -85,7 +87,7 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
     }
 
     @Test
-    public void testStoredInConjurStorage() {
+    void testStoredInConjurStorage() {
         ConjurSecretUsernameCredentialsImpl conjurSecretUsernameCredentials = mock(ConjurSecretUsernameCredentialsImpl.class);
         when(conjurSecretUsernameCredentials.storedInConjurStorage()).thenReturn(true);
 
@@ -93,7 +95,7 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
     }
 
     @Test
-    public void testSetStoredInConjurStorage() {
+    void testSetStoredInConjurStorage() {
         ConjurSecretUsernameCredentialsImpl conjurSecretUsernameCredentials = new ConjurSecretUsernameCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", "description");
         conjurSecretUsernameCredentials.setStoredInConjurStorage(true);
@@ -102,7 +104,7 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
     }
 
     @Test
-    public void testGetContext() {
+    void testGetContext() {
         ConjurSecretUsernameCredentialsImpl conjurSecretUsernameCredentials = mock(ConjurSecretUsernameCredentialsImpl.class);
         when(conjurSecretUsernameCredentials.getContext()).thenReturn(mockStoreContext);
 
@@ -110,7 +112,7 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
     }
 
     @Test
-    public void testSetContext() {
+    void testSetContext() {
         ConjurSecretUsernameCredentialsImpl conjurSecretUsernameCredentials = new ConjurSecretUsernameCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", "description");
         conjurSecretUsernameCredentials.setContext(mockStoreContext);
@@ -119,7 +121,7 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
     }
 
     @Test
-    public void testSetInheritedContext() {
+    void testSetInheritedContext() {
         ConjurSecretUsernameCredentialsImpl conjurSecretUsernameCredentials = new ConjurSecretUsernameCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", "description");
         conjurSecretUsernameCredentials.setInheritedContext(mockStoreContext);
@@ -128,7 +130,7 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
     }
 
     @Test
-    public void testDisplayName() {
+    void testDisplayName() {
         ConjurSecretUsernameCredentialsImpl conjurSecretUsernameCredentials = new ConjurSecretUsernameCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", "description");
 
@@ -136,7 +138,7 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
     }
 
     @Test
-    public void testGetUsername() {
+    void testGetUsername() {
         ConjurSecretUsernameCredentialsImpl conjurSecretUsernameCredentials = new ConjurSecretUsernameCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", "description");
 
@@ -144,7 +146,7 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
     }
 
     @Test
-    public void testSetUsername() {
+    void testSetUsername() {
         ConjurSecretUsernameCredentialsImpl conjurSecretUsernameCredentials = new ConjurSecretUsernameCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", "description");
         conjurSecretUsernameCredentials.setUserName("conjur-username");
@@ -153,7 +155,7 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
     }
 
     @Test
-    public void testGetVariableId() {
+    void testGetVariableId() {
         ConjurSecretUsernameCredentialsImpl conjurSecretUsernameCredentials = new ConjurSecretUsernameCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", "description");
         conjurSecretUsernameCredentials.setVariableId("var-id");
@@ -162,7 +164,7 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
     }
 
     @Test
-    public void testGetPasswordReturnsSecret() {
+    void testGetPasswordReturnsSecret() {
         ConjurSecretUsernameCredentialsImpl conjurSecretUsernameCredentials = new ConjurSecretUsernameCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", "description");
 
@@ -177,7 +179,7 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
     }
 
     @Test
-    public void testGetSecretReturnsSecretWithInheritance() {
+    void testGetSecretReturnsSecretWithInheritance() {
         ConjurSecretUsernameCredentialsImpl conjurSecretUsernameCredentials = new ConjurSecretUsernameCredentialsImpl(
                 CredentialsScope.GLOBAL, "testPipeline", "DevTeam-1", "Test pipeline", "description");
         conjurSecretUsernameCredentials.setStoredInConjurStorage(false);
@@ -191,14 +193,14 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
     }
 
     @Test
-    public void testGetDisplayNameOfDescriptor() {
+    void testGetDisplayNameOfDescriptor() {
         ConjurSecretStringCredentialsImpl.DescriptorImpl descriptor = new ConjurSecretStringCredentialsImpl.DescriptorImpl();
         assertEquals("Conjur Secret String Credential", descriptor.getDisplayName());
     }
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testDoTestConnectionReturnsErrorIfVariableIdIsEmpty() {
+    void testDoTestConnectionReturnsErrorIfVariableIdIsEmpty() {
         ConjurSecretUsernameCredentialsImpl.DescriptorImpl descriptor = new ConjurSecretUsernameCredentialsImpl.DescriptorImpl();
         ItemGroup<Item> mockContext = mock(ItemGroup.class);
         FormValidation result = descriptor.doTestConnection(mockContext, "var-id", null);
@@ -209,7 +211,7 @@ public class ConjurSecretUsernameCredentialsImplTest extends StandardListBoxMode
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testDoTestConnectionReturnsOk() {
+    void testDoTestConnectionReturnsOk() {
         ConjurSecretUsernameCredentialsImpl.DescriptorImpl descriptor = new ConjurSecretUsernameCredentialsImpl.DescriptorImpl();
         ItemGroup<Item> mockContext = mock(ItemGroup.class);
         try (MockedStatic<ConjurAPIUtils> mockedStatic = mockStatic(ConjurAPIUtils.class)) {

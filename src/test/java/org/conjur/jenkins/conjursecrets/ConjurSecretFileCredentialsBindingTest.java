@@ -3,28 +3,27 @@ package org.conjur.jenkins.conjursecrets;
 import hudson.FilePath;
 import org.conjur.jenkins.conjursecrets.ConjurSecretFileCredentialsBinding.DescriptorImpl;
 import org.jenkinsci.plugins.credentialsbinding.MultiBinding.MultiEnvironment;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ConjurSecretFileCredentialsBindingTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class ConjurSecretFileCredentialsBindingTest {
 
     private static final String CREDENTIAL_ID = "cred-id";
 
@@ -33,18 +32,18 @@ public class ConjurSecretFileCredentialsBindingTest {
     @Mock
     private ConjurSecretFileCredentialsBinding mockBinding;
 
-    @Before
-    public void setUp() throws Exception, SecurityException {
+    @BeforeEach
+    void beforeEach() {
         binding = new ConjurSecretFileCredentialsBinding(CREDENTIAL_ID);
     }
 
     @Test
-    public void testType() {
+    void testType() {
         assertNotNull(binding.type());
     }
 
     @Test
-    public void testGetFileVariable() {
+    void testGetFileVariable() {
         String fileName = "file-name";
         binding.setFileVariable(fileName);
 
@@ -52,7 +51,7 @@ public class ConjurSecretFileCredentialsBindingTest {
     }
 
     @Test
-    public void testGetContentVariable() {
+    void testGetContentVariable() {
         String contentName = "content-name";
         binding.setContentVariable(contentName);
 
@@ -60,7 +59,7 @@ public class ConjurSecretFileCredentialsBindingTest {
     }
 
     @Test
-    public void testBind1() throws IOException, InterruptedException {
+    void testBind1() throws Exception {
         Map<String, String> secretVals = new HashMap<>();
         MultiEnvironment env = new MultiEnvironment(secretVals);
         when(mockBinding.bind(any(), any(), any(), any())).thenReturn(env);
@@ -69,8 +68,8 @@ public class ConjurSecretFileCredentialsBindingTest {
     }
 
     @Test
-    public void testVariables() {
-        Set<String> varSet = new HashSet<String>();
+    void testVariables() {
+        Set<String> varSet = new HashSet<>();
         String variable = "test-file";
         String contentVar = "content-test";
         varSet.add(variable);
@@ -83,7 +82,7 @@ public class ConjurSecretFileCredentialsBindingTest {
     }
 
     @Test
-    public void testDescriptorImplReturnsCorrectDisplayNameAndType() {
+    void testDescriptorImplReturnsCorrectDisplayNameAndType() {
         DescriptorImpl descriptor = new DescriptorImpl();
 
         assertEquals("Conjur Secret File Credentials", descriptor.getDisplayName());
@@ -92,7 +91,7 @@ public class ConjurSecretFileCredentialsBindingTest {
     }
 
     @Test
-    public void testCleanupAction() {
+    void testCleanupAction() {
         FilePath mockPath = mock(FilePath.class);
         when(mockPath.getRemote()).thenReturn("/test/job");
         ConjurSecretFileCredentialsBinding.CleanupAction cleanupAction = new ConjurSecretFileCredentialsBinding.CleanupAction(mockPath);

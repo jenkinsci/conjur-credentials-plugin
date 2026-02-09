@@ -15,34 +15,32 @@ import org.conjur.jenkins.credentials.ConjurCredentialProvider;
 import org.jenkinsci.plugins.credentialsbinding.BindingDescriptor;
 import org.jenkinsci.plugins.credentialsbinding.MultiBinding;
 import org.jenkinsci.plugins.credentialsbinding.MultiBinding.MultiEnvironment;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
-import org.junit.runner.RunWith;
-import org.jvnet.hudson.reactor.ReactorException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ConjurSecretCredentialsBindingTest<I> {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@WithJenkins
+class ConjurSecretCredentialsBindingTest {
 
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+    private JenkinsRule j;
 
     @Mock
     public ConjurSecretCredentialsBinding binding;
@@ -60,12 +58,13 @@ public class ConjurSecretCredentialsBindingTest<I> {
     private TaskListener mockListener;
     private ConjurSecretCredentials mockCredentials;
     private BindingDescriptor<ConjurSecretCredentials> bindCred = null;
-    private Jenkins jenkins = null;
+    private final Jenkins jenkins = null;
     private ConjurCredentialProvider provider;
     private ModelObject context;
 
-    @Before
-    public void init() throws IOException, InterruptedException, ReactorException {
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        j = rule;
         bindCred = new ConjurSecretCredentialsBinding.DescriptorImpl();
         secretBinding = new ConjurSecretCredentialsBinding(TEST_CREDENTIAL_ID);
         secretBinding.setVariable(VARIABLE_NAME);
@@ -81,13 +80,13 @@ public class ConjurSecretCredentialsBindingTest<I> {
     }
 
     @Test
-    public void testConstuctor() {
+    void testConstructor() {
         Object expectedObj = new ConjurSecretCredentialsBinding("testPipeline");
         assertNotEquals(expectedObj, binding);
     }
 
     @Test
-    public void testBind1() throws IOException, InterruptedException {
+    void testBind1() throws Exception {
         Map<String, String> secretVals = new HashMap<>();
         MultiEnvironment env = new MultiEnvironment(secretVals);
         when(binding.bind(any(), any(), any(), any())).thenReturn(env);
@@ -96,7 +95,7 @@ public class ConjurSecretCredentialsBindingTest<I> {
 
 
     @Test
-    public void testVariable() {
+    void testVariable() {
         ConjurSecretCredentialsBinding bindObj1 = new ConjurSecretCredentialsBinding("testPipeline");
         String actualVariable = "pipeline";
         bindObj1.setVariable(actualVariable);
@@ -105,9 +104,9 @@ public class ConjurSecretCredentialsBindingTest<I> {
     }
 
     @Test
-    public void testVariables() {
+    void testVariables() {
         ConjurSecretCredentialsBinding bind = new ConjurSecretCredentialsBinding("Dev-Team-1");
-        Set<String> varSet = new HashSet<String>();
+        Set<String> varSet = new HashSet<>();
         String variable = "test";
         varSet.add(variable);
         bind.setVariable("test");
@@ -117,21 +116,21 @@ public class ConjurSecretCredentialsBindingTest<I> {
     }
 
     @Nested
-    public class DescriptorImpl extends BindingDescriptor<ConjurSecretCredentials> {
+    class DescriptorImpl {
 
         @Test
-        public void testGetDisplayName() {
+        void testGetDisplayName() {
             assertEquals("Conjur Secret credentials", bindCred.getDisplayName());
         }
 
         @Test
-        public void testRequiresWorkspace() {
+        void testRequiresWorkspace() {
             boolean condition = false;
             assertEquals(condition, bindCred.requiresWorkspace());
         }
 
         @Test
-        public void testRequiresWorkspace1() {
+        void testRequiresWorkspace1() {
             ConjurSecretUsernameCredentialsBinding.DescriptorImpl bindCred1 = new ConjurSecretUsernameCredentialsBinding.DescriptorImpl();
             boolean result = bindCred1.requiresWorkspace();
 
@@ -139,29 +138,22 @@ public class ConjurSecretCredentialsBindingTest<I> {
         }
 
         @Test
-        public void testRequiresWorkspace2() {
+        void testRequiresWorkspace2() {
             ConjurSecretUsernameCredentialsBinding.DescriptorImpl bindCred2 = new ConjurSecretUsernameCredentialsBinding.DescriptorImpl();
             assertFalse(bindCred2.requiresWorkspace(), "requiresWorkspace should return false");
         }
 
         @Test
-        public void testType() {
+        void testType() {
             ConjurSecretCredentialsBinding.DescriptorImpl bindCred1 = new ConjurSecretCredentialsBinding.DescriptorImpl();
             Class<ConjurSecretCredentials> expected = ConjurSecretCredentials.class;
 
             assertEquals(expected, bindCred1.type());
         }
-
-        @Override
-        protected Class<ConjurSecretCredentials> type() {
-            // TODO Auto-generated method stub
-            return ConjurSecretCredentials.class;
-        }
-
     }
 
     @Test
-    public void testTypeOfDescriptor() {
+    void testTypeOfDescriptor() {
         ConjurSecretCredentialsBinding.DescriptorImpl bindCred1 = new ConjurSecretCredentialsBinding.DescriptorImpl();
         Class<ConjurSecretCredentials> expected = ConjurSecretCredentials.class;
 
@@ -169,7 +161,7 @@ public class ConjurSecretCredentialsBindingTest<I> {
     }
 
     @Test
-    public void testRequiresWorkspace() {
+    void testRequiresWorkspace() {
         boolean condition = false;
         ConjurSecretCredentialsBinding.DescriptorImpl bindCred1 = new ConjurSecretCredentialsBinding.DescriptorImpl();
 
@@ -177,36 +169,34 @@ public class ConjurSecretCredentialsBindingTest<I> {
     }
 
     @Test
-    public void testType() {
+    void testType() {
         ConjurSecretCredentialsBinding bind = new ConjurSecretCredentialsBinding("Dev-Team-1");
         assertNotNull(bind.type());
     }
 
     @SuppressWarnings("deprecation")
     @Test
-    public void testBind() throws Exception {
-        mockCredentialLookup();
-        MultiBinding.MultiEnvironment env = secretBinding.bind(mockRun, mockFilePath, mockLauncher, mockListener);
-        Map<String, String> secretMap = env.getValues();
+    void testBind() throws Exception {
+        try (MockedStatic<CredentialsProvider> ignored = mockStatic(CredentialsProvider.class)) {
+            when(CredentialsProvider.findCredentialById(eq(TEST_CREDENTIAL_ID), eq(ConjurSecretCredentials.class), eq(mockRun)))
+                    .thenReturn(mockCredentials);
+            MultiBinding.MultiEnvironment env = secretBinding.bind(mockRun, mockFilePath, mockLauncher, mockListener);
+            Map<String, String> secretMap = env.getValues();
 
-        assertTrue(secretMap.containsKey(VARIABLE_NAME));
-        assertEquals(SECRET_VALUE, secretMap.get(VARIABLE_NAME));
+            assertTrue(secretMap.containsKey(VARIABLE_NAME));
+            assertEquals(SECRET_VALUE, secretMap.get(VARIABLE_NAME));
+        }
     }
 
     @SuppressWarnings("deprecation")
     @Test
-    public void testBindReturnsEmptyEnvironmentWhenCredentialNotFound() throws Exception {
-        mockStatic(CredentialsProvider.class);
-        when(CredentialsProvider.findCredentialById(eq(TEST_CREDENTIAL_ID), eq(ConjurSecretCredentials.class), eq(mockRun)))
-                .thenReturn(null);
-        MultiBinding.MultiEnvironment env = secretBinding.bind(mockRun, mockFilePath, mockLauncher, mockListener);
+    void testBindReturnsEmptyEnvironmentWhenCredentialNotFound() throws Exception {
+        try (MockedStatic<CredentialsProvider> ignored = mockStatic(CredentialsProvider.class)) {
+            when(CredentialsProvider.findCredentialById(eq(TEST_CREDENTIAL_ID), eq(ConjurSecretCredentials.class), eq(mockRun)))
+                    .thenReturn(null);
+            MultiBinding.MultiEnvironment env = secretBinding.bind(mockRun, mockFilePath, mockLauncher, mockListener);
 
-        assertTrue(env.getValues().isEmpty());
-    }
-
-    private void mockCredentialLookup() {
-        mockStatic(CredentialsProvider.class);
-        when(CredentialsProvider.findCredentialById(eq(TEST_CREDENTIAL_ID), eq(ConjurSecretCredentials.class), eq(mockRun)))
-                .thenReturn(mockCredentials);
+            assertTrue(env.getValues().isEmpty());
+        }
     }
 }

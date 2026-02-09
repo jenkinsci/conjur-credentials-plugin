@@ -4,29 +4,31 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import hudson.model.ModelObject;
 import hudson.util.Secret;
 import org.conjur.jenkins.api.ConjurAPI;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 
-@RunWith(MockitoJUnitRunner.class)
-public class ConjurSecretFileCredentialsImplTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class ConjurSecretFileCredentialsImplTest {
 
     @Mock
     private ModelObject mockStoreContext;
 
     @Test
-    public void testStoredInConjurStorage() {
+    void testStoredInConjurStorage() {
         ConjurSecretFileCredentialsImpl conjurSecretStringCredentials = mock(ConjurSecretFileCredentialsImpl.class);
         when(conjurSecretStringCredentials.storedInConjurStorage()).thenReturn(true);
 
@@ -34,7 +36,7 @@ public class ConjurSecretFileCredentialsImplTest {
     }
 
     @Test
-    public void testSetStoredInConjurStorage() {
+    void testSetStoredInConjurStorage() {
         ConjurSecretFileCredentialsImpl conjurSecretFileCredentials = new ConjurSecretFileCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "TestPipeline");
         conjurSecretFileCredentials.setStoredInConjurStorage(true);
@@ -43,7 +45,7 @@ public class ConjurSecretFileCredentialsImplTest {
     }
 
     @Test
-    public void testSetContext() {
+    void testSetContext() {
         ConjurSecretFileCredentialsImpl conjurSecretFileCredentials = new ConjurSecretFileCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "TestPipeline");
         conjurSecretFileCredentials.setContext(mockStoreContext);
@@ -52,7 +54,7 @@ public class ConjurSecretFileCredentialsImplTest {
     }
 
     @Test
-    public void testSetInheritedContext() {
+    void testSetInheritedContext() {
         ConjurSecretFileCredentialsImpl conjurSecretFileCredentials = new ConjurSecretFileCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "TestPipeline");
         conjurSecretFileCredentials.setInheritedContext(mockStoreContext);
@@ -61,7 +63,7 @@ public class ConjurSecretFileCredentialsImplTest {
     }
 
     @Test
-    public void testTagName() {
+    void testTagName() {
         ConjurSecretFileCredentialsImpl conjurSecretFileCredentials = new ConjurSecretFileCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "TestPipeline");
         String expectedResult = "";
@@ -70,7 +72,7 @@ public class ConjurSecretFileCredentialsImplTest {
     }
 
     @Test
-    public void testGetDisplayName() {
+    void testGetDisplayName() {
         ConjurSecretFileCredentialsImpl conjurSecretFileCredentials = new ConjurSecretFileCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "TestPipeline");
         String testVariableId = "TestPipeline";
@@ -80,7 +82,7 @@ public class ConjurSecretFileCredentialsImplTest {
     }
 
     @Test
-    public void testGetSecretReturnsSecret() {
+    void testGetSecretReturnsSecret() {
         ConjurSecretFileCredentialsImpl conjurSecretFileCredentials = new ConjurSecretFileCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "TestPipeline");
         conjurSecretFileCredentials.setStoredInConjurStorage(true);
@@ -94,7 +96,7 @@ public class ConjurSecretFileCredentialsImplTest {
     }
 
     @Test
-    public void testGetSecretReturnsSecretWithInheritance() {
+    void testGetSecretReturnsSecretWithInheritance() {
         ConjurSecretFileCredentialsImpl conjurSecretFileCredentials = new ConjurSecretFileCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "TestPipeline");
         conjurSecretFileCredentials.setStoredInConjurStorage(false);
@@ -108,23 +110,23 @@ public class ConjurSecretFileCredentialsImplTest {
     }
 
     @Test
-    public void testGetFileName() {
+    void testGetFileName() {
         ConjurSecretFileCredentialsImpl conjurSecretFileCredentials = new ConjurSecretFileCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "TestPipeline");
 
         assertEquals("conjur-file", conjurSecretFileCredentials.getFileName());
     }
 
-    @Test(expected = IOException.class)
-    public void testGetContentThrowsException() throws IOException {
+    @Test
+    void testGetContentThrowsException() {
         ConjurSecretFileCredentialsImpl conjurSecretFileCredentials = spy(new ConjurSecretFileCredentialsImpl(
-                CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "TestPipeline"));
+                    CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "TestPipeline"));
         doReturn(null).when(conjurSecretFileCredentials).getSecret();
-        conjurSecretFileCredentials.getContent();
+        assertThrows(IOException.class, conjurSecretFileCredentials::getContent);
     }
 
     @Test
-    public void testGetContentReturnsSecretWithoutInheritance() throws IOException {
+    void testGetContentReturnsSecretWithoutInheritance() throws Exception {
         ConjurSecretFileCredentialsImpl conjurSecretFileCredentials = spy(new ConjurSecretFileCredentialsImpl(
                 CredentialsScope.GLOBAL, "DevTeam-1", "test Pipeline", "TestPipeline"));
         conjurSecretFileCredentials.setStoredInConjurStorage(true);
@@ -139,7 +141,7 @@ public class ConjurSecretFileCredentialsImplTest {
 
 
     @Test
-    public void testGetDisplayNameOfDescriptor() {
+    void testGetDisplayNameOfDescriptor() {
         ConjurSecretFileCredentialsImpl.DescriptorImpl descriptor = new ConjurSecretFileCredentialsImpl.DescriptorImpl();
         assertEquals("Conjur Secret File", descriptor.getDisplayName());
     }
