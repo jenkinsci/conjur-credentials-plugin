@@ -637,6 +637,7 @@ public class ConjurAPI {
         byte[] result;
         Secret retSecret = null;
         byte[] authToken;
+        String contextName = "null";
 
         if (context == null) {
             LOGGER.log(Level.FINEST, "No context set for function getSecretWithInheritance");
@@ -648,11 +649,15 @@ public class ConjurAPI {
                     LOGGER.log(Level.FINEST, "No context available for current request");
                     context = Jenkins.get();
                 }
+
+                if( context != null )
+                {
+                    contextName = context.getDisplayName();
+                }
             }
         }
 
-        LOGGER.log(Level.FINEST, String.format("Get Secret with inheritance for context: %s", context.getDisplayName()));
-
+        LOGGER.log(Level.FINEST, String.format("Get Secret with inheritance for context: %s", contextName));
         try {
             ConjurConfiguration conjurConfiguration;
 
