@@ -80,7 +80,7 @@ function setup_conjur_resources {
     conjur variable set -i conjur/authn-jwt/jenkins/token-app-property -v 'jenkins_name'
     conjur variable set -i  conjur/authn-jwt/jenkins/audience -v 'cyberark-conjur'
     conjur variable set -i conjur/authn-jwt/jenkins/identity-path -v 'jenkins/projects'
-    conjur variable set -i  conjur/authn-jwt/jenkins/issuer -v 'http://jenkins:8080'
+    conjur variable set -i  conjur/authn-jwt/jenkins/issuer -v 'http://localhost:8080'
     conjur variable set -i conjur/authn-jwt/jenkins/jwks-uri -v 'http://jenkins:8080/jwtauth/conjur-jwk-set'
     conjur policy load -f $policy_path/authn-jwt-jenkins-host.yml -b root
     conjur policy load -f $policy_path/authn-jwt-jenkins-secrets.yml -b root
@@ -212,6 +212,33 @@ function deploy_jobs() {
   done
 }
 
+function wait_for_jenkins() {
+  echo "[INFO] Waiting for Jenkins container to complete initialization..."
+    timeout=300
+    counter=0
+    jenkins_container="jenkins"
+    while [[ $counter -lt $timeout ]]; do
+      # Get current logs and print them
+      current_logs=$(docker logs $jenkins_container 2>&1 | tail -5)
+      echo "[DEBUG] Recent logs from $jenkins_container:"
+      echo "$current_logs"
+      echo "---"
+
+      if echo "$current_logs" | grep -q "Jenkins is fully up and running"; then
+        echo "[INFO] Jenkins initialization completed successfully"
+        break
+      fi
+      echo "[INFO] Waiting for initialization... ($counter/$timeout seconds)"
+      sleep 5
+      counter=$((counter + 5))
+    done
+
+    if [[ $counter -ge $timeout ]]; then
+      echo "[ERROR] Timeout waiting for Jenkins initialization to complete"
+      exit 1
+    fi
+}
+
 function rotate_host_api_key() {
   URL=$1
   JENKINS_API_KEY=$(curl -k --request PUT --data "" \
@@ -291,9 +318,22 @@ function main() {
   docker compose up -d --build jenkins
   docker compose up -d bitbucket
   [[ "$EDGE" == "true" ]] && docker network connect scripts_default edge-test
-  docker exec jenkins bash -c "sleep 30 && ./test_job.sh"
+  wait_for_jenkins
+  docker exec jenkins bash -c "./test_job.sh --import-certs"
+
+  echo "Restarting Jenkins to apply certificate changes..."
   docker restart jenkins
-  sleep 10
+  wait_for_jenkins
+
+  # Install plugins
+  docker exec jenkins bash -c "./test_job.sh --install-plugins"
+
+  # Restart Jenkins to load the new plugins
+  echo "Restarting Jenkins to load plugins..."
+  docker restart jenkins
+  wait_for_jenkins
+
+  # Phase 3: Create credentials and run tests
   docker exec jenkins bash -c "./test_job.sh $DEFAULT_OPTION"
 }
 
