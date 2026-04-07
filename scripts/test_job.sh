@@ -54,6 +54,10 @@ create_credentials() {
 # Function to import SSL certificate into Java keystore
 import_ssl_certificate() {
     echo "Importing the SSL certificate into the Java keystore..."
+    openssl s_client -showcerts -connect ftp.halifax.rwth-aachen.de:443 </dev/null 2>/dev/null | openssl x509 -outform PEM > /var/jenkins_home/halifax.crt
+    keytool -import -noprompt -alias halifax -file /var/jenkins_home/halifax.crt -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit
+    openssl s_client -showcerts -connect updates.jenkins.io:443 </dev/null 2>/dev/null | openssl x509 -outform PEM > /var/jenkins_home/updates-jenkins.crt
+    keytool -import -noprompt -alias updates-jenkins -file /var/jenkins_home/updates-jenkins.crt -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit
     keytool -import -noprompt -file /var/jenkins_home/conjur.pem -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit
     check_command_success "Importing SSL certificate"
 }
@@ -198,6 +202,8 @@ print_final_summary() {
 CREATE_FLAG=0
 TEST_API_KEY_JOBS=0
 TEST_JWT_KEY_JOBS=0
+IMPORT_CERTS_FLAG=0
+INSTALL_PLUGINS_FLAG=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -213,17 +219,33 @@ while [[ $# -gt 0 ]]; do
             TEST_JWT_KEY_JOBS=1
             shift
             ;;
+        --import-certs)
+            IMPORT_CERTS_FLAG=1
+            shift
+            ;;
+        --install-plugins)
+            INSTALL_PLUGINS_FLAG=1
+            shift
+            ;;
         *)
-            echo "Usage: $0 [--create] [--test-api-key-jobs] [--test-jwt-jobs]"
+            echo "Usage: $0 [--create] [--test-api-key-jobs] [--test-jwt-jobs] [--import-certs] [--install-plugins]"
             exit 1
             ;;
     esac
 done
 
 
-if [ $CREATE_FLAG -eq 1 ]; then
-    create_credentials
+if [ $IMPORT_CERTS_FLAG -eq 1 ]; then
+    download_jenkins_cli
     import_ssl_certificate
+    cp -f /tmp/jenkinsConfig.xml /var/jenkins_home/jenkins.model.JenkinsLocationConfiguration.xml
+    exit $?
+elif [ $INSTALL_PLUGINS_FLAG -eq 1 ]; then
+    download_jenkins_cli
+    install_jenkins_plugins
+    exit $?
+elif [ $CREATE_FLAG -eq 1 ]; then
+    create_credentials
     configure_auth_method "api-key"
     process_jobs "api-key"
     configure_auth_method "jwt"
@@ -233,20 +255,19 @@ if [ $CREATE_FLAG -eq 1 ]; then
     exit $?
 elif [ $TEST_API_KEY_JOBS -eq 1 ]; then
     create_credentials
-    import_ssl_certificate
     configure_auth_method "api-key"
     process_jobs "api-key"
     print_final_summary
     exit $?
 elif [ $TEST_JWT_KEY_JOBS -eq 1 ]; then
     create_credentials
-    import_ssl_certificate
     configure_auth_method "jwt"
     process_jobs "jwt"
     print_final_summary
     exit $?
 else
     download_jenkins_cli
+    import_ssl_certificate
     install_jenkins_plugins
     cp -f /tmp/jenkinsConfig.xml /var/jenkins_home/jenkins.model.JenkinsLocationConfiguration.xml
 fi
