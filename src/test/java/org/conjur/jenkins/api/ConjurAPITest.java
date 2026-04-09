@@ -603,6 +603,87 @@ public class ConjurAPITest {
         assertEquals("mySecretValue", mockSecret.getPlainText());
     }
 
+    @Test
+    public void testGetConjurConfigFolderSetsCredentialIDContext() {
+        when(folderMock.getProperties()).thenReturn(mock(DescribableList.class));
+        when(folderMock.getProperties().get(FolderConjurConfiguration.class)).thenReturn(folderConjurConfigMock);
+        when(folderConjurConfigMock.getConjurConfiguration()).thenReturn(folderConjurConfiguration);
+        when(folderConjurConfigMock.getInheritFromParent()).thenReturn(true);
+        when(folderMock.getParent()).thenReturn(null);
+
+        try (MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class)) {
+            globalConfigStatic.when(GlobalConfiguration::all).thenReturn(mock(ExtensionList.class));
+            when(GlobalConfiguration.all().get(GlobalConjurConfiguration.class)).thenReturn(globalConjurConfigMock);
+            when(globalConjurConfigMock.getConjurConfiguration()).thenReturn(globalConjurConfiguration);
+
+            when(folderConjurConfiguration.mergeWithParent(globalConjurConfiguration))
+                    .thenReturn(folderConjurConfiguration);
+            when(folderConjurConfiguration.getAccount()).thenReturn("cucumber");
+            when(folderConjurConfiguration.getApplianceURL()).thenReturn("http://conjur");
+            when(globalConjurConfigMock.getSelectAuthenticator()).thenReturn("APIKey");
+            when(folderConjurConfiguration.getCredentialID()).thenReturn("credId");
+            when(folderConjurConfiguration.getCredentialIDContext()).thenReturn(null);
+
+            ConjurConfiguration result = ConjurAPI.getConjurConfig(folderMock);
+
+            assertNotNull(result);
+            verify(folderConjurConfiguration).setCredentialIDContext(folderMock);
+        }
+    }
+
+    @Test
+    public void testGetConjurConfigGlobalSetsCredentialIDContextToJenkins() {
+        when(folderMock.getProperties()).thenReturn(mock(DescribableList.class));
+        when(folderMock.getProperties().get(FolderConjurConfiguration.class)).thenReturn(null);
+        when(folderMock.getParent()).thenReturn(null);
+
+        try (MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class)) {
+            globalConfigStatic.when(GlobalConfiguration::all).thenReturn(mock(ExtensionList.class));
+            when(GlobalConfiguration.all().get(GlobalConjurConfiguration.class)).thenReturn(globalConjurConfigMock);
+            when(globalConjurConfigMock.getConjurConfiguration()).thenReturn(globalConjurConfiguration);
+            when(globalConjurConfiguration.getCredentialID()).thenReturn("credId");
+            when(globalConjurConfiguration.getCredentialIDContext()).thenReturn(null);
+            when(globalConjurConfiguration.getAccount()).thenReturn("test-account");
+            when(globalConjurConfiguration.getApplianceURL()).thenReturn("http://conjur");
+            when(globalConjurConfigMock.getSelectAuthenticator()).thenReturn("APIKey");
+
+            try (MockedStatic<jenkins.model.Jenkins> jenkinsMock = mockStatic(jenkins.model.Jenkins.class)) {
+                jenkins.model.Jenkins mockJenkinsInstance = mock(jenkins.model.Jenkins.class);
+                jenkinsMock.when(jenkins.model.Jenkins::getInstanceOrNull).thenReturn(mockJenkinsInstance);
+
+                ConjurConfiguration result = ConjurAPI.getConjurConfig(folderMock);
+
+                assertNotNull(result);
+                verify(globalConjurConfiguration).setCredentialIDContext(mockJenkinsInstance);
+            }
+        }
+    }
+
+    @Test
+    public void testGetConjurConfigDoesNotOverrideExistingContext() {
+        when(folderMock.getProperties()).thenReturn(mock(DescribableList.class));
+        when(folderMock.getProperties().get(FolderConjurConfiguration.class)).thenReturn(null);
+        when(folderMock.getParent()).thenReturn(null);
+
+        try (MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class)) {
+            globalConfigStatic.when(GlobalConfiguration::all).thenReturn(mock(ExtensionList.class));
+            when(GlobalConfiguration.all().get(GlobalConjurConfiguration.class)).thenReturn(globalConjurConfigMock);
+            when(globalConjurConfigMock.getConjurConfiguration()).thenReturn(globalConjurConfiguration);
+            ModelObject existingContext = mock(ModelObject.class);
+            when(globalConjurConfiguration.getCredentialID()).thenReturn("credId");
+            when(globalConjurConfiguration.getCredentialIDContext()).thenReturn(existingContext);
+            when(globalConjurConfiguration.getAccount()).thenReturn("test-account");
+            when(globalConjurConfiguration.getApplianceURL()).thenReturn("http://conjur");
+            when(globalConjurConfigMock.getSelectAuthenticator()).thenReturn("APIKey");
+
+            ConjurConfiguration result = ConjurAPI.getConjurConfig(folderMock);
+
+            assertNotNull(result);
+            assertEquals(existingContext, result.getCredentialIDContext());
+            verify(globalConjurConfiguration, never()).setCredentialIDContext(any());
+        }
+    }
+
 
     // Custom Handler to capture log messages
     static class TestLogHandler extends Handler {

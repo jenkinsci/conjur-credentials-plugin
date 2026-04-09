@@ -219,8 +219,108 @@ public class ConjurAPIKeyAuthenticatorTest {
             assertNull(authnInfo.getLogin());
             assertNull(authnInfo.getApiKey());
         }
+    }
 
+    @Test
+    public void testFillAuthnInfoWithNullCredentialID() {
+        authnInfo.setLogin(null);
+        authnInfo.setApiKey(null);
 
+        try (MockedStatic<ConjurAPI> conjurApiMock = mockStatic(ConjurAPI.class)) {
+            ConjurConfiguration mockConfig = mock(ConjurConfiguration.class);
+            conjurApiMock.when(() -> ConjurAPI.getConfigurationFromContext(any())).thenReturn(mockConfig);
+            when(mockConfig.getCredentialID()).thenReturn(null);
+
+            authenticator.fillAuthnInfo(authnInfo, mockContext);
+
+            assertNull(authnInfo.getLogin());
+            assertNull(authnInfo.getApiKey());
+        }
+    }
+
+    @Test
+    public void testFillAuthnInfoSetsLoginAndApiKey() {
+        try (MockedStatic<ConjurAPI> conjurApiMock = mockStatic(ConjurAPI.class);
+             MockedStatic<CredentialsMatchers> credentialsMatchersMock = mockStatic(CredentialsMatchers.class);
+             MockedStatic<DomainCredentials> domainCredentialsMock = mockStatic(DomainCredentials.class);
+             MockedStatic<SystemCredentialsProvider> systemProviderMock = mockStatic(SystemCredentialsProvider.class);
+             MockedStatic<Jenkins> jenkinsMock = mockStatic(Jenkins.class)) {
+
+            UsernamePasswordCredentials mockCredential = mock(UsernamePasswordCredentials.class);
+            when(mockCredential.getUsername()).thenReturn("testuser");
+
+            Secret mockSecret = mock(Secret.class);
+            when(mockSecret.getPlainText()).thenReturn("testsecret");
+            when(mockCredential.getPassword()).thenReturn(mockSecret);
+
+            ConjurConfiguration mockConfig = mock(ConjurConfiguration.class);
+            conjurApiMock.when(() -> ConjurAPI.getConfigurationFromContext(any())).thenReturn(mockConfig);
+            when(mockConfig.getCredentialID()).thenReturn("my-cred-id");
+            when(mockConfig.getCredentialIDContext()).thenReturn(null);
+
+            CredentialsMatcher matcher = mock(CredentialsMatcher.class);
+            credentialsMatchersMock.when(() -> CredentialsMatchers.instanceOf(UsernamePasswordCredentials.class))
+                    .thenReturn(matcher);
+            credentialsMatchersMock.when(() -> CredentialsMatchers.withId("my-cred-id"))
+                    .thenReturn(matcher);
+            credentialsMatchersMock.when(() -> CredentialsMatchers.firstOrNull(anyList(), any()))
+                    .thenReturn(mockCredential);
+
+            SystemCredentialsProvider mockSystemProvider = mock(SystemCredentialsProvider.class);
+            systemProviderMock.when(SystemCredentialsProvider::getInstance).thenReturn(mockSystemProvider);
+            when(mockSystemProvider.getDomainCredentialsMap()).thenReturn(new HashMap<>());
+
+            domainCredentialsMock.when(() -> DomainCredentials.getCredentials(any(), any(), anyList(), any()))
+                    .thenReturn(List.of(mockCredential));
+
+            Jenkins mockJenkins = mock(Jenkins.class);
+            jenkinsMock.when(Jenkins::get).thenReturn(mockJenkins);
+
+            authenticator.fillAuthnInfo(authnInfo, mockContext);
+
+            assertEquals("testuser", authnInfo.getLogin());
+            assertNotNull(authnInfo.getApiKey());
+        }
+    }
+
+    @Test
+    public void testFillAuthnInfoLogsWhenCredentialNotFound() {
+        try (MockedStatic<ConjurAPI> conjurApiMock = mockStatic(ConjurAPI.class);
+             MockedStatic<CredentialsMatchers> credentialsMatchersMock = mockStatic(CredentialsMatchers.class);
+             MockedStatic<DomainCredentials> domainCredentialsMock = mockStatic(DomainCredentials.class);
+             MockedStatic<SystemCredentialsProvider> systemProviderMock = mockStatic(SystemCredentialsProvider.class);
+             MockedStatic<Jenkins> jenkinsMock = mockStatic(Jenkins.class)) {
+
+            ConjurConfiguration mockConfig = mock(ConjurConfiguration.class);
+            conjurApiMock.when(() -> ConjurAPI.getConfigurationFromContext(any())).thenReturn(mockConfig);
+            when(mockConfig.getCredentialID()).thenReturn("nonexistent-cred-id");
+            when(mockConfig.getCredentialIDContext()).thenReturn(null);
+
+            CredentialsMatcher matcher = mock(CredentialsMatcher.class);
+            credentialsMatchersMock.when(() -> CredentialsMatchers.instanceOf(UsernamePasswordCredentials.class))
+                    .thenReturn(matcher);
+            credentialsMatchersMock.when(() -> CredentialsMatchers.withId("nonexistent-cred-id"))
+                    .thenReturn(matcher);
+            credentialsMatchersMock.when(() -> CredentialsMatchers.firstOrNull(anyList(), any()))
+                    .thenReturn(null);
+
+            SystemCredentialsProvider mockSystemProvider = mock(SystemCredentialsProvider.class);
+            systemProviderMock.when(SystemCredentialsProvider::getInstance).thenReturn(mockSystemProvider);
+            when(mockSystemProvider.getDomainCredentialsMap()).thenReturn(new HashMap<>());
+
+            domainCredentialsMock.when(() -> DomainCredentials.getCredentials(any(), any(), anyList(), any()))
+                    .thenReturn(Collections.emptyList());
+
+            Jenkins mockJenkins = mock(Jenkins.class);
+            jenkinsMock.when(Jenkins::get).thenReturn(mockJenkins);
+
+            authnInfo.setLogin(null);
+            authnInfo.setApiKey(null);
+
+            authenticator.fillAuthnInfo(authnInfo, mockContext);
+
+            assertNull(authnInfo.getLogin());
+        }
     }
 
 }

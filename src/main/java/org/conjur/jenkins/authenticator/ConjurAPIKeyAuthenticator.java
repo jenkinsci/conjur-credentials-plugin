@@ -2,20 +2,27 @@ package org.conjur.jenkins.authenticator;
 
 import com.cloudbees.plugins.credentials.CredentialsMatcher;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainCredentials;
+import hudson.model.Hudson;
+import hudson.model.Item;
 import hudson.model.ModelObject;
+import hudson.security.ACL;
+import jenkins.model.Jenkins;
 import okhttp3.*;
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.api.ConjurAPIUtils;
 import org.conjur.jenkins.api.ConjurAuthnInfo;
 import org.conjur.jenkins.configuration.ConjurConfiguration;
+import org.conjur.jenkins.credentials.ConjurCredentialProvider;
 import org.conjur.jenkins.exceptions.AuthenticationConjurException;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +35,7 @@ public class ConjurAPIKeyAuthenticator extends AbstractAuthenticator {
 
     /**
      * Function return authenticator name
+     *
      * @return authenticator name
      */
     @Override
@@ -38,7 +46,7 @@ public class ConjurAPIKeyAuthenticator extends AbstractAuthenticator {
     /**
      *
      * @param conjurAuthn ConjurAuthnInfo with information used to authenticate
-     * @param context Jenkins context object. Current context from which call is made
+     * @param context     Jenkins context object. Current context from which call is made
      * @return authorization token
      * @throws IOException
      */
@@ -85,26 +93,70 @@ public class ConjurAPIKeyAuthenticator extends AbstractAuthenticator {
     }
 
     /**
+     * Get Username credentials for context
+     *
+     * @param context      Context for which APIKey will be taken from Credentials
+     * @param credentialId
+     * @return UsernamePasswordCredentials
+     */
+    private UsernamePasswordCredentials getUsernameCredentialsForContext(ModelObject context, String credentialId) {
+        UsernamePasswordCredentials credential = null;
+
+        try {
+            List<UsernamePasswordCredentials> creds = new ArrayList<>();
+            for (CredentialsProvider provider : CredentialsProvider.all()) {
+                if (provider instanceof ConjurCredentialProvider) {
+                    continue; // skip our current provider
+                }
+
+                if (context instanceof Hudson || context == null) {
+                    CredentialsMatcher matcher =
+                            CredentialsMatchers.instanceOf(UsernamePasswordCredentials.class);
+                    creds.addAll(DomainCredentials.getCredentials(
+                            SystemCredentialsProvider.getInstance().getDomainCredentialsMap(), UsernamePasswordCredentials.class, Collections.emptyList(), matcher));
+                } else {
+                    creds.addAll(provider.getCredentials(UsernamePasswordCredentials.class, (Item) context, ACL.SYSTEM,
+                            Collections.emptyList()));
+                }
+            }
+            credential = CredentialsMatchers.firstOrNull(creds, CredentialsMatchers.withId(credentialId));
+        } catch (Exception e) {
+            String conDisplay = context != null ? context.getDisplayName() : "Jenkins";
+            LOGGER.log(Level.SEVERE, String.format("Cannot get Username Credentials for context %s", conDisplay), e);
+        }
+
+        return credential;
+    }
+
+    /**
      * Fill authninfo structure
+     *
      * @param conjurAuthn authentication configuration class
-     * @param context Context for which APIKey will be taken from Credentials
+     * @param context     Context for which APIKey will be taken from Credentials
      */
     @Override
     public void fillAuthnInfo(ConjurAuthnInfo conjurAuthn, ModelObject context) {
         ConjurConfiguration configuration = ConjurAPI.getConfigurationFromContext(context);
-        CredentialsMatcher matcher =
-                CredentialsMatchers.instanceOf(UsernamePasswordCredentials.class);
-        List <UsernamePasswordCredentials> globalCreds = DomainCredentials.getCredentials(
-                SystemCredentialsProvider.getInstance().getDomainCredentialsMap(), UsernamePasswordCredentials.class, Collections.emptyList(), matcher);
+        UsernamePasswordCredentials credential = null;
 
-        if (configuration.getCredentialID() != null && !configuration.getCredentialID().isEmpty()) {
-            UsernamePasswordCredentials credential = CredentialsMatchers.firstOrNull(globalCreds,
-                    CredentialsMatchers.withId(configuration.getCredentialID()));
-            if (credential != null) {
-                conjurAuthn.setLogin(credential.getUsername());
-                conjurAuthn.setApiKey(credential.getPassword().getPlainText().getBytes(StandardCharsets.US_ASCII));
-            }
+        if (configuration.getCredentialID() == null || configuration.getCredentialID().isEmpty()) {
+            return;
         }
-        LOGGER.log(Level.SEVERE, String.format("UsernamePasswordCredentials found %d for ID %s",globalCreds.size(), configuration.getCredentialID( ) ) );
+
+        credential = getUsernameCredentialsForContext(configuration.getCredentialIDContext(), configuration.getCredentialID());
+
+        if (credential == null) {
+            credential = getUsernameCredentialsForContext(Jenkins.get(), configuration.getCredentialID());
+        }
+
+        if (credential != null) {
+            conjurAuthn.setLogin(credential.getUsername());
+            conjurAuthn.setApiKey(
+                    credential.getPassword().getPlainText().getBytes(StandardCharsets.US_ASCII)
+            );
+        }
+
+        LOGGER.log(Level.SEVERE, String.format("UsernamePasswordCredentials found for ID %s", configuration.getCredentialID()
+        ));
     }
 }
