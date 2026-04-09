@@ -9,6 +9,7 @@ import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Item;
+import hudson.model.ModelObject;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
@@ -43,6 +44,7 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
     private String applianceURL;
     private String account;
     private String credentialID;
+    private transient ModelObject credentialIDContext;
     private String certificateCredentialID;
     private CertificateCredentials certificateCredentials;
     private String ownerFullName;
@@ -159,6 +161,12 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
         return credentialID;
     }
 
+    /**
+     * @return context assigned to credentail Id, if any
+     */
+    public ModelObject getCredentialIDContext() {
+        return credentialIDContext;
+    }
 
     /**
      * @return the currently Owner full name, if any
@@ -247,6 +255,15 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
     }
 
     /**
+     * Set Context assigned to Credential ID
+     *
+     * @param context the new value of Conjur credentialIDContext
+     */
+    public void setCredentialIDContext(ModelObject context) {
+        this.credentialIDContext = context;
+    }
+
+    /**
      * Together with {@link #getOwnerFullName}, binds to entry in
      * {@code config.jelly}.
      *
@@ -312,6 +329,7 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
         this.ownerFullName = config.getOwnerFullName();
         this.certificateCredentialID = config.getCertificateCredentialID();
         this.applianceURL = config.getApplianceURL();
+        this.credentialIDContext = config.getCredentialIDContext();
     }
 
     /**
@@ -333,8 +351,10 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
         if (StringUtils.isBlank(result.getCertificateCredentialID())) {
             result.setCertificateCredentialID(parent.getCertificateCredentialID());
         }
+        // credentialIDContext are assigned to credentialID
         if (StringUtils.isBlank(result.getCredentialID())) {
             result.setCredentialID(parent.getCredentialID());
+            result.setCredentialIDContext(parent.getCredentialIDContext());
         }
         if (result.certificateCredentials == null) {
             result.setCertificateCredentials(parent.getCertificateCredentials());

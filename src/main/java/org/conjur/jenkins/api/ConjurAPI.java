@@ -267,6 +267,9 @@ public class ConjurAPI {
                     resultingConfig = resultingConfig.mergeWithParent(folderProperty.getConjurConfiguration());
                 } else {
                     resultingConfig = folderProperty.getConjurConfiguration();
+                    if (resultingConfig.getCredentialID() != null) {
+                        resultingConfig.setCredentialIDContext(g);
+                    }
                 }
             }
         }
@@ -279,6 +282,10 @@ public class ConjurAPI {
                 resultingConfig = globalConfig.getConjurConfiguration();
             } else {
                 resultingConfig = resultingConfig.mergeWithParent(globalConfig.getConjurConfiguration());
+            }
+            // if credentialID was provided but it was not set before
+            if (resultingConfig.getCredentialID() != null && resultingConfig.getCredentialIDContext() == null) {
+                resultingConfig.setCredentialIDContext(Jenkins.getInstanceOrNull());
             }
         }
 
@@ -650,8 +657,7 @@ public class ConjurAPI {
                     context = Jenkins.get();
                 }
 
-                if( context != null )
-                {
+                if (context != null) {
                     contextName = context.getDisplayName();
                 }
             }
