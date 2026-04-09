@@ -90,15 +90,40 @@ public class ConjurAPIUtilsTest {
         }
     }
 
-    @SuppressWarnings("static-access")
     @Test
-    public void testGetHttpClient() {
-        ConjurConfiguration configuration = mock(ConjurConfiguration.class);
-        ConjurAPIUtils conjurAPIUtilsSpy = spy(new ConjurAPIUtils());
-        when(conjurAPIUtilsSpy.getHttpClient(configuration)).thenReturn(null);
-        OkHttpClient client = conjurAPIUtilsSpy.getHttpClient(configuration);
+    public void testGetHttpClientWithoutCertificate() {
+        try (MockedStatic<ConjurAPIUtils> conjurAPIUtilsStatic = mockStatic(ConjurAPIUtils.class)) {
+            ConjurConfiguration configuration = mock(ConjurConfiguration.class);
 
-        assertNotNull(client);
+            conjurAPIUtilsStatic.when(() -> ConjurAPIUtils.getHttpClient(configuration))
+                    .thenCallRealMethod();
+            conjurAPIUtilsStatic.when(() -> ConjurAPIUtils.certificateFromConfiguration(configuration))
+                    .thenReturn(null);
+
+            OkHttpClient client = ConjurAPIUtils.getHttpClient(configuration);
+
+            assertNotNull(client);
+        }
+    }
+
+    @Test
+    public void testGetHttpClientWithCertificate() {
+        try (MockedStatic<ConjurAPIUtils> conjurAPIUtilsStatic = mockStatic(ConjurAPIUtils.class)) {
+            ConjurConfiguration configuration = mock(ConjurConfiguration.class);
+            OkHttpClient expectedClient = new OkHttpClient.Builder().build();
+
+            conjurAPIUtilsStatic.when(() -> ConjurAPIUtils.getHttpClient(configuration))
+                    .thenCallRealMethod();
+            conjurAPIUtilsStatic.when(() -> ConjurAPIUtils.certificateFromConfiguration(configuration))
+                    .thenReturn(certificate);
+            conjurAPIUtilsStatic.when(() -> ConjurAPIUtils.httpClientWithCertificate(certificate))
+                    .thenReturn(expectedClient);
+
+            OkHttpClient client = ConjurAPIUtils.getHttpClient(configuration);
+
+            assertNotNull(client);
+            assertEquals(expectedClient, client);
+        }
     }
 
     @Test

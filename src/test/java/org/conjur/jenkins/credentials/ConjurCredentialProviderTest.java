@@ -1,4 +1,3 @@
-
 package org.conjur.jenkins.credentials;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
@@ -11,6 +10,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
@@ -38,11 +38,14 @@ public class ConjurCredentialProviderTest {
     }
 
     @Test
-    public void getCredentialsTest() throws Exception {
-        String classname1 = "icon-conjur-credentials-store";
-        classname1 = null;
+    public void getCredentialsTest() {
+        ConjurCredentialProvider provider = new ConjurCredentialProvider();
+        ModelObject mockContext = mock(ModelObject.class);
 
-        assertNull(classname1);
+        List<StandardCredentials> result = provider.getCredentials(StandardCredentials.class, mockContext);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
     }
 
     @SuppressWarnings("unchecked")

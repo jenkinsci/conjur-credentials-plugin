@@ -3,6 +3,7 @@ package org.conjur.jenkins.api;
 
 import com.cloudbees.hudson.plugins.folder.AbstractFolder;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
+import com.google.inject.internal.asm.$ClassTooLargeException;
 import hudson.ExtensionList;
 import hudson.model.Hudson;
 import hudson.model.Job;
@@ -16,6 +17,7 @@ import org.conjur.jenkins.authenticator.AbstractAuthenticator;
 import org.conjur.jenkins.authenticator.ConjurAPIKeyAuthenticator;
 import org.conjur.jenkins.configuration.*;
 import org.conjur.jenkins.exceptions.AuthenticationConjurException;
+import org.conjur.jenkins.exceptions.InvalidConjurSecretException;
 import org.conjur.jenkins.jwtauth.impl.JwtToken;
 import org.junit.After;
 import org.junit.Before;
@@ -36,6 +38,7 @@ import java.util.logging.Logger;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -171,7 +174,6 @@ public class ConjurAPITest {
         assertEquals("globalApplianceURL", conjurAuthn.getApplianceUrl());
     }
 
-
     @Test
     public void testGetConjurSecretHandlesNullResponse() throws IOException {
         try (MockedStatic<ConjurAPI> mockedStaticConjurAPI = mockStatic(ConjurAPI.class)) {
@@ -225,7 +227,6 @@ public class ConjurAPITest {
         assertNull(envNull.get("CONJUR_ACCOUNT"));
         assertTrue(envNull.containsKey("CONJUR_AUTHN_LOGIN"));
         assertNull(envNull.get("CONJUR_AUTHN_API_KEY"));
-
     }
 
     @Test
@@ -242,7 +243,6 @@ public class ConjurAPITest {
         ConjurConfiguration resultNull = ConjurAPI.logConjurConfiguration(conjurConfiguration);
 
         assertEquals(conjurConfiguration, resultNull);
-
     }
 
     @Test
@@ -310,7 +310,6 @@ public class ConjurAPITest {
         }
     }
 
-
     //
     // Test if proper authenticator was selected
     //
@@ -347,7 +346,6 @@ public class ConjurAPITest {
 
             assertArrayEquals("secret".getBytes(), result);
         }
-
     }
 
     @Test
@@ -371,7 +369,6 @@ public class ConjurAPITest {
 
             assertEquals("No access", exception.getMessage());
         }
-
     }
 
     @Test
@@ -396,7 +393,6 @@ public class ConjurAPITest {
 
             assertEquals("Error fetching secret from Conjur [501 - Internal Error] IO Error", exception.getMessage());
         }
-
     }
 
     @Test
@@ -423,7 +419,6 @@ public class ConjurAPITest {
 
             when(globalConjurConfigMock.getSelectAuthenticator()).thenReturn("APIKey");
             when(folderConjurConfiguration.getCredentialID()).thenReturn("credId");
-
 
             ConjurConfiguration result = ConjurAPI.getConjurConfig(folderMock);
 
@@ -462,7 +457,6 @@ public class ConjurAPITest {
 
             when(globalConjurConfigMock.getSelectAuthenticator()).thenReturn("APIKey");
             when(globalConjurConfiguration.getCredentialID()).thenReturn("credId");
-
 
             ConjurConfiguration result = ConjurAPI.getConjurConfig(folderMock);
 
@@ -518,7 +512,6 @@ public class ConjurAPITest {
             when(GlobalConfiguration.all().get(GlobalConjurConfiguration.class)).thenReturn(globalConjurConfigMock);
             when(globalConjurConfigMock.getConjurConfiguration()).thenReturn(globalConjurConfiguration);
 
-
             ConjurConfiguration result = ConjurAPI.getConfigurationFromContext(hudsonMock);
 
             assertNotNull(result);
@@ -543,7 +536,6 @@ public class ConjurAPITest {
         assertSame(jobConfigMock, result);
     }
 
-
     @SuppressWarnings("unchecked")
     @Test
     public void testIsInheritanceOn() {
@@ -554,8 +546,6 @@ public class ConjurAPITest {
         boolean result = ConjurAPI.isInheritanceOn(mockJob);
 
         assertTrue(result);
-
-
     }
 
     @Test
@@ -592,9 +582,7 @@ public class ConjurAPITest {
         assertTrue(handler.getMessages().stream().anyMatch(msg ->
                 msg.contains("Cannot get properties for AbstractFolder")
         ));
-
     }
-
 
     @Test
     public void testSimpleSecretMocking() {
@@ -684,6 +672,131 @@ public class ConjurAPITest {
         }
     }
 
+    @Test
+    public void testGetSecretFromConjurConvertsSecretBytesToUtf8String() {
+        var variableId = "test/password";
+        var expected = "secretValue";
+        var secretBytes = expected.getBytes(StandardCharsets.UTF_8);
+        var authToken = "auth-token".getBytes();
+
+        try (MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class);
+             MockedStatic<ConjurAPIUtils> apiUtilsStatic = mockStatic(ConjurAPIUtils.class)) {
+
+            // Allow real method for the method under test
+            conjurApiStatic.when(() -> ConjurAPI.getSecretFromConjur(context, context, variableId))
+                    .thenCallRealMethod();
+
+            // Mock the internal calls that would need Jenkins
+            conjurApiStatic.when(() -> ConjurAPI.getConfigurationFromContext(context))
+                    .thenReturn(mockConfiguration);
+            conjurApiStatic.when(() -> ConjurAPI.getConjurAuthnInfo(mockConfiguration, context))
+                    .thenReturn(mockAuthnInfo);
+            conjurApiStatic.when(() -> ConjurAPI.getAuthorizationToken(any(ConjurAuthnInfo.class), eq(context)))
+                    .thenReturn(authToken);
+            apiUtilsStatic.when(() -> ConjurAPIUtils.getHttpClient(mockConfiguration))
+                    .thenReturn(mockClient);
+            conjurApiStatic.when(() -> ConjurAPI.getConjurSecret(eq(mockClient), eq(mockConfiguration), any(byte[].class), eq(variableId)))
+                    .thenReturn(secretBytes);
+
+            // Runs real getSecretFromConjur, but with mocked dependencies
+            var actual = ConjurAPI.getSecretFromConjur(context, context, variableId);
+
+            // Assert
+            assertNotNull(actual);
+            assertEquals(expected, actual.getPlainText());
+        }
+    }
+
+    @Test
+    public void testGetSecretFromConjurWithNullContextReturnsNull() {
+        var result = ConjurAPI.getSecretFromConjur(null, null, "db/password");
+
+        assertNull(result);
+    }
+
+    @Test
+    public void testGetSecretFromConjurWithNullInheritedContextUsesMainContext() {
+        var variableId = "test/password";
+        var expected = "secretValue";
+        var secretBytes = expected.getBytes(StandardCharsets.UTF_8);
+        var authToken = "auth-token".getBytes();
+
+        try (MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class);
+             MockedStatic<ConjurAPIUtils> apiUtilsStatic = mockStatic(ConjurAPIUtils.class)) {
+
+            // Allow real method for the method under test
+            conjurApiStatic.when(() -> ConjurAPI.getSecretFromConjur(context, null, variableId))
+                    .thenCallRealMethod();
+
+            conjurApiStatic.when(() -> ConjurAPI.getConfigurationFromContext(context))
+                    .thenReturn(mockConfiguration);
+            conjurApiStatic.when(() -> ConjurAPI.getConjurAuthnInfo(mockConfiguration, context))
+                    .thenReturn(mockAuthnInfo);
+            conjurApiStatic.when(() -> ConjurAPI.getAuthorizationToken(any(ConjurAuthnInfo.class), eq(context)))
+                    .thenReturn(authToken);
+            apiUtilsStatic.when(() -> ConjurAPIUtils.getHttpClient(mockConfiguration))
+                    .thenReturn(mockClient);
+            conjurApiStatic.when(() -> ConjurAPI.getConjurSecret(eq(mockClient), eq(mockConfiguration), any(byte[].class), eq(variableId)))
+                    .thenReturn(secretBytes);
+
+            // Passing NULL as inheritedObjectContext to test the == null branch
+            var actual = ConjurAPI.getSecretFromConjur(context, null, variableId);
+
+            assertNotNull(actual);
+            assertEquals(expected, actual.getPlainText());
+            conjurApiStatic.verify(() -> ConjurAPI.getConjurAuthnInfo(mockConfiguration, context), atLeastOnce());
+        }
+    }
+
+    @Test
+    public void testGetSecretFromConjurThrowsInvalidConjurSecretExceptionOnIOException()  {
+        var variableId = "test/password";
+
+        try (MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class)) {
+
+            conjurApiStatic.when(() ->
+                            ConjurAPI.getSecretFromConjur(context, null, variableId))
+                    .thenCallRealMethod();
+
+            conjurApiStatic.when(() ->
+                            ConjurAPI.getConfigurationFromContext(context))
+                    .thenReturn(mockConfiguration);
+
+            conjurApiStatic.when(() ->
+                            ConjurAPI.getConjurAuthnInfo(mockConfiguration, context))
+                    .thenReturn(mock(ConjurAuthnInfo.class));
+
+            conjurApiStatic.when(() ->
+                            ConjurAPI.getAuthorizationToken(any(ConjurAuthnInfo.class), eq(context)))
+                    .thenThrow(new IOException());
+
+            assertThrows(InvalidConjurSecretException.class,
+                    () -> ConjurAPI.getSecretFromConjur(context, null, variableId));
+        }
+    }
+
+    @Test
+    public void testGetSecretFromConjurThrowsInvalidConjurSecretExceptionOnGeneralException() {
+        var variableId = "test/password";
+
+        try (MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class)) {
+
+            conjurApiStatic.when(() ->
+                            ConjurAPI.getSecretFromConjur(context, null, variableId))
+                    .thenCallRealMethod();
+
+            conjurApiStatic.when(() ->
+                            ConjurAPI.getConfigurationFromContext(context))
+                    .thenReturn(mockConfiguration);
+
+            conjurApiStatic.when(() ->
+                            ConjurAPI.getConjurAuthnInfo(mockConfiguration, context))
+                    .thenThrow(new RuntimeException());
+
+            assertThrows(InvalidConjurSecretException.class,
+                    () -> ConjurAPI.getSecretFromConjur(context, null, variableId));
+        }
+    }
 
     // Custom Handler to capture log messages
     static class TestLogHandler extends Handler {

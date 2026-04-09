@@ -8,6 +8,8 @@ import hudson.util.FormValidation;
 import org.conjur.jenkins.jwtauth.impl.JwtToken;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.runner.RunWith;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.mockito.Mock;
@@ -199,10 +201,69 @@ public class GlobalConjurConfigurationTest {
         assertEquals(FormValidation.ok().kind, descriptor.doObtainJwtToken(mockItem).kind);
     }
 
+    @Test
+    public void testSetIdentityFieldNameWithValue() {
+        GlobalConjurConfiguration globalConfig = new GlobalConjurConfiguration();
+
+        globalConfig.setIdentityFieldName("fieldName");
+
+        assertEquals("fieldName", globalConfig.getidentityFieldName());
+    }
+
+    @Test
+    public void testSetIdentityFieldNameWithEmptyDefaultsToSub() {
+        GlobalConjurConfiguration globalConfig = new GlobalConjurConfiguration();
+
+        globalConfig.setIdentityFieldName("");
+
+        assertEquals("sub", globalConfig.getidentityFieldName());
+    }
+
+    @Test
+    public void testSetIdentityFormatFieldsFromToken() {
+        GlobalConjurConfiguration globalConfig = new GlobalConjurConfiguration();
+        String expectedFormatFields = "formatFields";
+
+        globalConfig.setIdentityFormatFieldsFromToken(expectedFormatFields);
+
+        assertEquals(expectedFormatFields, globalConfig.getIdentityFormatFieldsFromToken());
+    }
+
+    @Test
+    public void testSetEnableIdentityFormatFieldsFromToken() {
+        GlobalConjurConfiguration globalConfig = new GlobalConjurConfiguration();
+
+        globalConfig.setEnableIdentityFormatFieldsFromToken(true);
+
+        assertTrue(globalConfig.getEnableIdentityFormatFieldsFromToken());
+    }
+
+    @Test
+    public void testSetEnableIdentityFormatFieldsFromTokenFalse() {
+        GlobalConjurConfiguration globalConfig = new GlobalConjurConfiguration();
+
+        globalConfig.setEnableIdentityFormatFieldsFromToken(false);
+
+        assertFalse(globalConfig.getEnableIdentityFormatFieldsFromToken());
+    }
+
+    @Test
+    public void testSetSelectIdentityFormatToken() {
+        GlobalConjurConfiguration globalConfig = new GlobalConjurConfiguration();
+        String expectedFormatToken = "jenkins_name";
+
+        globalConfig.setSelectIdentityFormatToken(expectedFormatToken);
+
+        assertEquals(expectedFormatToken, globalConfig.getSelectIdentityFormatToken());
+    }
+
+    @Test
+    public void testSetSelectIdentityFieldsSeparator() {
+        GlobalConjurConfiguration globalConfig = new GlobalConjurConfiguration();
+        String expectedSeparator = "_";
+
+        globalConfig.setSelectIdentityFieldsSeparator(expectedSeparator);
+
+        assertEquals(expectedSeparator, globalConfig.getSelectIdentityFieldsSeparator());
+    }
 }
-
-
-
-
-	
-
