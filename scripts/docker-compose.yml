@@ -1,0 +1,88 @@
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000" 
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+      - JAVA_ARGS=-Djavax.net.ssl.trustStore=/opt/java/openjdk/lib/security/cacerts
+    networks:
+      - "${DOCKER_NETWORK}"
+  pg:
+    image: postgres:15
+    environment:
+      # To avoid the following error:
+      #
+      #   Error: Database is uninitialized and superuser password is not
+      #   specified.  You must specify POSTGRES_PASSWORD for the superuser. Use
+      #   "-e POSTGRES_PASSWORD=password" to set it in "docker run".
+      #
+      #   You may also use POSTGRES_HOST_AUTH_METHOD=trust to allow all
+      #   connections without a password. This is *not* recommended. See
+      #   PostgreSQL documentation about "trust"
+      POSTGRES_HOST_AUTH_METHOD: trust
+
+  conjur:
+    image: cyberark/conjur
+    command: server -a cucumber -p 3000
+    environment:
+      CONJUR_APPLIANCE_URL: http://localhost:3000
+      DATABASE_URL: postgres://postgres@pg/postgres
+      CONJUR_DATA_KEY: ${CONJUR_DATA_KEY}
+      CONJUR_AUTHENTICATORS: 'authn, authn-jwt/jenkins'
+    depends_on:
+      - pg
+    networks:
+      - default
+    links:
+      - pg
+
+  conjur_cli:
+    image: cyberark/conjur-cli:8
+    entrypoint: []
+    command: sleep infinity
+    environment:
+      CONJUR_APPLIANCE_URL: http://conjur:3000
+      CONJUR_ACCOUNT: cucumber
+      CONJUR_AUTHN_LOGIN: admin
+      CONJUR_AUTHN_API_KEY: ${ADMIN_API_KEY}
+    volumes:
+      - ./policy:/policy
+    networks:
+      - default
+    links:
+      - conjur
+
+  conjur-proxy-nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile_nginx
+    entrypoint: nginx-debug -g 'daemon off;'
+    environment:
+        TERM: xterm
+    depends_on:
+      - conjur
+
+  bitbucket:
+    image: atlassian/bitbucket
+    container_name: bitbucket1
+    volumes:
+      - ./bitbucket:/var/atlassian/application-data/bitbucket
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 7990:7990
+      - 7999:7999
+    restart: on-failure
+    networks:
+      - "${DOCKER_NETWORK}"
+
+networks:
+  dap_net:
+    name: dap_net
+    external: true

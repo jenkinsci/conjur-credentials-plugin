@@ -1,22 +1,28 @@
 # VIM
 *~
 
-# MVN target
-target/
-
-.settings/
-
 .classpath
-
-.vscode/settings.json
-.vscode/tasks.json
-.factorypath
 .DS_Store
 .factorypath
-bin/
-.factorypath
-.factorypath
-.factorypath
+.infrapool
+.project
+.settings
+.vscode
+apache-maven*
+bin
+tmp
+conjur.pem
+access_token
+maven.*
+pom.xml.*
+release-*
 release.properties
-release.properties
-/.idea/
+target
+VERSION
+.env
+api_key
+conf/tls/nginx.*
+*.jar
+logs/
+maven_cache/
+.idea

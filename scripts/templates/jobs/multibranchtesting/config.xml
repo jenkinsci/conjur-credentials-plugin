@@ -1,0 +1,77 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject plugin="workflow-multibranch@806.vb_b_688f609ee9">
+    <actions/>
+    <description></description>
+    <properties>
+        <org.conjur.jenkins.configuration.FolderConjurConfiguration plugin="conjur-credentials@2.2.4">
+            <inheritFromParent>true</inheritFromParent>
+            <conjurConfiguration>
+                <applianceURL></applianceURL>
+                <account></account>
+                <credentialID></credentialID>
+                <certificateCredentialID></certificateCredentialID>
+            </conjurConfiguration>
+        </org.conjur.jenkins.configuration.FolderConjurConfiguration>
+    </properties>
+    <folderViews class="jenkins.branch.MultiBranchProjectViewHolder" plugin="branch-api@2.1217.v43d8b_b_d8b_2c7">
+        <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+    </folderViews>
+    <healthMetrics/>
+    <icon class="jenkins.branch.MetadataActionFolderIcon" plugin="branch-api@2.1217.v43d8b_b_d8b_2c7">
+        <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+    </icon>
+    <orphanedItemStrategy class="com.cloudbees.hudson.plugins.folder.computed.DefaultOrphanedItemStrategy" plugin="cloudbees-folder@6.1012.v79a_86a_1ea_c1f">
+        <pruneDeadBranches>true</pruneDeadBranches>
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>-1</numToKeep>
+        <abortBuilds>false</abortBuilds>
+    </orphanedItemStrategy>
+    <triggers/>
+    <disabled>false</disabled>
+    <sources class="jenkins.branch.MultiBranchProject$BranchSourceList" plugin="branch-api@2.1217.v43d8b_b_d8b_2c7">
+        <data>
+            <jenkins.branch.BranchSource>
+                <source class="jenkins.plugins.git.GitSCMSource" plugin="git@5.7.0">
+                    <id>e2f3b55e-e0ab-4c3a-8a97-136ba4402703</id>
+                    <remote>https://github.com/n-suneetha/JenkinsTesting-2.git</remote>
+                    <credentialsId></credentialsId>
+                    <traits>
+                        <jenkins.plugins.git.traits.BranchDiscoveryTrait/>
+                    </traits>
+                </source>
+                <strategy class="jenkins.branch.DefaultBranchPropertyStrategy">
+                    <properties class="empty-list"/>
+                </strategy>
+            </jenkins.branch.BranchSource>
+            <jenkins.branch.BranchSource>
+                <source class="com.atlassian.bitbucket.jenkins.internal.scm.BitbucketSCMSource" plugin="atlassian-bitbucket-server-integration@4.2.0">
+                    <id>09c9c3ae-195b-498b-8b28-1ef8b8dd23e3</id>
+                    <cloneUrl>http://bitbucket1:7990/scm/bit/bitbucketrepo.git</cloneUrl>
+                    <repository>
+                        <credentialsId>bitbucket-credentials</credentialsId>
+                        <mirrorName></mirrorName>
+                        <projectKey>BIT</projectKey>
+                        <projectName>BitbucketProject</projectName>
+                        <repositoryName>BitbucketRepo</repositoryName>
+                        <repositorySlug>bitbucketrepo</repositorySlug>
+                        <serverId>bitbucket</serverId>
+                        <sshCredentialsId></sshCredentialsId>
+                    </repository>
+                    <selfLink>http://bitbucket1:7990/projects/BIT/repos/bitbucketrepo</selfLink>
+                    <traits>
+                        <com.atlassian.bitbucket.jenkins.internal.scm.trait.BitbucketBranchDiscoveryTrait/>
+                    </traits>
+                    <webhookRegistered>false</webhookRegistered>
+                </source>
+                <strategy class="jenkins.branch.DefaultBranchPropertyStrategy">
+                    <properties class="empty-list"/>
+                </strategy>
+            </jenkins.branch.BranchSource>
+        </data>
+        <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+    </sources>
+    <factory class="org.jenkinsci.plugins.workflow.multibranch.WorkflowBranchProjectFactory">
+        <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+        <scriptPath>Jenkins</scriptPath>
+    </factory>
+</org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject>

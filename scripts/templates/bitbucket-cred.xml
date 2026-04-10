@@ -1,0 +1,8 @@
+<com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl>
+    <scope>GLOBAL</scope>
+    <id>bitbucket-credentials</id>
+    <description>BitbucketCredentials</description>
+    <username>suneetha</username>
+    <password>suneetha</password>
+    <usernameSecret>false</usernameSecret>
+</com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl>

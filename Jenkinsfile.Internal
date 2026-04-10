@@ -1,0 +1,219 @@
+#!/usr/bin/env groovy
+@Library("product-pipelines-shared-library") _
+// Automated release, promotion and dependencies
+properties([
+  // Include the automated release parameters for the build
+  release.addParams(),
+  // Dependencies of the project that should trigger builds
+  dependencies([])
+])
+
+// Performs release promotion.  No other stages will be run
+if (params.MODE == "PROMOTE") {
+  target_version = ""
+  // This call will create non-draft github release once the closure has completed
+  release.promote(params.VERSION_TO_PROMOTE) { infrapool, sourceVersion, targetVersion, assetDirectory ->
+    // Any assets from sourceVersion Github release are available in assetDirectory
+    // Any version number updates from sourceVersion to targetVersion occur here
+    // Any publishing of targetVersion artifacts occur here
+    // Anything added to assetDirectory will be attached to the Github Release
+
+    // assetDirectory is on the infrapool node.
+
+    target_version = targetVersion
+
+    // Build plugin with target version
+    infrapool.agentSh "VERSION=\"${targetVersion}\" scripts/update-version.sh"
+    infrapool.agentSh('scripts/compile.sh')
+    infrapool.agentSh('scripts/build.sh')
+
+    // Copy built plugin to assetDirectory, so it will be attached to the Github Release
+    infrapool.agentSh("sudo cp target/*.hpi \"${assetDirectory}\"")
+
+    // Do upstream release. This pushes plugin to jenkinsci project maven
+    // and the plugin index.
+    infrapool.agentSh('scripts/promote.sh')
+
+  }
+  
+  job="conjur-enterprise-self-services/services/internal-github-release-publication/CNJR-1442_allow_upstream_cause"
+  build(
+      job: job,
+      parameters: [
+        string(name: 'SOURCE_ORGANIZATION', value: 'conjur-enterprise'),
+        string(name: 'SOURCE_REPOSITORY', value: 'conjur-credentials-plugin'),
+        string(name: 'SOURCE_TAG', value: "v${target_version}"),
+        string(name: 'DESTINATION_ORGANIZATION', value: 'jenkinsci'),
+        string(name: 'DESTINATION_REPOSITORY', value: 'conjur-credentials-plugin'),
+        string(name: 'DESTINATION_BRANCH', value: 'master')
+      ]
+  )
+  return
+}
+
+pipeline {
+  agent { label 'conjur-enterprise-common-agent' }
+
+  options {
+    timestamps()
+    buildDiscarder(logRotator(numToKeepStr: '30'))
+  }
+
+  triggers {
+    cron(getDailyCronString())
+  }
+
+  environment {
+    // Sets the MODE to the specified or autocalculated value as appropriate
+    MODE = release.canonicalizeMode()
+  }
+
+  stages {
+    // Aborts any builds triggered by another project that wouldn't include any changes
+    stage ("Skip build if triggering job didn't create a release") {
+      when {
+        expression {
+          MODE == "SKIP"
+        }
+      }
+      steps {
+        script {
+          currentBuild.result = 'ABORTED'
+          error("Aborting build because this build was triggered from upstream, but no release was built")
+        }
+      }
+    }
+
+    stage('Scan for internal URLs') {
+      steps {
+        script {
+          detectInternalUrls()
+        }
+      }
+    }
+
+    stage('Get InfraPool ExecutorV2 Agent(s)') {
+      steps{
+        script {
+          // Request ExecutorV2 agents for 1 hour(s)
+          INFRAPOOL_EXECUTORV2_AGENTS = getInfraPoolAgent(type: "ExecutorV2", quantity: 1, duration: 1)
+          INFRAPOOL_EXECUTORV2_AGENT_0 = INFRAPOOL_EXECUTORV2_AGENTS[0]
+          infrapool = infraPoolConnect(INFRAPOOL_EXECUTORV2_AGENT_0, {})
+        }
+      }
+    }
+
+    // Generates a VERSION file based on the current build number and latest version in CHANGELOG.md
+    stage('Validate Changelog and set version') {
+      steps {
+        script {
+          updateVersion(infrapool, "CHANGELOG.md", "${BUILD_NUMBER}")
+          // Set version in POM file
+          infrapool.agentSh 'VERSION="$(<VERSION)" scripts/update-version.sh'
+        }
+      }
+    }
+    stage('Compile') {
+      steps {
+        script {
+          infrapool.agentSh 'scripts/compile.sh'
+        }
+      }
+    }
+
+    stage('Package') {
+      steps {
+        script {
+          infrapool.agentSh 'scripts/build.sh'
+        }
+      }
+      post {
+        always {
+          script {
+            infrapool.agentArchiveArtifacts artifacts: 'target/conjur-credentials.hpi'
+          }
+        }
+      }
+    }
+    stage('Test') {
+      steps {
+        script {
+          infrapool.agentSh 'scripts/test.sh'
+          // Stash Surefire reports
+          infrapool.agentStash name: 'surefire-reports', includes: 'target/surefire-reports/*.xml'
+        }
+      }
+    }
+    stage('Publish Test Results') {
+      steps {
+        script {
+            unstash 'surefire-reports'
+            // Publish JUnit reports
+            junit 'target/surefire-reports/*.xml'
+        }
+      }
+    }
+
+    stage('Test Conjur Enterprise'){
+      steps {
+        script {
+          infrapool.agentSh 'scripts/start.sh -e'
+        }
+      }
+    }
+
+    stage('Test Conjur OSS') {
+      steps {
+        script {
+          infrapool.agentSh 'scripts/start.sh'
+        }
+      }
+    }
+
+    stage('Report Test Coverage to Codacy') {
+      steps {
+          script {
+              // Assuming the jacoco.xml file is in the 'target/site/jacoco/' directory
+                infrapool.agentStash name: 'jacoco', includes: 'target/site/jacoco/jacoco.xml'
+                unstash 'jacoco'
+                codacy action: 'reportCoverage', filePath: "target/site/jacoco/jacoco.xml"
+                // Stash and unstash HTML coverage report
+                infrapool.agentStash name: 'target-site-jacoco', includes: 'target/site/jacoco/*.xml'
+                unstash 'target-site-jacoco'
+              // Publish HTML Coverage Report
+              publishHTML(target: [
+                  allowMissing: false,
+                  alwaysLinkToLastBuild: false,
+                  keepAll: true,
+                  reportDir: 'target/site/jacoco/',
+                  reportFiles: 'index.html',
+                  reportName: 'Coverage Report',
+                  reportTitles: 'Conjur Credentials Plugin Code Coverage Jacoco report'
+              ])
+      }
+     }
+    }
+    stage('Release') {
+      when {
+        expression {
+          MODE == "RELEASE"
+        }
+      }
+
+      steps {
+        script {
+          release(infrapool, { billOfMaterialsDirectory, assetDirectory ->
+            // Publish release artifacts to all the appropriate locations
+            // Copy any artifacts to assetDirectory to attach them to the Github release
+            infrapool.agentSh "cp target/conjur-credentials.jar target/conjur-credentials.hpi ${assetDirectory}"
+          })
+        }
+      }
+    }
+  }
+  post {
+    always {
+      releaseInfraPoolAgent(".infrapool/release_agents")
+    }
+  }
+}

@@ -61,7 +61,7 @@ public class ConjurSecretCredentialsImpl extends BaseStandardCredentials impleme
 	}
 
 	/**
-	 * set variableId (Conjur variable path)
+	 * set variableId
 	 *
 	 * @param variableId
 	 */

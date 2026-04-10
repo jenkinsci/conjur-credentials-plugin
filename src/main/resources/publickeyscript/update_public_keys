@@ -1,0 +1,21 @@
+#!/bin/bash
+
+#generate the access token 
+
+CONT_SESSION_TOKEN=$(curl --header "Accept-Encoding: base64" --data "$LOGINCREDENTIALSTOCONJUR" \
+      http://conjur_server/authn/myConjurAccount/host%2Fjenkins%2Fprojects%2Fjenkins/authenticate)
+      
+#get the public-keys from the http://jenkins_server:8080/jwtauth/conjur-jwk-set, 
+
+publickey=$(curl -k http://<jenkins_url>:<port number>/jwtauth/conjur-jwk-set)
+export secretVar='{
+    "type": "jwks",
+    "value": '${publickey}'
+  }'
+echo $secretVar > publickeysfile
+
+#update the public-keys or set a secret
+
+curl -H "Authorization: Token token=\"$CONT_SESSION_TOKEN\"" \
+    --data "$(cat publickeysfile)" \
+     http://conjur_server/secrets/myConjurAccount/variable/conjur%2Fauthn-jwt%2Fjenkins%2Fpublic-keys

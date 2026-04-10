@@ -1,0 +1,232 @@
+#!/usr/bin/env groovy
+@Library("product-pipelines-shared-library") _
+// Automated release, promotion and dependencies
+properties([
+  // Dependencies of the project that should trigger builds
+  dependencies([])
+])
+
+pipeline {
+  agent { label 'conjur-enterprise-common-agent' }
+
+  options {
+    timestamps()
+    buildDiscarder(logRotator(numToKeepStr: '30'))
+  }
+
+  triggers {
+    cron(getDailyCronString())
+  }
+
+  environment {
+    // Sets the MODE to the specified or autocalculated value as appropriate
+    MODE = release.canonicalizeMode()
+  }
+
+  stages {
+    // Aborts any builds triggered by another project that wouldn't include any changes
+    stage ("Skip build if triggering job didn't create a release") {
+      when {
+        expression {
+          MODE == "SKIP"
+        }
+      }
+      steps {
+        script {
+          currentBuild.result = 'ABORTED'
+          error("Aborting build because this build was triggered from upstream, but no release was built")
+        }
+      }
+    }
+
+    stage('Get InfraPool ExecutorV2 Agent(s)') {
+      steps{
+        script {
+          // Request ExecutorV2 agents for 1 hour(s)
+          INFRAPOOL_EXECUTORV2_AGENTS = getInfraPoolAgent(type: "ExecutorV2", quantity: 1, duration: 1)
+          INFRAPOOL_EXECUTORV2_AGENT_0 = INFRAPOOL_EXECUTORV2_AGENTS[0]
+          infrapool = infraPoolConnect(INFRAPOOL_EXECUTORV2_AGENT_0, {})
+        }
+      }
+    }
+
+    // Generates a VERSION file based on the current build number and latest version in CHANGELOG.md
+    stage('Validate Changelog and set version') {
+      steps {
+        script {
+          updateVersion(infrapool, "CHANGELOG.md", "${BUILD_NUMBER}")
+          // Set version in POM file
+          infrapool.agentSh 'VERSION="$(<VERSION)" scripts/update-version.sh'
+        }
+      }
+    }
+    stage('Compile') {
+      steps {
+        script {
+          infrapool.agentSh 'scripts/compile.sh'
+        }
+      }
+    }
+
+    stage('Package') {
+      steps {
+        script {
+          infrapool.agentSh 'scripts/build.sh'
+        }
+      }
+      post {
+        always {
+          script {
+            infrapool.agentArchiveArtifacts artifacts: 'target/conjur-credentials.hpi'
+          }
+        }
+      }
+    }
+    stage('Test') {
+      steps {
+        script {
+          infrapool.agentSh 'scripts/test.sh'
+          // Stash Surefire reports
+          infrapool.agentStash name: 'surefire-reports', includes: 'target/surefire-reports/*.xml'
+        }
+      }
+    }
+    stage('Publish Test Results') {
+      steps {
+        script {
+            unstash 'surefire-reports'
+            // Publish JUnit reports
+            junit 'target/surefire-reports/*.xml'
+        }
+      }
+    }
+
+    stage('Test Conjur Enterprise'){
+      steps {
+        script {
+          infrapool.agentSh 'scripts/start.sh -e'
+        }
+      }
+    }
+
+    stage('Test Conjur OSS') {
+      steps {
+        script {
+          infrapool.agentSh 'scripts/start.sh'
+        }
+      }
+    }
+
+    stage('Run Conjur Cloud tests') {
+      stages {
+        stage('Create a Tenant') {
+          steps {
+            script {
+              TENANT = getConjurCloudTenant()
+            }
+          }
+        }
+        stage('Authenticate') {
+          steps {
+            script {
+              def id_token = getConjurCloudTenant.tokens(
+                infrapool: infrapool,
+                identity_url: "${TENANT.identity_information.idaptive_tenant_fqdn}",
+                username: "${TENANT.login_name}"
+              )
+
+              def conj_token = getConjurCloudTenant.tokens(
+                infrapool: infrapool,
+                conjur_url: "${TENANT.conjur_cloud_url}",
+                identity_token: "${id_token}"
+                )
+
+              env.conj_token = conj_token
+            }
+          }
+        }
+        stage('Get Edge Token') {
+          steps {
+            script {
+              def edge_token = getConjurCloudTenant.tokens(
+                infrapool: infrapool,
+                conjur_url: "${TENANT.conjur_cloud_url}",
+                edge_name: "${TENANT.conjur_edge_name}",
+                conjur_token: "${conj_token}"
+              )
+
+              def deploy_edge = getConjurCloudTenant.edge(
+                infrapool: infrapool,
+                conjur_url: "${TENANT.conjur_cloud_url}",
+                edge_name: "edge-test",
+                edge_token: "${edge_token}",
+                common_name: "edge-test",
+                subject_alt_names: "edge-test"
+              )
+
+              env.edge_token = edge_token
+            }
+          }
+        }
+        stage('Run tests against Cloud') {
+          environment {
+            INFRAPOOL_CONJUR_APPLIANCE_URL="${TENANT.conjur_cloud_url}"
+            INFRAPOOL_CONJUR_AUTHN_LOGIN="${TENANT.login_name}"
+            INFRAPOOL_CONJUR_AUTHN_TOKEN="${env.conj_token}"
+            INFRAPOOL_TEST_CLOUD=true
+          }
+          steps {
+            script {
+              infrapool.agentSh "scripts/start.sh -c"
+            }
+          }
+        }
+        stage('Run tests against Edge') {
+          environment {
+            INFRAPOOL_CONJUR_APPLIANCE_URL="${TENANT.conjur_cloud_url}"
+            INFRAPOOL_CONJUR_AUTHN_LOGIN="${TENANT.login_name}"
+            INFRAPOOL_CONJUR_AUTHN_TOKEN="${env.conj_token}"
+            INFRAPOOL_TEST_CLOUD=true
+          }
+          steps {
+            script {
+              infrapool.agentSh "scripts/start.sh -ed"
+            }
+          }
+        }
+      }
+    }
+
+    stage('Report Test Coverage to Codacy') {
+      steps {
+          script {
+              // Assuming the jacoco.xml file is in the 'target/site/jacoco/' directory
+                infrapool.agentStash name: 'jacoco', includes: 'target/site/jacoco/jacoco.xml'
+                unstash 'jacoco'
+                codacy action: 'reportCoverage', filePath: "target/site/jacoco/jacoco.xml"
+                // Stash and unstash HTML coverage report
+                infrapool.agentStash name: 'target-site-jacoco', includes: 'target/site/jacoco/*.xml'
+                unstash 'target-site-jacoco'
+              // Publish HTML Coverage Report
+              publishHTML(target: [
+                  allowMissing: false,
+                  alwaysLinkToLastBuild: false,
+                  keepAll: true,
+                  reportDir: 'target/site/jacoco/',
+                  reportFiles: 'index.html',
+                  reportName: 'Coverage Report',
+                  reportTitles: 'Conjur Credentials Plugin Code Coverage Jacoco report'
+              ])
+      }
+     }
+    }
+  }
+  post {
+    always {
+      script {
+        deleteConjurCloudTenant("${TENANT.id}")
+      }
+      releaseInfraPoolAgent(".infrapool/release_agents")
+    }
+  }
+}

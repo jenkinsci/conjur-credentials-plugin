@@ -2,7 +2,7 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
     <f:section title="${%Conjur Appliance}">
-		<f:entry title="Inherit from parent?" description="If checked, All values will be inherited from parent (either parent folder or Global configuration.)">
+		<f:entry title="Inherit from parent?" description="When checked, this Jenkins item will inherit secrets and configuration from the parent.  Global configuration will be used if parent doesn't have configuration or this is left unchecked. ">
 	    	<f:checkbox name="inheritFromParent" field="inheritFromParent" default="true" checked="${inheritFromParent}"/>
 	  	</f:entry>
         <f:property field="conjurConfiguration" header="${%Conjur Configuration}"/>

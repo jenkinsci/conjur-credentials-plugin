@@ -1,0 +1,8 @@
+<com.atlassian.bitbucket.jenkins.internal.config.BitbucketTokenCredentialsImpl plugin="atlassian-bitbucket-server-integration@4.2.0">
+    <scope>SYSTEM</scope>
+    <id>bitbucket-personal-token</id>
+    <description>bitbucket related</description>
+    <secret>BBDC-ODgyMDU0MDE4OTc3OsTDrUZ+8msF6Jq9zzMn1WKiA5Aj</secret>
+</com.atlassian.bitbucket.jenkins.internal.config.BitbucketTokenCredentialsImpl>
+
+
