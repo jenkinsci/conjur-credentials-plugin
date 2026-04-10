@@ -1,122 +1,237 @@
 package org.conjur.jenkins.conjursecrets;
 
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.CredentialsSnapshotTaker;
+import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.Extension;
+import hudson.model.Item;
+import hudson.model.ItemGroup;
+import hudson.model.ModelObject;
+import hudson.util.FormValidation;
+import hudson.util.Secret;
+import org.conjur.jenkins.api.ConjurAPI;
+import org.conjur.jenkins.api.ConjurAPIUtils;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 
 import javax.annotation.CheckForNull;
 
-import com.cloudbees.plugins.credentials.CredentialsDescriptor;
-import com.cloudbees.plugins.credentials.CredentialsScope;
-import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
-
-import org.conjur.jenkins.api.ConjurAPI;
-import org.conjur.jenkins.api.ConjurAPIUtils;
-import org.conjur.jenkins.configuration.ConjurConfiguration;
-import org.conjur.jenkins.exceptions.InvalidConjurSecretException;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-
-import hudson.Extension;
-import hudson.model.ModelObject;
-import hudson.util.Secret;
-import okhttp3.OkHttpClient;
-
+/** Class to retrieve the secrets */
 public class ConjurSecretCredentialsImpl extends BaseStandardCredentials implements ConjurSecretCredentials {
 
-	@Extension
-	public static class DescriptorImpl extends CredentialsDescriptor {
+	private static final long serialVersionUID = 1L;
+	private String variableId; // to be used as Username
+	private transient ModelObject context;
+	boolean storedInConjurStorage = false;
+	private transient ModelObject inheritedObjectContext;
 
-		@Override
-		public String getDisplayName() {
-			return "Conjur Secret Credential";
-		}
-
+	/**
+	 * to set the varaibleName,scope,id,description
+	 * 
+	 * @param scope
+	 * @param id
+	 * @param variableId
+	 * @param description
+	 */
+	@DataBoundConstructor
+	public ConjurSecretCredentialsImpl(@CheckForNull CredentialsScope scope, @CheckForNull String id,
+									   @CheckForNull String variableId, @CheckForNull String description) {
+		super(scope, id, description);
+		this.variableId = variableId;
 	}
 
 	/**
-	 * 
+	 * @return the DisplayName
 	 */
-	private static final long serialVersionUID = 1L;
-
-	private static final Logger LOGGER = Logger.getLogger(ConjurSecretCredentialsImpl.class.getName());
-	private String variablePath; // to be used as Username
-
-	private ConjurConfiguration conjurConfiguration;
-
-	private transient ModelObject context;
-	private transient ModelObject storeContext;
-
-	static Logger getLogger() {
-		return Logger.getLogger(ConjurSecretCredentialsImpl.class.getName());
-	}
-
-
-	@DataBoundConstructor
-	public ConjurSecretCredentialsImpl(@CheckForNull CredentialsScope scope, @CheckForNull String id,
-			@CheckForNull String variablePath, @CheckForNull String description) {
-		super(scope, id, description);
-		this.variablePath = variablePath;
-	}
-
-
 	@Override
 	public String getDisplayName() {
-		return "ConjurSecret:" + this.variablePath;
+		return "ConjurSecret:" + this.variableId;
 	}
 
+	/**
+	 * @retrun the Secret based on the credentialId
+	 * @param secretString
+	 * @return
+	 */
 	static Secret secretFromString(String secretString) {
 		return Secret.fromString(secretString);
 	}
 
-	public Secret getSecret() {
-
-		String result = "";
-		try {
-			// Get Http Client
-			OkHttpClient client = ConjurAPIUtils.getHttpClient(this.conjurConfiguration);
-			// Authenticate to Conjur
-			String authToken = ConjurAPI.getAuthorizationToken(client, this.conjurConfiguration, context);
-			// Retrieve secret from Conjur
-			String secretString = ConjurAPI.getSecret(client, this.conjurConfiguration, authToken, this.variablePath);
-			result = secretString;
-		} catch (IOException e) {
-			LOGGER.log(Level.FINE, "EXCEPTION: " + e.getMessage());
-			throw new InvalidConjurSecretException(e.getMessage(), e);
-		}
-
-		return secretFromString(result);
+	/**
+	 * set variableId (Conjur variable path)
+	 *
+	 * @param variableId
+	 */
+	@DataBoundSetter
+	public void setVariableId(String variableId) {
+		this.variableId = variableId;
 	}
 
-	public String getVariablePath() {
-		return this.variablePath;
+	/**
+	 * @return variableId as String
+	 **/
+	public String getVariableId() {
+		return this.variableId;
 	}
 
-	public void setConjurConfiguration(ConjurConfiguration conjurConfiguration) {
-		if (conjurConfiguration != null)
-			this.conjurConfiguration = conjurConfiguration;
-	}
-
-	public void setContext(ModelObject context) {
-		LOGGER.log(Level.FINEST, "Setting context");
-		this.context = context;
-		setConjurConfiguration(ConjurAPI.getConfigurationFromContext(context, storeContext));
-	}
-
-	public void setStoreContext(ModelObject storeContext) {
-		LOGGER.log(Level.FINEST, "Setting store context");
-		this.context = storeContext;
-		setConjurConfiguration(ConjurAPI.getConfigurationFromContext(context, storeContext));
-	}
-
+	/**
+	 * JCasC alias for variableId.
+	 * Allows using 'variablePath' in jenkins.yaml instead of 'variableId',
+	 * which is more semantically meaningful as it represents the full Conjur path.
+	 *
+	 * @param variablePath Conjur variable path (e.g. "path/to/secret")
+	 */
 	@DataBoundSetter
 	public void setVariablePath(String variablePath) {
-		this.variablePath = variablePath;
+		this.variableId = variablePath;
 	}
 
+	/**
+	 * JCasC alias getter for variableId.
+	 * @return Conjur variable path
+	 */
+	public String getVariablePath() {
+		return this.variableId;
+	}
+
+	/**
+	 * Set context to which Credential will be bind
+	 * @param context ModelObject
+	 */
+	public void setContext(ModelObject context) {
+		this.context = context;
+	}
+
+	/**
+	 * get the ModelObject context
+	 * @return context
+	 */
+	@Override
+	public ModelObject getContext() {
+		return this.context;
+	}
+
+	/**
+	 *
+	 * @param context ModelObject
+	 */
+	@Override
+	public void setInheritedContext( ModelObject context)
+	{
+		inheritedObjectContext = context;
+	}
+
+	/**
+	 * get the ModelObject context
+	 * @return context
+	 */
+	@Override
+	public ModelObject getInheritedContext() {
+		return this.inheritedObjectContext;
+	}
+
+	/**
+	 * set information if Credential is stored in ConjurStorage
+	 * @param storedInConjurStorage boolean value
+	 */
+	@Override
+	public void setStoredInConjurStorage(boolean storedInConjurStorage) {
+		this.storedInConjurStorage = storedInConjurStorage;
+	}
+
+	/**
+	 * return information if Credential is stored in ConjurStorage
+	 * @return context
+	 */
+	@Override
+	public boolean storedInConjurStorage() {
+		return this.storedInConjurStorage;
+	}
+
+	/**
+	 * @return the Secret calling the {@link ConjurAPI } class , Gets the
+	 *         OkHttpclient by calling getHttpclient of {@link ConjurAPIUtils} Get
+	 *         the AuthToken by calling getAuthorizationToken of {@link ConjurAPI }
+	 *         Get the secret by calling teh getSecret of {@link ConjurAPI }
+	 */
+	public Secret getSecret( ) {
+		Secret retSecret = null;
+		if( storedInConjurStorage ) {
+			retSecret = ConjurAPI.getSecretFromConjur(this.context, this.inheritedObjectContext, this.variableId);
+		}else {
+			retSecret = ConjurAPI.getSecretFromConjurWithInheritance(this.context, this, this.variableId);
+		}
+		return retSecret;
+	}
+
+	/**
+	 * @return the Name Tag
+	 */
 	@Override
 	public String getNameTag() {
 		return "";
 	}
 
+	/**
+	 *
+	 */
+	@Extension
+	public static class DescriptorImpl extends BaseStandardCredentialsDescriptor {
+		private static final String DISPLAY_NAME = "Conjur Secret Credential";
+
+		@Override
+		public String getDisplayName() {
+			return DISPLAY_NAME;
+		}
+
+		public FormValidation doTestConnection(
+				@AncestorInPath ItemGroup<Item> context,
+				@QueryParameter("credentialID") String credentialID,
+				@QueryParameter("variableId") String variableId) {
+
+			if (variableId == null || variableId.isEmpty()) {
+				return FormValidation.error("FAILED variableId field is required");
+			}
+			ConjurSecretCredentialsImpl credential = new ConjurSecretCredentialsImpl(CredentialsScope.GLOBAL, credentialID, variableId,
+					"desc");
+			return ConjurAPIUtils.validateCredential(context, credential);
+		}
+	}
+
+	/**
+	 *
+	 */
+	static class SelfContained extends ConjurSecretCredentialsImpl {
+		private final Secret secret;
+
+		public SelfContained(ConjurSecretCredentialsImpl base) {
+			super( base.getScope(), base.getId(), base.getVariableId() , base.getDescription());
+			secret = base.getSecret();
+		}
+
+		@NonNull
+		@Override
+		public Secret getSecret() {
+			return secret;
+		}
+	}
+
+	/**
+	 *
+	 */
+	@Extension
+	public static class SnapshotTaker extends CredentialsSnapshotTaker<ConjurSecretCredentialsImpl> {
+		@Override
+		public Class<ConjurSecretCredentialsImpl> type() {
+			return ConjurSecretCredentialsImpl.class;
+		}
+
+		@Override
+		public ConjurSecretCredentialsImpl snapshot(ConjurSecretCredentialsImpl credentials) {
+			return new ConjurSecretCredentialsImpl.SelfContained(credentials);
+		}
+	}
 }

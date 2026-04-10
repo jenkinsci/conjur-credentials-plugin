@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler" xmlns:c="/lib/credentials">
+<f:section title="Conjur Direct Docker Certificate">
+  <f:entry title="${%Client Key Variable}">
+    <f:textbox field="clientKeyVariable" name="clientKeyVariable" default="CONJUR_DOCKER_CLIENT_KEY"/>
+  </f:entry>
+  <f:entry title="${%Client Certificate Variable}">
+    <f:textbox field="clientCertVariable" name="clientCertVariable" default="CONJUR_DOCKER_CLIENT_CERT"/>
+  </f:entry>
+  <f:entry title="${%CA Certificate Variable}">
+    <f:textbox field="caCertVariable" name="caCertVariable" default="CONJUR_DOCKER_CA_CERT"/>
+  </f:entry>
+</f:section>
+</j:jelly>

@@ -7,6 +7,8 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import hudson.model.Descriptor;
+import org.conjur.jenkins.credentials.ConjurCredentialStore;
 
 import org.conjur.jenkins.conjursecrets.ConjurSecretCredentialsImpl;
 import org.junit.Before;
@@ -24,7 +26,13 @@ public class ConjurConfigurationTest {
 	@Before
 	public void setupConjur() {
 
-		CredentialsStore store = CredentialsProvider.lookupStores(j.jenkins).iterator().next();
+		CredentialsStore store = null;
+		for (CredentialsStore s : CredentialsProvider.lookupStores(j.jenkins)) {
+			if (!(s instanceof ConjurCredentialStore)) {
+				store = s;
+				break;
+			}
+		}
 
 		/*
 		// Setup Conjur SSL Certificate
@@ -42,12 +50,12 @@ public class ConjurConfigurationTest {
 		*/
 
 		// Setup Conjur login credentials
-		UsernamePasswordCredentialsImpl conjurCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,
-				"conjur-login", "Login Credential to Conjur", "host/frontend/frontend-01",
-				"1vpn19h1j621711qm1c9mphkkqw2y35v283h1bccxb028w06t94st");
 		try {
+			UsernamePasswordCredentialsImpl conjurCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,
+					"conjur-login", "Login Credential to Conjur", "host/frontend/frontend-01",
+					"1vpn19h1j621711qm1c9mphkkqw2y35v283h1bccxb028w06t94st");
 			store.addCredentials(Domain.global(), conjurCredentials);
-		} catch (IOException e) {
+		} catch (IOException | Descriptor.FormException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -65,7 +73,13 @@ public class ConjurConfigurationTest {
 	@Test
 	public void addConjurCredential() {
 		setGlobalConfiguration();
-		CredentialsStore store = CredentialsProvider.lookupStores(j.jenkins).iterator().next();
+		CredentialsStore store = null;
+		for (CredentialsStore s : CredentialsProvider.lookupStores(j.jenkins)) {
+			if (!(s instanceof ConjurCredentialStore)) {
+				store = s;
+				break;
+			}
+		}
 		ConjurSecretCredentialsImpl cred = new ConjurSecretCredentialsImpl(CredentialsScope.GLOBAL, "DB_SECRET",
 				"db/db_password", "Conjur Secret");
 		try {

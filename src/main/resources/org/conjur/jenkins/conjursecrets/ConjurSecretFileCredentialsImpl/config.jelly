@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler" xmlns:l="/lib/layout">
+    <f:entry title="${%Variable Id}">
+        <f:textbox field="variableId" name="variableId"/>
+    </f:entry>
+    <st:include page="id-and-description" class="${descriptor.clazz}"/>
+    <l:isAdmin>
+        <f:validateButton title="${%Test Conjur Secrets retrieval}" progress="${%Testing retrieval of secret...}"
+                          method="testConnection" with="variableId" />
+    </l:isAdmin>
+</j:jelly>

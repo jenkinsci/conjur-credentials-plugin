@@ -12,86 +12,103 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Pipeline binding that exposes a Conjur Username+Password credential as two
+ * separate environment variables without requiring the path to be pre-configured.
+ *
+ * Usage in Jenkinsfile:
+ * <pre>
+ *   withCredentials([conjurDirectUsername(
+ *       credentialsId: 'my-conjur-username-cred',
+ *       usernameVariable: 'MY_USER',
+ *       passwordVariable: 'MY_PASS')]) {
+ *       sh 'echo $MY_USER'
+ *   }
+ * </pre>
+ */
 public class ConjurDirectUsernameCredentialsBinding extends MultiBinding<ConjurSecretUsernameCredentials> {
 
-	@Symbol("conjurDirectUsername")
-	@Extension
-	public static class DescriptorImpl extends BindingDescriptor<ConjurSecretUsernameCredentials> {
+    private static final Logger LOGGER = Logger.getLogger(ConjurDirectUsernameCredentialsBinding.class.getName());
 
-		@Override
-		public String getDisplayName() {
-			return "Conjur Secret Username credentials";
-		}
+    private String usernameVariable;
+    private String passwordVariable;
 
-		@Override
-		public boolean requiresWorkspace() {
-			return false;
-		}
+    @Symbol("conjurDirectUsername")
+    @Extension
+    public static class DescriptorImpl extends BindingDescriptor<ConjurSecretUsernameCredentials> {
 
-		@Override
-		protected Class<ConjurSecretUsernameCredentials> type() {
-			return ConjurSecretUsernameCredentials.class;
-		}
-	}
-	private static final Logger LOGGER = Logger.getLogger(ConjurDirectUsernameCredentialsBinding.class.getName());
+        @Override
+        public String getDisplayName() {
+            return "Conjur Direct Username+Password Credential";
+        }
 
-	private String usernameVariable;
+        @Override
+        public boolean requiresWorkspace() {
+            return false;
+        }
 
-	private String passwordVariable;
+        @Override
+        protected Class<ConjurSecretUsernameCredentials> type() {
+            return ConjurSecretUsernameCredentials.class;
+        }
+    }
 
-	@DataBoundConstructor
-	public ConjurDirectUsernameCredentialsBinding(String credentialsId) {
-		super(credentialsId);
-	}
+    @DataBoundConstructor
+    public ConjurDirectUsernameCredentialsBinding(String credentialsId) {
+        super(credentialsId);
+    }
 
-	@Override
-	public MultiEnvironment bind(Run<?, ?> build, FilePath workSpace, Launcher launcher, TaskListener listener)
-			throws IOException, InterruptedException {
+    @Override
+    public MultiEnvironment bind(Run<?, ?> build, FilePath workSpace, Launcher launcher, TaskListener listener)
+            throws IOException, InterruptedException {
+        LOGGER.log(Level.INFO, "ConjurDirectUsernameCredentialsBinding.bind() for [{0}, {1}]",
+                new Object[]{usernameVariable, passwordVariable});
 
-		LOGGER.log(Level.INFO, "Binding UserName and Password");
+        ConjurSecretUsernameCredentials credential = getCredentials(build);
+        // Inject context so the credential can resolve auth info from the build
+        credential.setContext(build);
 
-		ConjurSecretUsernameCredentials conjurSecretCredential = getCredentials(build);
-		conjurSecretCredential.setContext(build);
+        Map<String, String> env = new HashMap<>();
+        env.put(usernameVariable, credential.getUsername());
+        env.put(passwordVariable, credential.getPassword().getPlainText());
+        return new MultiEnvironment(env);
+    }
 
-		Map<String, String> m = new HashMap<>();
-		m.put(usernameVariable, conjurSecretCredential.getUsername());
-		m.put(passwordVariable, conjurSecretCredential.getPassword().getPlainText());
-		return new MultiEnvironment(m);
+    public String getUsernameVariable() {
+        return this.usernameVariable;
+    }
 
-	}
+    public String getPasswordVariable() {
+        return this.passwordVariable;
+    }
 
-	public String getPasswordVariable() {
-		return this.passwordVariable;
-	}
+    @DataBoundSetter
+    public void setUsernameVariable(String usernameVariable) {
+        LOGGER.log(Level.INFO, "Setting usernameVariable to {0}", usernameVariable);
+        this.usernameVariable = usernameVariable;
+    }
 
-	public String getUsernameVariable() {
-		return this.usernameVariable;
-	}
+    @DataBoundSetter
+    public void setPasswordVariable(String passwordVariable) {
+        LOGGER.log(Level.INFO, "Setting passwordVariable to {0}", passwordVariable);
+        this.passwordVariable = passwordVariable;
+    }
 
-	@DataBoundSetter
-	public void setPasswordVariable(String passwordVariable) {
-		LOGGER.log(Level.INFO, "Setting Password variable to {0}", passwordVariable);
-		this.passwordVariable = passwordVariable;
-	}
+    @Override
+    protected Class<ConjurSecretUsernameCredentials> type() {
+        return ConjurSecretUsernameCredentials.class;
+    }
 
-	@DataBoundSetter
-	public void setUsernameVariable(String usernameVariable) {
-		LOGGER.log(Level.INFO, "Setting Username variable to {0}", usernameVariable);
-		this.usernameVariable = usernameVariable;
-	}
-
-	@Override
-	protected Class<ConjurSecretUsernameCredentials> type() {
-		return ConjurSecretUsernameCredentials.class;
-	}
-
-	@Override
-	public Set<String> variables() {
-		return new HashSet<>(Arrays.asList(usernameVariable, passwordVariable));
-	}
-
+    @Override
+    public Set<String> variables() {
+        return new HashSet<>(Arrays.asList(usernameVariable, passwordVariable));
+    }
 }

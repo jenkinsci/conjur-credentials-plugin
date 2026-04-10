@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler" xmlns:c="/lib/credentials">
+<f:section title="Conjur Direct File">
+  <f:entry title="${%File Path Variable}">
+    <f:textbox field="fileVariable" name="fileVariable" default="CONJUR_FILE"/>
+  </f:entry>
+  <f:entry title="${%Content Variable}">
+    <f:textbox field="contentVariable" name="contentVariable" default="CONJUR_FILE_CONTENT"/>
+  </f:entry>
+</f:section>
+</j:jelly>

@@ -1,35 +1,37 @@
 package org.conjur.jenkins.conjursecrets;
 
-import javax.annotation.Nonnull;
-
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsNameProvider;
 import com.cloudbees.plugins.credentials.NameWith;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 
-import org.conjur.jenkins.configuration.ConjurConfiguration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-import hudson.model.ModelObject;
-
+/**
+ * ConjurSecretUsernameSSHKeyCredentials Interace to get DisplayNamecontext,ConjurConfiguration 
+ * and NameProvider based SSHKeyCredentails
+ *
+ */
 @NameWith(value = ConjurSecretUsernameSSHKeyCredentials.NameProvider.class, priority = 1)
+public interface ConjurSecretUsernameSSHKeyCredentials extends SSHUserPrivateKey, ConjurSecretCredentials {
 
-public interface ConjurSecretUsernameSSHKeyCredentials extends SSHUserPrivateKey {
-
+	/**
+	 *
+	 * @return display name
+	 */
 	String getDisplayName();
 
-	void setContext(ModelObject context);
-	void setStoreContext(ModelObject context);
-
-	String getPrivateKey();
-
-	void setConjurConfiguration(ConjurConfiguration conjurConfiguration);
+	/**
+	 * Get Private Key
+	 * @return private key
+	 */
+	String getPrivateKey( );
 
 	public static class NameProvider extends CredentialsNameProvider<StandardUsernameCredentials> {
-		@Nonnull
+		@NonNull
 		@Override
-		public String getName(@Nonnull StandardUsernameCredentials c) {
+		public String getName(@NonNull StandardUsernameCredentials c) {
 			return "ConjurSecretUsernameSSHKey:" + c.getUsername() + "/*ConjurSecretUsernameSSHKey*" + " (" + c.getDescription() + ")";
 		}
 	}
-
 }
