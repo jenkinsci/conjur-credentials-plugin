@@ -123,6 +123,24 @@ public class JwtTokenTest {
     }
 
     @Test
+    public void testGetTokenReturnsSignedTokenWhenUnsignedTokenIsNotNull() {
+        try (MockedStatic<JwtToken> jwtTokenStatic = mockStatic(JwtToken.class)) {
+            JwtToken mockUnsignedToken = mock(JwtToken.class);
+            when(mockUnsignedToken.sign()).thenReturn("signed.jwt.token");
+
+            jwtTokenStatic.when(() -> JwtToken.getToken("testAction", "context", globalConfigMock))
+                    .thenCallRealMethod();
+            jwtTokenStatic.when(() -> JwtToken.getUnsignedToken("testAction", "context", globalConfigMock))
+                    .thenReturn(mockUnsignedToken);
+
+            String token = JwtToken.getToken("testAction", "context", globalConfigMock);
+
+            assertNotNull(token);
+            assertEquals("signed.jwt.token", token);
+        }
+    }
+
+    @Test
     public void testGetTokenWithDifferntParameters() {
         JwtToken mockToken = spy(new JwtToken());
 
@@ -178,6 +196,4 @@ public class JwtTokenTest {
             assertEquals(3, token.split("\\.").length); // Should be a valid JWT structure
         }
     }
-
 }
-
