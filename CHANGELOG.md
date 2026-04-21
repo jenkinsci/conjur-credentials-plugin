@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)an
 
 Please use documentation outlined in the GitHub Readme for this version.  Official CyberArk documentation pages will be updated to reflect these changes once available
 
+## [3.0.11] - 2026-04-21
+
+### Added
+- Added test coverage
+
 ## [3.0.10] - 2026-04-09
 
 ### Fixed
