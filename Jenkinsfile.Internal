@@ -36,7 +36,7 @@ if (params.MODE == "PROMOTE") {
 
   }
   
-  job="conjur-enterprise-self-services/services/internal-github-release-publication/CNJR-1442_allow_upstream_cause"
+  job="conjur-enterprise-self-services/services/internal-github-release-publication/main"
   build(
       job: job,
       parameters: [
