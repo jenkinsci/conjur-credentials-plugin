@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler" xmlns:c="/lib/credentials">
+<f:section title="Conjur Direct SSH Key">
+  <f:entry title="${%Username Variable}">
+    <f:textbox field="usernameVariable" name="usernameVariable" default="CONJUR_SSH_USERNAME"/>
+  </f:entry>
+  <f:entry title="${%Private Key Variable}">
+    <f:textbox field="privateKeyVariable" name="privateKeyVariable" default="CONJUR_SSH_PRIVATE_KEY"/>
+  </f:entry>
+</f:section>
+</j:jelly>

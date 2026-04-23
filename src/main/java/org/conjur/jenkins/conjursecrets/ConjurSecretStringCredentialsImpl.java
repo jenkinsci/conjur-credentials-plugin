@@ -75,10 +75,19 @@ public class ConjurSecretStringCredentialsImpl extends BaseStandardCredentials i
     }
 
     /**
-     *
      * @return variableId as String
      **/
     public String getVariableId() {
+        return this.variableId;
+    }
+
+    /** JCasC alias: accepts 'variablePath' in jenkins.yaml as an alternative to 'variableId'. */
+    @DataBoundSetter
+    public void setVariablePath(String variablePath) {
+        this.variableId = variablePath;
+    }
+
+    public String getVariablePath() {
         return this.variableId;
     }
 

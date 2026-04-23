@@ -71,10 +71,29 @@ public class ConjurSecretCredentialsImpl extends BaseStandardCredentials impleme
 	}
 
 	/**
-	 *
 	 * @return variableId as String
 	 **/
 	public String getVariableId() {
+		return this.variableId;
+	}
+
+	/**
+	 * JCasC alias for variableId.
+	 * Allows using 'variablePath' in jenkins.yaml instead of 'variableId',
+	 * which is more semantically meaningful as it represents the full Conjur path.
+	 *
+	 * @param variablePath Conjur variable path (e.g. "path/to/secret")
+	 */
+	@DataBoundSetter
+	public void setVariablePath(String variablePath) {
+		this.variableId = variablePath;
+	}
+
+	/**
+	 * JCasC alias getter for variableId.
+	 * @return Conjur variable path
+	 */
+	public String getVariablePath() {
 		return this.variableId;
 	}
 
