@@ -41,6 +41,30 @@ function wait_for_conjur {
   docker exec "$(conjur_cid)" conjurctl wait -p 3000
 }
 
+# Waits for Conjur Enterprise to be ready by polling the health endpoint
+# Reference: https://docs.cyberark.com/secrets-manager-sh/13.5/en/content/developer/conjur_api_health_check.htm
+function wait_for_conjur_enterprise_health {
+  local max_attempts=5
+  local attempt=1
+  local url="$1"
+
+  echo "Waiting for Conjur to be ready at ${url}..."
+
+  while [[ $attempt -le $max_attempts ]]; do
+    # Check Conjur health endpoint
+    if curl -sk "${url}/health" | grep -q "ok"; then
+      echo "Conjur is ready!"
+      return 0
+    fi
+    echo "Attempt $attempt/$max_attempts: Conjur not ready yet, waiting..."
+    sleep 5
+    attempt=$((attempt + 1))
+  done
+
+  echo "ERROR: Conjur did not become ready in time"
+  return 1
+}
+
 function fetch_conjur_cert {
   local cid="$1"
   local cert_path="$2"
