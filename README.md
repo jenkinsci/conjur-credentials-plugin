@@ -64,6 +64,8 @@ Here is an example of what a JWT token used by the Jenkins integration should lo
 }
 ```
 
+> **Note:** The JWT contains both `jenkins_name` (leaf job name only, `"Job1"`) and `jenkins_full_name` (folder-qualified path, `"Project1/Job1"`). When choosing a claim for `token-app-property`, make sure its value uniquely identifies the job across your entire Jenkins instance. `jenkins_name` is not unique in multi-folder deployments — two jobs in different folders with the same leaf name produce identical values. `jenkins_full_name` is unique by construction, but you may use any claim whose value is guaranteed to be unique for your setup.
+
 ### Step 2: Configure the Conjur Credentials Plugin in Jenkins
 
 Configure the plugin within Jenkins with authentication details for your Jenkins job. This step will need to be done by a Jenkins admin.
@@ -170,10 +172,10 @@ conjur policy load -f /path/to/file/authn-jwt-jenkins.yml -b root
 
 Using the Secrets Manager CLI populate the variables as follows:
 
-Populate the `token-app-property` variable with the name of the claim that you received from the Jenkins admin, for example `jenkins_name`
+Populate the `token-app-property` variable with the name of the claim that you received from the Jenkins admin, for example `jenkins_full_name`
 
 ```
-conjur variable set -i conjur/authn-jwt/jenkins/token-app-property -v 'jenkins_name'
+conjur variable set -i conjur/authn-jwt/jenkins/token-app-property -v 'jenkins_full_name'
 ```
 
 Populate the `identity-path` variable with the name you will give to the host policy for the Jenkins job, for example `myspace/jwt-apps`
@@ -315,6 +317,8 @@ It is also important to mention that all secrets assigned to `root` (global conf
 #### Host Annotation Examples
 
 When JWT authenticator is selected, you have to remember to set the proper path in the `jenkins_full_name` field.
+
+> **Security note:** The claim you set as `token-app-property` must uniquely identify the job across your entire Jenkins instance. `jenkins_name` contains only the leaf job name without folder qualification — in a multi-folder deployment, two jobs in different folders with the same name are indistinguishable by this claim alone. `jenkins_full_name` is unique by construction and is therefore the recommended choice, but any claim whose value is guaranteed unique for your setup is acceptable.
 
 Example of policy with host assigned to folder:
 ```
