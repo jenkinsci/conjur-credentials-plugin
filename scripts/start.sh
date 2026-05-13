@@ -130,6 +130,9 @@ function deploy_conjur_enterprise {
 
     set_conjur_cid "$(docker compose ps -q conjur-master.mycompany.local)"
 
+    # Wait for Conjur master to be ready before proceeding
+    wait_for_conjur_enterprise_health "https://localhost:443"
+
     fetch_conjur_cert "$(conjur_cid)" "/etc/ssl/certs/ca.pem"
 
     # Run 'sleep infinity' in the CLI container so it stays alive
