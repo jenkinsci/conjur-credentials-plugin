@@ -1,0 +1,28 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job">
+    <actions/>
+    <description>CyberArk DisCo Discovery pipeline using shared services folder credentials.</description>
+    <keepDependencies>false</keepDependencies>
+    <properties/>
+    <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+        <script><![CDATA[node {
+    stage('Use DisCo shared services folder secrets') {
+        withCredentials([
+            string(credentialsId: 'disco-root-folder-secret', variable: 'DISCO_ROOT_SECRET'),
+            string(credentialsId: 'disco-shared-services-secret', variable: 'DISCO_SHARED_SERVICES_SECRET')
+        ]) {
+            sh '''#!/bin/bash
+            set -euo pipefail
+            test -n "$DISCO_ROOT_SECRET"
+            test -n "$DISCO_SHARED_SERVICES_SECRET"
+            echo "DisCo shared services folder credential bindings succeeded"
+            '''
+        }
+    }
+}
+]]></script>
+        <sandbox>true</sandbox>
+    </definition>
+    <triggers/>
+    <disabled>false</disabled>
+</flow-definition>

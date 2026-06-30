@@ -175,7 +175,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
         try (MockedStatic<Jenkins> staticMockJenkins = mockStatic(Jenkins.class);
              MockedStatic<CredentialsProvider> mockProvider = mockStatic(CredentialsProvider.class)) {
             staticMockJenkins.when(Jenkins::get).thenReturn(jenkinsMock);
-            mockProvider.when(() -> CredentialsProvider.lookupCredentials(eq(ConjurSecretCredentials.class), eq(jenkinsMock), any(), anyList())).thenReturn(Collections.singletonList(mockCredentials));
+            mockProvider.when(() -> CredentialsProvider.lookupCredentialsInItemGroup(eq(ConjurSecretCredentials.class), eq(jenkinsMock), any(), anyList())).thenReturn(Collections.singletonList(mockCredentials));
             ConjurSecretUsernameSSHKeyCredentialsImpl conjurSecretUsernameSSHCredentials = new ConjurSecretUsernameSSHKeyCredentialsImpl(
                     CredentialsScope.GLOBAL, "testPipeline", "Test pipeline", credentialId, mock(Secret.class), "description");
             String privateKey = conjurSecretUsernameSSHCredentials.getPrivateKey();
@@ -191,7 +191,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
         try (MockedStatic<Jenkins> staticMockJenkins = mockStatic(Jenkins.class);
              MockedStatic<CredentialsProvider> mockProvider = mockStatic(CredentialsProvider.class)) {
             staticMockJenkins.when(Jenkins::get).thenReturn(jenkinsMock);
-            mockProvider.when(() -> CredentialsProvider.lookupCredentials(eq(ConjurSecretCredentials.class), eq(jenkinsMock), any(), anyList())).thenReturn(Collections.emptyList());
+            mockProvider.when(() -> CredentialsProvider.lookupCredentialsInItemGroup(eq(ConjurSecretCredentials.class), eq(jenkinsMock), any(), anyList())).thenReturn(Collections.emptyList());
             ConjurSecretUsernameSSHKeyCredentialsImpl conjurSecretUsernameSSHCredentials = new ConjurSecretUsernameSSHKeyCredentialsImpl(
                     CredentialsScope.GLOBAL, "testPipeline", "Test pipeline", credentialId, mock(Secret.class), "description");
             String privateKey = conjurSecretUsernameSSHCredentials.getPrivateKey();
@@ -212,7 +212,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImplTest {
         try (MockedStatic<Jenkins> staticMockJenkins = mockStatic(Jenkins.class);
              MockedStatic<CredentialsProvider> mockProvider = mockStatic(CredentialsProvider.class)) {
             staticMockJenkins.when(Jenkins::get).thenReturn(jenkinsMock);
-            mockProvider.when(() -> CredentialsProvider.lookupCredentials(eq(ConjurSecretCredentials.class), eq(jenkinsMock), any(), anyList())).thenReturn(Collections.singletonList(mockCredentials));
+            mockProvider.when(() -> CredentialsProvider.lookupCredentialsInItemGroup(eq(ConjurSecretCredentials.class), eq(jenkinsMock), any(), anyList())).thenReturn(Collections.singletonList(mockCredentials));
             ConjurSecretUsernameSSHKeyCredentialsImpl conjurSecretUsernameSSHCredentials = new ConjurSecretUsernameSSHKeyCredentialsImpl(
                     CredentialsScope.GLOBAL, "testPipeline", "Test pipeline", credentialId, mock(Secret.class), "description");
             List<String> keys = conjurSecretUsernameSSHCredentials.getPrivateKeys();

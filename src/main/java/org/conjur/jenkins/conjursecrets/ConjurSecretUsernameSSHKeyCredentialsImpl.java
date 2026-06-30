@@ -15,8 +15,11 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
+import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.api.ConjurAPIUtils;
 import org.kohsuke.stapler.AncestorInPath;
+
+import static org.conjur.jenkins.CjplCode.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -181,15 +184,14 @@ public class ConjurSecretUsernameSSHKeyCredentialsImpl extends BaseSSHUser
 	 * @return the SSHKey secret
 	 */
 	@Override
-	@SuppressWarnings("deprecation")
 	public String getPrivateKey( ) {
 		// First, try to fetch credentials from the global Jenkins context
 		ModelObject searchContext = this.context != null ? this.context : Jenkins.get();
 		ConjurSecretCredentials credential = CredentialsMatchers.firstOrNull(
-				CredentialsProvider.lookupCredentials(
+				CredentialsProvider.lookupCredentialsInItemGroup(
 						ConjurSecretCredentials.class,
                         (ItemGroup) searchContext,
-						ACL.SYSTEM,
+						ACL.SYSTEM2,
 						Collections.emptyList()),
 				CredentialsMatchers.withId(credentialID));
 
@@ -232,7 +234,7 @@ public class ConjurSecretUsernameSSHKeyCredentialsImpl extends BaseSSHUser
                 @QueryParameter("username") String username) {
 
             if (username == null || credentialID == null || passphrase == null) {
-                return FormValidation.error("FAILED username,passphrase,credentialID fields is required");
+                return FormValidation.error(USERNAME_PASSPHRASE_CREDENTIAL_REQUIRED.format());
             }
 
             ConjurSecretUsernameSSHKeyCredentialsImpl credential = new ConjurSecretUsernameSSHKeyCredentialsImpl(CredentialsScope.GLOBAL, "test", username, credentialID, passphrase,

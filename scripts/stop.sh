@@ -7,7 +7,8 @@ declare -x DOCKER_NETWORK='default'
 echo "---- removing dev environment----"
 cd "$(dev_dir)"
 
-docker compose down -v
+docker compose down -v || true
+docker compose -f docker-compose.disco.yml down -v || true
 
 if [[ -n "$(cli_cid)" ]]; then
   docker rm -f "$(cli_cid)" 2>/dev/null

@@ -12,6 +12,7 @@ import jenkins.model.Jenkins;
 import okhttp3.OkHttpClient;
 import org.conjur.jenkins.configuration.ConjurConfiguration;
 import org.conjur.jenkins.conjursecrets.ConjurSecretCredentials;
+import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.exceptions.InvalidConjurSecretException;
 import org.junit.After;
 import org.junit.Before;
@@ -232,7 +233,7 @@ public class ConjurAPIUtilsTest {
         String urlPath = "folder1/myJob/";
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> ConjurAPIUtils.extractJobPathFromUrl(urlPath));
 
-        assertEquals("Invalid job path: folder1/myJob/", exception.getMessage());
+        assertEquals(CjplCode.INVALID_JOB_PATH.format("folder1/myJob/"), exception.getMessage());
     }
 
     @Test

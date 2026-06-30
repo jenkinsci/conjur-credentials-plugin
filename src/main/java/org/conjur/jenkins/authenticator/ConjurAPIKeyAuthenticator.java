@@ -18,8 +18,11 @@ import org.conjur.jenkins.api.ConjurAuthnInfo;
 import org.conjur.jenkins.configuration.ConjurConfiguration;
 import org.conjur.jenkins.credentials.ConjurCredentialProvider;
 import org.conjur.jenkins.exceptions.AuthenticationConjurException;
+import org.conjur.jenkins.CjplCode;
 
 import java.io.IOException;
+
+import static org.conjur.jenkins.CjplCode.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -62,6 +65,10 @@ public class ConjurAPIKeyAuthenticator extends AbstractAuthenticator {
         if (conjurAuthn.getApiKey() != null && conjurAuthn.getLogin() != null) {
             String urlstring = String.format("%s/%s/%s/%s/authenticate", conjurAuthn.getApplianceUrl(), conjurAuthn.getAuthnPath(),
                     conjurAuthn.getAccount(), URLEncoder.encode(conjurAuthn.getLogin(), "utf-8"));
+
+            LOGGER.log(Level.FINEST,
+                    () -> String.format("Conjur Authenticate API urlstring %s", urlstring));
+
             request = new Request.Builder()
                     .url(urlstring)
                     .post(RequestBody.create(MediaType.parse("text/plain"), conjurAuthn.getApiKey())).build();
@@ -87,7 +94,7 @@ public class ConjurAPIKeyAuthenticator extends AbstractAuthenticator {
                 }
             }
         } else {
-            LOGGER.log(Level.SEVERE, "Cannot create http call. Authentication failed.");
+            LOGGER.log(Level.SEVERE, APIKEY_HTTP_CALL_FAILED.format());
         }
         return resultingToken;
     }
@@ -142,7 +149,6 @@ public class ConjurAPIKeyAuthenticator extends AbstractAuthenticator {
         if (configuration.getCredentialID() == null || configuration.getCredentialID().isEmpty()) {
             return;
         }
-
         credential = getUsernameCredentialsForContext(configuration.getCredentialIDContext(), configuration.getCredentialID());
 
         if (credential == null) {

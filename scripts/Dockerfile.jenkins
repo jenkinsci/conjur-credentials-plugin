@@ -31,6 +31,8 @@ COPY --chown=jenkins:jenkins templates/bitbucket-config.groovy /tmp
 
 COPY --chown=jenkins:jenkins templates/bitbucket-cred.xml /tmp
 
+COPY --chown=jenkins:jenkins templates/disco/run-disco-discovery.groovy /tmp
+
 COPY --chown=jenkins:jenkins test_job.sh /var/jenkins_home
 
 COPY --chown=jenkins:jenkins tmp/jobs/ /var/jenkins_home/jobs/

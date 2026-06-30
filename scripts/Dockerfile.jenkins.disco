@@ -1,0 +1,29 @@
+FROM jenkins/jenkins:lts
+
+USER root
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    && apt-get clean
+
+RUN chown jenkins:jenkins /opt/java/openjdk/lib/security/cacerts && \
+    chmod 644 /opt/java/openjdk/lib/security/cacerts
+
+RUN mkdir -p /usr/share/jenkins/ref/init.groovy.d && \
+    chown -R jenkins:jenkins /usr/share/jenkins/ref/init.groovy.d
+
+USER jenkins
+WORKDIR /var/jenkins_home
+
+COPY --chown=jenkins:jenkins tmp/* /tmp
+
+COPY --chown=jenkins:jenkins templates/plugins /tmp
+COPY --chown=jenkins:jenkins templates/jenkinsConfig.xml /tmp
+COPY --chown=jenkins:jenkins templates/disco/run-disco-discovery.groovy /tmp
+COPY --chown=jenkins:jenkins templates/disco/configure-disco-e2e-security.groovy /usr/share/jenkins/ref/init.groovy.d/configure-disco-e2e-security.groovy
+COPY --chown=jenkins:jenkins templates/jenkinsConfig.xml /var/jenkins_home/jenkins.model.JenkinsLocationConfiguration.xml
+COPY --chown=jenkins:jenkins tmp/org.conjur.jenkins.disco.config.DiscoExporterConfiguration.xml /var/jenkins_home
+COPY --chown=jenkins:jenkins test_job.sh /var/jenkins_home
+
+EXPOSE 8080

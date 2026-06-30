@@ -1,0 +1,30 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job">
+    <actions/>
+    <description>CyberArk DisCo Discovery pipeline using payments folder credentials.</description>
+    <keepDependencies>false</keepDependencies>
+    <properties/>
+    <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+        <script><![CDATA[node {
+    stage('Use DisCo payments folder secrets') {
+        withCredentials([
+            string(credentialsId: 'disco-root-folder-secret', variable: 'DISCO_ROOT_SECRET'),
+            string(credentialsId: 'disco-team-alpha-secret', variable: 'DISCO_TEAM_ALPHA_SECRET'),
+            string(credentialsId: 'disco-payments-secret', variable: 'DISCO_PAYMENTS_SECRET')
+        ]) {
+            sh '''#!/bin/bash
+            set -euo pipefail
+            test -n "$DISCO_ROOT_SECRET"
+            test -n "$DISCO_TEAM_ALPHA_SECRET"
+            test -n "$DISCO_PAYMENTS_SECRET"
+            echo "DisCo payments folder credential bindings succeeded"
+            '''
+        }
+    }
+}
+]]></script>
+        <sandbox>true</sandbox>
+    </definition>
+    <triggers/>
+    <disabled>false</disabled>
+</flow-definition>

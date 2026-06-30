@@ -22,8 +22,12 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
 
+import org.conjur.jenkins.CjplCode;
+
 import java.io.Serializable;
 import java.util.Collections;
+
+import static org.conjur.jenkins.CjplCode.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -223,13 +227,13 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
         this.certificateCredentialID = certificateCredentialID;
 
         if (certificateCredentialID == null) {
-            LOGGER.log(Level.FINEST, "CertificationID is null");
+            LOGGER.log(Level.FINEST, CERTIFICATE_ID_NULL.format());
             return;
         }
 
         // we have to be aware, this function is calling getCredentials in provider
         this.certificateCredentials = CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentials(CertificateCredentials.class, Jenkins.get(), ACL.SYSTEM,
+                CredentialsProvider.lookupCredentialsInItemGroup(CertificateCredentials.class, Jenkins.get(), ACL.SYSTEM2,
                         Collections.<DomainRequirement>emptyList()),
                 CredentialsMatchers.withId(certificateCredentialID));
     }

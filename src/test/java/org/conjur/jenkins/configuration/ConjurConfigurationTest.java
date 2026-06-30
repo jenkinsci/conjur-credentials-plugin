@@ -236,7 +236,7 @@ public class ConjurConfigurationTest {
     @Test
     public void testGetGlobalAuthenticator() {
         ConjurConfiguration config = new ConjurConfiguration();
-        assertEquals("APIKey", config.getGlobalAuthenticator());
+        assertEquals("JWT", config.getGlobalAuthenticator());
     }
 
     @Test

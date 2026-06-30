@@ -1,18 +1,19 @@
 package org.conjur.jenkins.configuration;
 
-import java.io.BufferedReader;
+import org.conjur.jenkins.CjplCode;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Base64;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import static org.conjur.jenkins.CjplCode.*;
 
 public class TelemetryConfiguration {
 
@@ -25,7 +26,6 @@ public class TelemetryConfiguration {
 
     private static String finalHeader = null;
     private static String cachedPluginVersion = null;
-
 
     public static String getTelemetryHeader() {
         if (finalHeader == null) {
@@ -40,51 +40,62 @@ public class TelemetryConfiguration {
      * @return Base64 encoded telemetry header.
      */
     public static String buildTelemetryHeader() {
-        String integrationName = DEFAULT_INTEGRATION_NAME;
-        String integrationType = DEFAULT_INTEGRATION_TYPE;
-        String integrationVersion = getPluginVersion();  // Get version from changelog
-        String vendorName = DEFAULT_VENDOR_NAME;
-
         String telemetryData = String.format("in=%s&it=%s&iv=%s&vn=%s",
-                integrationName,
-                integrationType,
-                integrationVersion,
-                vendorName);
+                DEFAULT_INTEGRATION_NAME,
+                DEFAULT_INTEGRATION_TYPE,
+                getPluginVersion(),
+                DEFAULT_VENDOR_NAME);
 
         return Base64.getUrlEncoder().encodeToString(telemetryData.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
-     * Fetches the plugin version from the CHANGELOG.md file.
+     * Returns the plugin version read from the JAR manifest ({@code Plugin-Version} attribute).
+     * Maven's hpi-plugin writes this from the {@code <version>} in pom.xml at build time, so
+     * it is always in sync with the actual built artifact and requires no file-system access.
      *
-     * @return The version string or "unknown" if the version is not found.
+     * Falls back to {@code "unknown"} if the manifest is unreachable.
      */
     public static String getPluginVersion() {
         if (cachedPluginVersion != null) {
             return cachedPluginVersion;
         }
 
-        Path changelogPath = Paths.get("CHANGELOG.md");
-        Pattern versionPattern = Pattern.compile("## \\[([\\d]+(?:\\.[\\d]+)*)\\]");
+        cachedPluginVersion = readVersionFromManifest();
+        return cachedPluginVersion;
+    }
 
-        try (InputStream inputStream = Files.newInputStream(changelogPath);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+    // -------------------------------------------------------------------------
 
-            String line;
-            while ((line = reader.readLine()) != null) {
-                Matcher matcher = versionPattern.matcher(line);
+    private static String readVersionFromManifest() {
+        try {
+            // Locate the manifest that belongs to this class's JAR/HPI
+            String className = TelemetryConfiguration.class.getName().replace('.', '/') + ".class";
+            URL classResource = TelemetryConfiguration.class.getClassLoader().getResource(className);
+            if (classResource == null) {
+                LOGGER.warning(MANIFEST_RESOURCE_NOT_FOUND.format());
+                return DEFAULT_VERSION;
+            }
 
-                if (matcher.find()) {
-                    cachedPluginVersion = matcher.group(1);
-                    LOGGER.info("Found version in CHANGELOG.md: " + cachedPluginVersion);
-                    return cachedPluginVersion;
+            String classPath = classResource.toString();
+            // classPath is e.g. "jar:file:/…/conjur-credentials.hpi!/WEB-INF/classes/…"
+            // Strip to the jar root and append the manifest path
+            String manifestPath = classPath.substring(0, classPath.lastIndexOf("!") + 1)
+                    + "/META-INF/MANIFEST.MF";
+
+            try (InputStream is = URI.create(manifestPath).toURL().openStream()) {
+                Manifest manifest = new Manifest(is);
+                Attributes attrs = manifest.getMainAttributes();
+                String version = attrs.getValue("Plugin-Version");
+                if (version != null && !version.isBlank()) {
+                    LOGGER.log(Level.INFO, PLUGIN_VERSION_FROM_MANIFEST.format(version));
+                    return version.trim();
                 }
             }
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Error reading CHANGELOG.md from the JAR.", e);
+        } catch (IOException | IllegalArgumentException e) {
+            LOGGER.log(Level.WARNING, MANIFEST_VERSION_READ_FAILED.format(e.getMessage()));
         }
 
-        cachedPluginVersion = DEFAULT_VERSION;
-        return cachedPluginVersion;
+        return DEFAULT_VERSION;
     }
 }

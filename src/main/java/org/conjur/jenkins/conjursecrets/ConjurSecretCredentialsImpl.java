@@ -10,6 +10,7 @@ import hudson.model.ItemGroup;
 import hudson.model.ModelObject;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.api.ConjurAPIUtils;
 import org.kohsuke.stapler.AncestorInPath;
@@ -18,6 +19,8 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import javax.annotation.CheckForNull;
+
+import static org.conjur.jenkins.CjplCode.*;
 
 /** Class to retrieve the secrets */
 public class ConjurSecretCredentialsImpl extends BaseStandardCredentials implements ConjurSecretCredentials {
@@ -174,7 +177,7 @@ public class ConjurSecretCredentialsImpl extends BaseStandardCredentials impleme
 				@QueryParameter("variableId") String variableId) {
 
 			if (variableId == null || variableId.isEmpty()) {
-				return FormValidation.error("FAILED variableId field is required");
+				return FormValidation.error(VARIABLE_ID_REQUIRED.format());
 			}
 			ConjurSecretCredentialsImpl credential = new ConjurSecretCredentialsImpl(CredentialsScope.GLOBAL, credentialID, variableId,
 					"desc");

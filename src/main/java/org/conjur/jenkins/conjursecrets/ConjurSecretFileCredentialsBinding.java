@@ -10,12 +10,15 @@ import hudson.model.listeners.RunListener;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.credentialsbinding.BindingDescriptor;
 import org.jenkinsci.plugins.credentialsbinding.MultiBinding;
+import org.conjur.jenkins.CjplCode;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+
+import static org.conjur.jenkins.CjplCode.*;
 
 public class ConjurSecretFileCredentialsBinding extends MultiBinding<ConjurSecretFileCredentials> {
 
@@ -109,7 +112,7 @@ public class ConjurSecretFileCredentialsBinding extends MultiBinding<ConjurSecre
                 try {
                     new FilePath(new File(cleanupAction.getPath())).delete();
                 } catch (Exception e) {
-                    listener.error("Can't delete temp file: " + e.getMessage());
+                    listener.error(TEMP_FILE_DELETE_FAILED.format(e.getMessage()));
                 }
             });
         }

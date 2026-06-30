@@ -6,10 +6,13 @@ import okhttp3.*;
 import org.conjur.jenkins.api.ConjurAPIUtils;
 import org.conjur.jenkins.api.ConjurAuthnInfo;
 import org.conjur.jenkins.configuration.GlobalConjurConfiguration;
+import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.exceptions.AuthenticationConjurException;
 import org.conjur.jenkins.jwtauth.impl.JwtToken;
 
 import java.io.IOException;
+
+import static org.conjur.jenkins.CjplCode.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.logging.Level;
@@ -48,9 +51,13 @@ public class ConjurJWTAuthenticator extends AbstractAuthenticator {
         if (conjurAuthn.getApiKey() != null && conjurAuthn.getAuthnPath() != null) {
             String authnPath = !conjurAuthn.getAuthnPath().contains("/") ? "authn-jwt/" + conjurAuthn.getAuthnPath() : conjurAuthn.getAuthnPath();
 
-            request = new Request.Builder().url(String.format("%s/%s/%s/authenticate",
-                    conjurAuthn.getApplianceUrl(), authnPath, conjurAuthn.getAccount()))
+            String locUrl = String.format("%s/%s/%s/authenticate",
+                    conjurAuthn.getApplianceUrl(), authnPath, conjurAuthn.getAccount());
+            request = new Request.Builder().url(locUrl)
                     .post(RequestBody.create(MediaType.parse("text/plain"), conjurAuthn.getApiKey())).build();
+
+            LOGGER.log(Level.FINEST,
+                    () -> String.format("Conjur Authenticate API urlstring %s", locUrl));
         }
 
         if (request != null) {
@@ -71,7 +78,7 @@ public class ConjurJWTAuthenticator extends AbstractAuthenticator {
                 }
             }
         } else {
-            LOGGER.log(Level.SEVERE, "Cannot create http call. JWTAuthentication failed.");
+            LOGGER.log(Level.SEVERE, JWT_HTTP_CALL_FAILED.format());
         }
         return resultingToken;
     }

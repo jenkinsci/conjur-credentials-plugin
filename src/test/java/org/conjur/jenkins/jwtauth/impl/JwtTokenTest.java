@@ -43,7 +43,7 @@ public class JwtTokenTest {
         GlobalConjurConfiguration mockConfig = mock(GlobalConjurConfiguration.class);
         when(mockConfig.getJwtAudience()).thenReturn("test-audience");
         when(mockConfig.getTokenDurationInSeconds()).thenReturn(600L);
-        when(mockConfig.getKeyLifetimeInMinutes()).thenReturn(10L);
+        //when(mockConfig.getKeyLifetimeInMinutes()).thenReturn(10L);
     }
 
     @Test

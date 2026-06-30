@@ -27,6 +27,8 @@ import org.json.JSONObject;
 import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 
+import org.conjur.jenkins.CjplCode;
+
 import javax.net.ssl.SSLPeerUnverifiedException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -36,6 +38,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static org.conjur.jenkins.CjplCode.*;
 
 /**
  * The ConjurAPI class provides the service to authenticate and retrieve secrets
@@ -221,8 +225,7 @@ public class ConjurAPI {
             if (response.code() == 404) {
                 throw new AuthenticationConjurException("No access");
             }
-            throw new IOException(String.format("Error fetching secret from Conjur [%d - %s] %s", response.code(), response.message()
-                    , new String(result)));
+            throw new IOException(CONJUR_SECRET_FETCH_ERROR.format(response.code(), response.message(), new String(result)));
         }
         return result;
     }
@@ -292,15 +295,15 @@ public class ConjurAPI {
         // report configuration issues
 
         if (resultingConfig == null) {
-            LOGGER.log(Level.SEVERE, "Missing configuration for Conjur Plugin");
+            LOGGER.log(Level.SEVERE, MISSING_CONJUR_CONFIG.format());
         } else if (StringUtils.isEmpty(resultingConfig.getAccount())) {
-            LOGGER.log(Level.SEVERE, "Conjur Plugin missing Account field to be configured");
+            LOGGER.log(Level.SEVERE, MISSING_ACCOUNT_FIELD.format());
         } else if (StringUtils.isEmpty(resultingConfig.getApplianceURL())) {
-            LOGGER.log(Level.SEVERE, "Conjur Plugin require ConjurURL field to be configured");
+            LOGGER.log(Level.SEVERE, MISSING_APPLIANCE_URL.format());
         } else if (globalConfig != null &&
                 globalConfig.getSelectAuthenticator().equals("APIKey") &&
                 StringUtils.isEmpty(resultingConfig.getCredentialID())) {
-            LOGGER.log(Level.SEVERE, "Credentials not set for APIKey authenticator");
+            LOGGER.log(Level.SEVERE, MISSING_APIKEY_CREDENTIALS.format());
         }
 
         return resultingConfig;
@@ -398,20 +401,20 @@ public class ConjurAPI {
         try {
             conjurAuthn = ConjurAPI.getConjurAuthnInfo(conjurConfiguration, context);
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, String.format("Cannot generate AuthnInfo. Exception: %s", e));
+            LOGGER.log(Level.SEVERE, AUTHN_INFO_FAILED.format(e));
             return null;
         }
 
         try {
             authToken = ConjurAPI.getAuthorizationToken(conjurAuthn, context);
         } catch (AuthenticationConjurException exc) {
-            LOGGER.log(Level.SEVERE, String.format("Authentication failed. Cannot get token from Conjur for context: %s", context.getDisplayName()));
+            LOGGER.log(Level.SEVERE, AUTH_FAILED_FOR_CONTEXT.format(context.getDisplayName()));
             return null;
         } catch (SSLPeerUnverifiedException pve) {
-            LOGGER.log(Level.SEVERE, String.format("Cannot get authentication token from Conjur. SSL Peer Unverified url: %s", conjurAuthn.getApplianceUrl()));
+            LOGGER.log(Level.SEVERE, AUTH_SSL_PEER_UNVERIFIED.format(conjurAuthn.getApplianceUrl()));
             return null;
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, String.format("Cannot get authentication token from Conjur. Exception: %s", e));
+            LOGGER.log(Level.SEVERE, AUTH_EXCEPTION.format(e));
             return null;
         }
 
@@ -434,10 +437,8 @@ public class ConjurAPI {
 
             LOGGER.log(Level.FINEST, String.format("ConjurAPI RESULT => %s request %s", respBodyString, requestUrl));
             if (response.code() != 200) {
-                LOGGER.log(Level.FINEST, String.format("Error fetching variables from Conjur [%d - %s] : %s", response.code(), response.message()
-                        , respBodyString));
-                throw new IOException(String.format("Error fetching variables from Conjur [%d - %s] : %s", response.code(), response.message(),
-                        respBodyString));
+                LOGGER.log(Level.FINEST, CONJUR_VARIABLE_FETCH_ERROR.format(response.code(), response.message(), respBodyString));
+                throw new IOException(CONJUR_VARIABLE_FETCH_ERROR.format(response.code(), response.message(), respBodyString));
             }
 
             // now we parse response and go through all secrets
@@ -540,7 +541,7 @@ public class ConjurAPI {
                 LOGGER.log(Level.FINEST, String.format("[getCredentialsForContext] Path: %s  userName:[%s]  credentialType:[%s]", variableId, userName, credentialType));
             }    // for() json structures in loop
         } else {
-            throw new IOException("Error fetching variables from Conjur");
+            throw new IOException(CONJUR_VARIABLE_FETCH_FAILED.format());
         }
         LOGGER.log(Level.FINEST, String.format("%d credentials returned", allCredentials.size()));
         return allCredentials;

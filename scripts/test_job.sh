@@ -3,6 +3,19 @@
 declare -x TOTAL_SUCCESS=0
 declare -x TOTAL_FAILURE=0
 
+JENKINS_URL="${JENKINS_URL:-http://localhost:8080}"
+if [[ -z "${JENKINS_CLI_AUTH:-}" && -n "${JENKINS_ADMIN_ID:-}" && -n "${JENKINS_ADMIN_PASSWORD:-}" ]]; then
+    JENKINS_CLI_AUTH="${JENKINS_ADMIN_ID}:${JENKINS_ADMIN_PASSWORD}"
+fi
+
+jenkins_cli() {
+    local command=(java -jar /tmp/jenkins-cli.jar -s "${JENKINS_URL}")
+    if [[ -n "${JENKINS_CLI_AUTH:-}" ]]; then
+        command+=(-auth "${JENKINS_CLI_AUTH}")
+    fi
+    "${command[@]}" "$@"
+}
+
 # Function to check if the command was successful
 check_command_success() {
     if [ $? -ne 0 ]; then
@@ -18,7 +31,7 @@ download_jenkins_cli() {
     echo "Downloading Jenkins CLI..."
     wget http://localhost:8080/jnlpJars/jenkins-cli.jar -O /tmp/jenkins-cli.jar
     check_command_success "Downloading Jenkins CLI"
-    
+
     # Verify if the file was downloaded successfully
     if [ ! -f /tmp/jenkins-cli.jar ]; then
         echo "Error: Jenkins CLI jar does not exist after download."
@@ -29,26 +42,40 @@ download_jenkins_cli() {
 # Function to install Jenkins plugins
 install_jenkins_plugins() {
     echo "Installing required Jenkins plugins..."
-    java -jar /tmp/jenkins-cli.jar -s http://localhost:8080 install-plugin $(cat /tmp/plugins) -deploy
-    wget https://updates.jenkins.io/latest/conjur-credentials.hpi -O /tmp/conjur-credentials.hpi
-    java -jar /tmp/jenkins-cli.jar -s http://localhost:8080 install-plugin file:///tmp/conjur-credentials.hpi
-    check_command_success "Installing Jenkins plugins"
+    jenkins_cli install-plugin $(cat /tmp/plugins) -deploy
+    check_command_success "Installing required Jenkins plugins"
+    if [ ! -f /tmp/conjur-credentials.hpi ]; then
+        echo "Error: local Conjur plugin artifact /tmp/conjur-credentials.hpi was not copied into the Jenkins container."
+        exit 1
+    fi
+    echo "Installing local Conjur plugin artifact from /tmp/conjur-credentials.hpi"
+    jenkins_cli install-plugin file:///tmp/conjur-credentials.hpi
+    check_command_success "Installing local Conjur plugin artifact"
 }
 
 # Function to create global credentials
 create_credentials() {
     echo "Create the global credentials..."
-    java -jar /tmp/jenkins-cli.jar -s http://localhost:8080 create-credentials-by-xml system::system::jenkins _ < /tmp/credential.xml
+    jenkins_cli create-credentials-by-xml system::system::jenkins _ < /tmp/credential.xml
     check_command_success "Creating credentials"
-    java -jar /tmp/jenkins-cli.jar -s http://localhost:8080 create-credentials-by-xml system::system::jenkins _ < /tmp/secret.xml
+    jenkins_cli create-credentials-by-xml system::system::jenkins _ < /tmp/secret.xml
     check_command_success "Creating secrets"
-    java -jar /tmp/jenkins-cli.jar -s http://localhost:8080 create-credentials-by-xml system::system::jenkins _ < /tmp/add-bitbucket-token.xml
+    jenkins_cli create-credentials-by-xml system::system::jenkins _ < /tmp/add-bitbucket-token.xml
     check_command_success "Adding bitbucket personal access token"
-    java -jar /tmp/jenkins-cli.jar -s http://localhost:8080 create-credentials-by-xml system::system::jenkins _ < /tmp/bitbucket-cred.xml
+    jenkins_cli create-credentials-by-xml system::system::jenkins _ < /tmp/bitbucket-cred.xml
     check_command_success "Adding bitbucket username credentials"
-    java -jar /tmp/jenkins-cli.jar -s http://localhost:8080 groovy = < /tmp/bitbucket-config.groovy
+    jenkins_cli groovy = < /tmp/bitbucket-config.groovy
     check_command_success "Adding bitbucket server instance"
 
+}
+
+# Function to create disco credentials
+create_disco_credentials() {
+    echo "Creating CyberArk DisCo Discovery credentials..."
+    jenkins_cli help create-credentials-by-xml >/dev/null
+    check_command_success "Verifying credentials CLI command"
+    jenkins_cli create-credentials-by-xml system::system::jenkins _ < /tmp/disco-credential.xml
+    check_command_success "Adding CyberArk DisCo Discovery credential"
 }
 
 # Function to import SSL certificate into Java keystore
@@ -58,7 +85,12 @@ import_ssl_certificate() {
     keytool -import -noprompt -alias halifax -file /var/jenkins_home/halifax.crt -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit
     openssl s_client -showcerts -connect updates.jenkins.io:443 </dev/null 2>/dev/null | openssl x509 -outform PEM > /var/jenkins_home/updates-jenkins.crt
     keytool -import -noprompt -alias updates-jenkins -file /var/jenkins_home/updates-jenkins.crt -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit
-    keytool -import -noprompt -file /var/jenkins_home/conjur.pem -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit
+    if [ -f /var/jenkins_home/conjur.pem ]; then
+        keytool -import -noprompt -file /var/jenkins_home/conjur.pem -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit
+        check_command_success "Importing Conjur certificate"
+    else
+        echo "Skipping Conjur certificate import: /var/jenkins_home/conjur.pem not found"
+    fi
     check_command_success "Importing SSL certificate"
 }
 
@@ -71,16 +103,16 @@ trigger_jenkins_build() {
      if [ "$2" -eq 3 ]; then
             # "Multibranch job detected. Reloading job config"
             # There is no direct build for multibranch
-            java -jar /tmp/jenkins-cli.jar -s http://localhost:8080 reload-job "$1"
+            jenkins_cli reload-job "$1"
             check_command_success "Reloading multibranch job"
 
             echo "Waiting 10 seconds for branches to be discovered.."
             sleep 10
-            branch_jobs=$(echo "import jenkins.model.*; Jenkins.instance.getItem('$1')?.getItems()?.each { println it.name } " | java -jar /tmp/jenkins-cli.jar -s http://localhost:8080 groovy = )
+            branch_jobs=$(echo "import jenkins.model.*; Jenkins.instance.getItem('$1')?.getItems()?.each { println it.name } " | jenkins_cli groovy = )
             for branch_job in $branch_jobs; do
                full_job_name="$1/$branch_job"
                echo "Triggering branch build: $full_job_name"
-               BUILD_STATUS=$(java -jar /tmp/jenkins-cli.jar -s http://localhost:8080 build "$full_job_name" -f )
+               BUILD_STATUS=$(jenkins_cli build "$full_job_name" -f )
                 # Validate the build trigger
                if [ -z "$BUILD_STATUS" ]; then
                        echo "Error: Build trigger failed."
@@ -91,7 +123,7 @@ trigger_jenkins_build() {
                check_build_status
             done
      else
-            BUILD_STATUS=$(java -jar /tmp/jenkins-cli.jar -s http://localhost:8080 build "$1" -f)
+            BUILD_STATUS=$(jenkins_cli build "$1" -f)
              # Validate the build trigger
              if [ -z "$BUILD_STATUS" ]; then
                     echo "Error: Build trigger failed."
@@ -130,7 +162,7 @@ configure_auth_method() {
     fi
 
     echo "Reloading Jenkins configuration for job: $job_name"
-cat << 'EOF' | java -jar /tmp/jenkins-cli.jar -s http://localhost:8080 groovy =
+cat << 'EOF' | jenkins_cli groovy =
 import jenkins.model.*;
 import org.conjur.jenkins.configuration.*;
 import org.conjur.jenkins.configuration.GlobalConjurConfiguration;
@@ -139,6 +171,12 @@ def instance = Jenkins.getInstance()
 def conjurConfig = instance.getDescriptor(GlobalConjurConfiguration.class)
 conjurConfig.load()
 EOF
+}
+
+run_disco_discovery() {
+    echo "Launching CyberArk DisCo Discovery and waiting for completion..."
+    jenkins_cli groovy = < /tmp/run-disco-discovery.groovy
+    check_command_success "CyberArk DisCo Discovery export"
 }
 
 wait_for_conjur_refresh() {
@@ -200,15 +238,21 @@ print_final_summary() {
 
 # Main
 CREATE_FLAG=0
+CREATE_DISCO_FLAG=0
 TEST_API_KEY_JOBS=0
 TEST_JWT_KEY_JOBS=0
 IMPORT_CERTS_FLAG=0
 INSTALL_PLUGINS_FLAG=0
+RUN_DISCO_DISCOVERY_FLAG=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --create)
             CREATE_FLAG=1
+            shift
+            ;;
+        --create-disco)
+            CREATE_DISCO_FLAG=1
             shift
             ;;
         --test-api-key-jobs)
@@ -227,8 +271,12 @@ while [[ $# -gt 0 ]]; do
             INSTALL_PLUGINS_FLAG=1
             shift
             ;;
+        --run-disco-discovery)
+            RUN_DISCO_DISCOVERY_FLAG=1
+            shift
+            ;;
         *)
-            echo "Usage: $0 [--create] [--test-api-key-jobs] [--test-jwt-jobs] [--import-certs] [--install-plugins]"
+            echo "Usage: $0 [--create] [--create-disco] [--test-api-key-jobs] [--test-jwt-jobs] [--import-certs] [--install-plugins] [--run-disco-discovery]"
             exit 1
             ;;
     esac
@@ -238,11 +286,22 @@ done
 if [ $IMPORT_CERTS_FLAG -eq 1 ]; then
     download_jenkins_cli
     import_ssl_certificate
-    cp -f /tmp/jenkinsConfig.xml /var/jenkins_home/jenkins.model.JenkinsLocationConfiguration.xml
+    if [ -f /tmp/jenkinsConfig.xml ]; then
+        cp -f /tmp/jenkinsConfig.xml /var/jenkins_home/jenkins.model.JenkinsLocationConfiguration.xml
+    fi
     exit $?
 elif [ $INSTALL_PLUGINS_FLAG -eq 1 ]; then
     download_jenkins_cli
     install_jenkins_plugins
+    exit $?
+elif [ $RUN_DISCO_DISCOVERY_FLAG -eq 1 ]; then
+    download_jenkins_cli
+# Skip running Disco discovery during the Jenkins setup, as it is not needed because the E2E tests will trigger it later.
+#    run_disco_discovery
+    exit $?
+elif [ $CREATE_DISCO_FLAG -eq 1 ]; then
+    download_jenkins_cli
+    create_disco_credentials
     exit $?
 elif [ $CREATE_FLAG -eq 1 ]; then
     create_credentials

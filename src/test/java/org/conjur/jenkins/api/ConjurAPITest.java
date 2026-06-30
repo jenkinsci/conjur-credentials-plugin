@@ -12,10 +12,12 @@ import hudson.model.Run;
 import hudson.util.DescribableList;
 import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
 import okhttp3.*;
 import org.conjur.jenkins.authenticator.AbstractAuthenticator;
 import org.conjur.jenkins.authenticator.ConjurAPIKeyAuthenticator;
 import org.conjur.jenkins.configuration.*;
+import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.exceptions.AuthenticationConjurException;
 import org.conjur.jenkins.exceptions.InvalidConjurSecretException;
 import org.conjur.jenkins.jwtauth.impl.JwtToken;
@@ -391,7 +393,7 @@ public class ConjurAPITest {
 
             IOException exception = assertThrows(IOException.class, () -> ConjurAPI.getConjurSecret(mockClient, mockConfiguration, token, variableId));
 
-            assertEquals("Error fetching secret from Conjur [501 - Internal Error] IO Error", exception.getMessage());
+            assertEquals(CjplCode.CONJUR_SECRET_FETCH_ERROR.format(501, "Internal Error", "IO Error"), exception.getMessage());
         }
     }
 
@@ -635,9 +637,9 @@ public class ConjurAPITest {
             when(globalConjurConfiguration.getApplianceURL()).thenReturn("http://conjur");
             when(globalConjurConfigMock.getSelectAuthenticator()).thenReturn("APIKey");
 
-            try (MockedStatic<jenkins.model.Jenkins> jenkinsMock = mockStatic(jenkins.model.Jenkins.class)) {
-                jenkins.model.Jenkins mockJenkinsInstance = mock(jenkins.model.Jenkins.class);
-                jenkinsMock.when(jenkins.model.Jenkins::getInstanceOrNull).thenReturn(mockJenkinsInstance);
+            try (MockedStatic<Jenkins> jenkinsMock = mockStatic(Jenkins.class)) {
+                Jenkins mockJenkinsInstance = mock(Jenkins.class);
+                jenkinsMock.when(Jenkins::getInstanceOrNull).thenReturn(mockJenkinsInstance);
 
                 ConjurConfiguration result = ConjurAPI.getConjurConfig(folderMock);
 

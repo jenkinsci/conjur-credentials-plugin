@@ -5,6 +5,36 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)an
 
 Please use documentation outlined in the GitHub Readme for this version.  Official CyberArk documentation pages will be updated to reflect these changes once available
 
+## [3.1.0] - 2026-06-26
+
+### Added
+- DisCo (Discovery & Context Collection) pipeline: automatically discovers all Jenkins credentials across the folder/job hierarchy and exports them to the CyberArk DisCo ingestion platform
+- DisCo configuration page: subdomain, authentication mode (username+password or two separate secret credentials), export interval (1–24 h), and optional encrypted secret-value export
+- Scheduled background export via configurable interval with manual "Run Discovery Now" trigger
+- Where-used engine: scans Pipeline script bodies and job configuration XML to identify which jobs reference each credential
+- Encryption service: fetches public keys from the DisCo platform and selects the key with the longest remaining validity; keys without an expiry are treated as having infinite validity
+- Environment-selectable DisCo base URLs via `CYBERARK_DISCO_ENV` environment variable; defaults to Production when the variable is absent or unrecognised
+- FedRAMP environment URLs included (`GOV_DEV`, `GOV_TEST`, `GOV_STAGE`, `GOV_PROD`, etc.)
+- JWKS URI and full JWKS data embedded in each exported snapshot
+- Conjur appliance URL read from the existing Global Conjur Configuration (not duplicated in DisCo settings)
+- DisCo credential fields now show an **Add** button next to each dropdown, allowing credentials to be created inline without leaving the configuration page; the newly created credential is automatically selected after saving
+- `StandardUsernamePasswordCredentials` type filter on the Username+Password credential picker; `StringCredentials` type filter on both Secret Text pickers
+- Unit tests for `CyberArkIdentityClient`, `DiscoveryScheduler`, `AnnotationMapper`, and `DiscoExporterConfiguration`
+
+### Fixed
+- HTTP 403 response from the Discovery Service is now reported as `DISC_010: Access denied` with a clear message that includes the subdomain and a hint to verify tenant configuration; previously it surfaced as a generic `DISC_001` error with no actionable guidance
+- Discovery pipeline IOExceptions (including `DISC_010`, `DISC_003`) are now surfaced in the UI status panel with their original error code intact; previously they were overwritten with a `DISC_008` prefix
+
+### Changed
+- Minimum required Jenkins version raised to 2.492 (Java 21 baseline)
+- Plugin version in telemetry header is now read from the JAR manifest (`Plugin-Version` attribute) instead of the changelog file
+- `testEnvironment` setting removed from the DisCo UI — rate-limit bypass is derived automatically from the active `CYBERARK_DISCO_ENV` value (any non-production environment bypasses the 1-hour manual trigger limit)
+- DisCo snapshot exports `folders` and `jobs` as separate JSON arrays (both typed as `JenkinsObject`)
+- `providerId` field in `DiscoverySnapshot` renamed to `jenkinsId` for consistency with the DisCo API contract; `originStoreId` is set to the same Jenkins instance ID value
+- `DiscoveryOrchestrator.getPluginVersion()` now delegates to `TelemetryConfiguration.getPluginVersion()` — eliminates the duplicate implementation
+- `EncryptionService` `User-Agent` header now reads the version from `TelemetryConfiguration.getPluginVersion()` instead of a hardcoded string
+- `CredentialsProvider.lookupCredentials()` with `ACL.SYSTEM` replaced by `lookupCredentialsInItemGroup()` / `lookupCredentialsInItem()` with `ACL.SYSTEM2` across all call sites (deprecated API removed)
+
 ## [3.0.12] - 2026-04-23
 
 ### Fixed
@@ -18,7 +48,7 @@ Please use documentation outlined in the GitHub Readme for this version.  Offici
 ## [3.0.10] - 2026-04-09
 
 ### Fixed
-- Error when trying to use ApiKey on folder level 
+- Error when trying to use ApiKey on folder level
 
 ## [3.0.9] - 2026-02-09
 
@@ -196,6 +226,9 @@ We strongly recommend utilizing the default values recommended for fields that w
 ### Added
 - Added Support for SSH Private Key
 
+[3.1.2]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.1.1...v3.1.2
+[3.1.1]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.1.0...v3.1.1
+[3.1.0]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.0.9...v3.1.0
 [3.0.7]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.0.6...v3.0.7
 [3.0.6]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.0.5...v3.0.6
 [3.0.5]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.0.4...v3.0.5

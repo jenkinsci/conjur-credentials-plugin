@@ -8,9 +8,12 @@ import hudson.model.ItemGroup;
 import hudson.model.ModelObject;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.api.ConjurAPIUtils;
 import org.kohsuke.stapler.AncestorInPath;
+
+import static org.conjur.jenkins.CjplCode.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.springframework.lang.NonNull;
@@ -45,7 +48,7 @@ public class ConjurSecretFileCredentialsImpl extends BaseStandardCredentials imp
     public InputStream getContent() throws IOException {
         Secret secret = getSecret();
         if (secret == null) {
-            throw new IOException("Can't retrieve secret for variableId: " + this.variableId);
+            throw new IOException(SECRET_RETRIEVAL_FAILED_VAR.format(this.variableId));
         }
         return new ByteArrayInputStream(secret.getPlainText().getBytes(StandardCharsets.UTF_8));
     }
@@ -114,7 +117,7 @@ public class ConjurSecretFileCredentialsImpl extends BaseStandardCredentials imp
                 @QueryParameter("variableId") String variableId) {
 
             if (variableId == null || variableId.isEmpty()) {
-                return FormValidation.error("FAILED variableId field is required");
+                return FormValidation.error(VARIABLE_ID_REQUIRED.format());
             }
             ConjurSecretFileCredentialsImpl credential = new ConjurSecretFileCredentialsImpl(CredentialsScope.GLOBAL, "test", "desc", variableId);
             return ConjurAPIUtils.validateCredential(context, credential);

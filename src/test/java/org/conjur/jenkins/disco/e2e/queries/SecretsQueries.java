@@ -1,0 +1,63 @@
+package org.conjur.jenkins.disco.e2e.queries;
+
+public final class SecretsQueries {
+
+    private SecretsQueries() {
+    }
+
+    public static final String FETCH_SECRET_BY_NAME = "query FetchSecretByName($name: String!) {\n"
+            + "  secrets(\n"
+            + "    filter: { name: { contains: $name } }\n"
+            + "    pageInput: { limit: 150, offset: 0 }\n"
+            + "  ) {\n"
+            + "    items {\n"
+            + "      additionalData\n"
+            + "      compliance\n"
+            + "      description\n"
+            + "      id\n"
+            + "      location\n"
+            + "      managedByCyberArk\n"
+            + "      name\n"
+            + "      originId\n"
+            + "      originLastRetrieved\n"
+            + "      providerId\n"
+            + "      providerType\n"
+            + "      originUpdatedAt\n"
+            + "      permanence\n"
+            + "      subType\n"
+            + "      tags {\n"
+            + "        key\n"
+            + "        type\n"
+            + "        value\n"
+            + "      }\n"
+            + "      type\n"
+            + "      updatedAt\n"
+            + "      username\n"
+            + "      validityFrom\n"
+            + "      validityTo\n"
+            + "    }\n"
+            + "  }\n"
+            + "}";
+
+    public static final String FETCH_SECRET_RISKS = "query SecretRisks($secretId: String!) {\n"
+            + "  secrets(filter: { id: { eq: $secretId } }, pageInput: { limit: 1, offset: 0 }) {\n"
+            + "    items {\n"
+            + "      risks {\n"
+            + "        id\n"
+            + "        riskLevel\n"
+            + "        name\n"
+            + "        description\n"
+            + "        lifecycleStatus\n"
+            + "        remediation {\n"
+            + "          id\n"
+            + "          description\n"
+            + "          actions {\n"
+            + "            type\n"
+            + "            additionalData\n"
+            + "          }\n"
+            + "        }\n"
+            + "      }\n"
+            + "    }\n"
+            + "  }\n"
+            + "}";
+}

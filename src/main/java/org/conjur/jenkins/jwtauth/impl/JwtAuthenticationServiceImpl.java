@@ -3,11 +3,14 @@ package org.conjur.jenkins.jwtauth.impl;
 import hudson.Extension;
 import jenkins.model.GlobalConfiguration;
 import org.conjur.jenkins.configuration.GlobalConjurConfiguration;
+import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.jwtauth.JwtAuthenticationService;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static org.conjur.jenkins.CjplCode.*;
 
 /**
  * 
@@ -28,7 +31,7 @@ public class JwtAuthenticationServiceImpl extends JwtAuthenticationService {
 		try {
 			GlobalConjurConfiguration result = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
 			if (result == null ) {
-				throw new HttpRequestMethodNotSupportedException("conjur-jwk-set");
+				throw new HttpRequestMethodNotSupportedException(JWKS_METHOD_NOT_SUPPORTED.format());
 			}
 
 			return JwtToken.getJwkset().toString(4);

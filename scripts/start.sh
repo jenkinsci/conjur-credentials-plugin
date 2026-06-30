@@ -6,6 +6,7 @@ declare -x DOCKER_NETWORK=''
 declare -x ENTERPRISE='false'
 declare -x CLOUD='false'
 declare -x EDGE='false'
+declare -x DISCO_ONLY='false'
 declare -x JENKINS_API_KEY=''
 declare -x ADMIN_API_KEY=''
 declare -x DEFAULT_OPTION='--create'
@@ -21,6 +22,7 @@ $0 [options]
 -e            Deploy Conjur Enterprise. (Default: Conjur Open Source)
 -c            Deploy Conjur Cloud. (Only for CI/CD pipelines, not for local development)
 -ed           Deploy Conjur Edge. (Only for CI/CD pipelines, not for local development)
+--disco-only  Start Jenkins with DisCo credentials only. Do not start Conjur.
 -h, --help    Print usage information.
 EOF
 }
@@ -28,14 +30,15 @@ EOF
 while true ; do
   case "$1" in
     -e ) ENTERPRISE="true" ; shift ;;
-    -c )  
+    --disco-only ) DISCO_ONLY="true" ; shift ;;
+    -c )
       if [[ "$OSTYPE" == "darwin"* ]]; then
         echo "Cannot setup a local environment using Conjur Cloud - this option is intended for CI/CD pipelines only"
         exit 1
       fi
       CLOUD="true"
       shift ;;
-    -ed )  
+    -ed )
       if [[ "$OSTYPE" == "darwin"* ]]; then
         echo "Cannot setup a local environment using Conjur Cloud - this option is intended for CI/CD pipelines only"
         exit 1
@@ -74,7 +77,7 @@ function setup_conjur_resources {
     conjur variable set -i jenkins/db/dbuserName -v db_username
     conjur variable set -i jenkins/db/dbpassWord -v db_password
     conjur variable set -i 'jenkins/db/key' -v db_key
-    
+
     #JWT configuration
     conjur policy load -f $policy_path/authn-jwt-jenkins.yml -b root
     conjur variable set -i conjur/authn-jwt/jenkins/token-app-property -v 'jenkins_name'
@@ -166,7 +169,7 @@ function set_conjur_cloud_variable() {
 function deploy_conjur_cloud() {
   curl -w "%{http_code}" -H "Authorization: Token token=\"$INFRAPOOL_CONJUR_AUTHN_TOKEN\"" \
        -X POST -d "$(cat ./policy/root.yml)" "${CONJUR_APPLIANCE_URL}/policies/conjur/policy/data"
-  
+
   set_conjur_cloud_variable "data/jenkins/db/password" "password"
   set_conjur_cloud_variable "data/jenkins/db/dbuserName" "db_username"
   set_conjur_cloud_variable "data/jenkins/db/dbpassWord" "db_password"
@@ -174,16 +177,66 @@ function deploy_conjur_cloud() {
 
 }
 
+function escape_sed_replacement() {
+  printf '%s' "$1" | sed -e 's/[\/&|]/\\&/g'
+}
+
+function render_disco_xml() {
+  local disco_subdomain="${DISCO_SUBDOMAIN:-57s7k26zx9x54w}"
+  local disco_auth_mode="${DISCO_AUTH_MODE:-USERNAME_PASSWORD}"
+  local disco_credential_id="${DISCO_CREDENTIAL_ID:-disco}"
+  local disco_username_credential_id="${DISCO_USERNAME_CREDENTIAL_ID:-}"
+  local disco_password_credential_id="${DISCO_PASSWORD_CREDENTIAL_ID:-}"
+  local disco_export_interval_hours="${DISCO_EXPORT_INTERVAL_HOURS:-12}"
+  local disco_export_secret_values="${DISCO_EXPORT_SECRET_VALUES:-true}"
+
+  sed -e "s|{{DISCO_SUBDOMAIN}}|$(escape_sed_replacement "$disco_subdomain")|g" \
+    -e "s|{{DISCO_AUTH_MODE}}|$(escape_sed_replacement "$disco_auth_mode")|g" \
+    -e "s|{{DISCO_CREDENTIAL_ID}}|$(escape_sed_replacement "$disco_credential_id")|g" \
+    -e "s|{{DISCO_USERNAME_CREDENTIAL_ID}}|$(escape_sed_replacement "$disco_username_credential_id")|g" \
+    -e "s|{{DISCO_PASSWORD_CREDENTIAL_ID}}|$(escape_sed_replacement "$disco_password_credential_id")|g" \
+    -e "s|{{DISCO_EXPORT_INTERVAL_HOURS}}|$(escape_sed_replacement "$disco_export_interval_hours")|g" \
+    -e "s|{{DISCO_EXPORT_SECRET_VALUES}}|$(escape_sed_replacement "$disco_export_secret_values")|g" \
+    templates/disco/discoexporterconfiguration.xml > tmp/org.conjur.jenkins.disco.config.DiscoExporterConfiguration.xml
+
+  local disco_username="${DISCO_USERNAME:-itso@cyberark.cloud.712204}"
+  local disco_password="${DISCO_PASSWORD:-t3stP@ss}"
+  local disco_global_secret_credential_id="${DISCO_GLOBAL_SECRET_CREDENTIAL_ID:-disco-global-secret-$(openssl rand -hex 4)}"
+  local disco_system_secret_credential_id="${DISCO_SYSTEM_SECRET_CREDENTIAL_ID:-disco-system-secret-$(openssl rand -hex 4)}"
+  local disco_global_secret="${DISCO_GLOBAL_SECRET:-$(openssl rand -hex 16)}"
+  local disco_system_secret="${DISCO_SYSTEM_SECRET:-$(openssl rand -hex 16)}"
+  sed -e "s|{{DISCO_CREDENTIAL_ID}}|$(escape_sed_replacement "$disco_credential_id")|g" \
+    -e "s|{{DISCO_USERNAME}}|$(escape_sed_replacement "$disco_username")|g" \
+    -e "s|{{DISCO_PASSWORD}}|$(escape_sed_replacement "$disco_password")|g" \
+    templates/disco/disco-credential.xml > tmp/disco-credential.xml
+
+  printf '%s\n' \
+    "$disco_global_secret_credential_id" \
+    "$disco_system_secret_credential_id" > tmp/disco-secret-names.txt
+
+  {
+    printf 'DISCO_GLOBAL_SECRET_CREDENTIAL_ID=%q\n' "$disco_global_secret_credential_id"
+    printf 'DISCO_SYSTEM_SECRET_CREDENTIAL_ID=%q\n' "$disco_system_secret_credential_id"
+    printf 'DISCO_SECRET_NAMES=%q\n' "${disco_global_secret_credential_id},${disco_system_secret_credential_id}"
+  } > tmp/disco-secret-manifest.env
+
+
+  echo "[INFO] Rendered CyberArk DisCo Discovery credential XML with id '$disco_credential_id'"
+  echo "[INFO] Rendered CyberArk DisCo Discovery GLOBAL secret credential XML with id '$disco_global_secret_credential_id'"
+  echo "[INFO] Rendered CyberArk DisCo Discovery SYSTEM secret credential XML with id '$disco_system_secret_credential_id'"
+  echo "[INFO] Wrote CyberArk DisCo Discovery secret-name manifest to tmp/disco-secret-names.txt"
+}
+
 function deploy_xml() {
   sed -e "s|{{USERNAME}}|$CONJUR_AUTHN_LOGIN|g" \
     -e "s|{{API_KEY}}|$CONJUR_API_KEY|g" \
     templates/credential.xml > tmp/credential.xml
-  
+
   sed -e "s|{{URL}}|$CONJUR_APPLIANCE_URL|g" \
     -e "s|{{ACCOUNT}}|$CONJUR_ACCOUNT|g" \
     -e "s|{{SECRET_PATH}}|$CONJUR_SECRET_PATH|g" \
     templates/secret.xml > tmp/secret.xml
-  
+
    sed -e "s|{{URL}}|$CONJUR_APPLIANCE_URL|g" \
       -e "s|{{ACCOUNT}}|$CONJUR_ACCOUNT|g" \
       templates/globalconjurconfiguration-apikey.xml > tmp/globalconjurconfiguration-apikey.xml
@@ -194,6 +247,11 @@ function deploy_xml() {
 
     # Use API Key by default
     cp tmp/globalconjurconfiguration-apikey.xml tmp/org.conjur.jenkins.configuration.GlobalConjurConfiguration.xml
+}
+
+function deploy_disco_only_xml() {
+  echo "[INFO] Rendering DisCo Discovery XML"
+  render_disco_xml
 }
 
 function deploy_jobs() {
@@ -242,6 +300,42 @@ function wait_for_jenkins() {
     fi
 }
 
+function setup_jenkins() {
+  echo "[INFO] Jenkins setup: importing certificates"
+  docker exec jenkins bash -c "./test_job.sh --import-certs"
+
+  echo "Restarting Jenkins to apply certificate changes..."
+  docker restart jenkins
+  wait_for_jenkins
+
+  # Install plugins, including the local Conjur credentials plugin artifact.
+  echo "[INFO] Jenkins setup: installing required plugins and local Conjur credentials plugin"
+  docker exec jenkins bash -c "./test_job.sh --install-plugins"
+
+  # Restart Jenkins to load the new plugins and CLI commands.
+  echo "Restarting Jenkins to load plugins..."
+  docker restart jenkins
+  wait_for_jenkins
+}
+
+function prepare_local_conjur_plugin() {
+  local plugin_artifact="$(project_dir)/target/conjur-credentials.hpi"
+
+  if [[ ! -f "$plugin_artifact" ]]; then
+    echo "[INFO] Local Conjur plugin artifact not found at $plugin_artifact"
+    echo "[INFO] Building the current branch plugin with Maven..."
+    (cd "$(project_dir)" && mvn -DskipTests package)
+  fi
+
+  if [[ ! -f "$plugin_artifact" ]]; then
+    echo "[ERROR] Could not find or build local Conjur plugin artifact: $plugin_artifact"
+    exit 1
+  fi
+
+  echo "[INFO] Using local Conjur plugin artifact from current branch: $plugin_artifact"
+  cp -f "$plugin_artifact" ./tmp/conjur-credentials.hpi
+}
+
 function rotate_host_api_key() {
   URL=$1
   JENKINS_API_KEY=$(curl -k --request PUT --data "" \
@@ -249,13 +343,37 @@ function rotate_host_api_key() {
      ${URL}/authn/conjur/api_key?role=host:data%2Fjenkins%2Fjenkins-connector)
 }
 
+function run_disco_only() {
+  clean
+  mkdir -p tmp
+
+  export CYBERARK_DISCO_ENV="${CYBERARK_DISCO_ENV:-INTEGRATION}"
+
+  prepare_local_conjur_plugin
+  deploy_disco_only_xml
+
+  docker compose -f docker-compose.disco.yml up -d --build jenkins
+  wait_for_jenkins
+  setup_jenkins
+
+  docker exec jenkins bash -c "./test_job.sh --create-disco"
+
+  echo "Launching CyberArk DisCo Discovery from startup automation..."
+  docker exec jenkins bash -c "./test_job.sh --run-disco-discovery"
+}
+
 function main() {
+  if [[ "$DISCO_ONLY" == "true" ]]; then
+    run_disco_only
+    return
+  fi
+
   # remove previous environment
   clean
   mkdir -p tmp
 
-  # Copy the hpi file
-  test -f "$(project_dir)"/target/conjur-credentials.hpi && cp -f "$(project_dir)"/target/conjur-credentials.hpi ./tmp
+  # Build/copy the current branch plugin; do not use the Update Center copy.
+  prepare_local_conjur_plugin
 
   if [[ "$ENTERPRISE" == "true" ]]; then
     export CONJUR_APPLIANCE_URL='https://conjur-master.mycompany.local'
@@ -312,7 +430,7 @@ function main() {
     export CONJUR_SECRET_PATH="jenkins/db/dbpassWord"
 
   fi
- 
+
   #deploy the Conjur configuration
   deploy_xml
   # deploy_jobs
@@ -322,19 +440,7 @@ function main() {
   docker compose up -d bitbucket
   [[ "$EDGE" == "true" ]] && docker network connect scripts_default edge-test
   wait_for_jenkins
-  docker exec jenkins bash -c "./test_job.sh --import-certs"
-
-  echo "Restarting Jenkins to apply certificate changes..."
-  docker restart jenkins
-  wait_for_jenkins
-
-  # Install plugins
-  docker exec jenkins bash -c "./test_job.sh --install-plugins"
-
-  # Restart Jenkins to load the new plugins
-  echo "Restarting Jenkins to load plugins..."
-  docker restart jenkins
-  wait_for_jenkins
+  setup_jenkins
 
   # Phase 3: Create credentials and run tests
   docker exec jenkins bash -c "./test_job.sh $DEFAULT_OPTION"

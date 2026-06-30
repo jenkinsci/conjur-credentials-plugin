@@ -20,6 +20,7 @@ Please follow this documentation to configure plugin:
 
 - [Configure JWT Authentication](#configure-jwt-authentication)
 - [Configure API Key Authentication](#configure-api-key-authentication)
+- [Configure DisCo Discovery](#configure-disco-discovery)
 - [Migration Guide](#migration-guide)
 
 
@@ -391,7 +392,64 @@ To change this behaviour, you must add annotations to the secrets in your Secret
 
 ## Configure API Key Authentication
 
-Please follow [this documentation](https://docs.cyberark.com/conjur-open-source/latest/en/content/integrations/jenkins.htm) to run Jenkins Plugin in API key authentication mode. 
+Please follow [this documentation](https://docs.cyberark.com/conjur-open-source/latest/en/content/integrations/jenkins.htm) to run Jenkins Plugin in API key authentication mode.
+
+## Configure DisCo Discovery
+
+The DisCo (Discovery & Context Collection) pipeline automatically scans all Jenkins credentials across the folder and job hierarchy and exports an encrypted inventory snapshot to the CyberArk DisCo ingestion platform.
+
+### Step 1: Enable and configure DisCo
+
+Navigate to `Manage Jenkins > System` and scroll to the **CyberArk DisCo Discovery** section.
+
+| Field | Description |
+|---|---|
+| Subdomain | Your CyberArk tenant subdomain (e.g. `acme`) |
+| Authentication Mode | `Username + Password credential` — a single `UsernamePasswordCredentials` entry; or `Two separate Secret Text credentials` — one `StringCredentials` for the username and one for the password |
+| DisCo Credential | (Username+Password mode) Select or **Add** a `UsernamePasswordCredentials` credential containing your CyberArk Identity login |
+| Username Secret / Password Secret | (Two Secrets mode) Select or **Add** a `Secret Text` credential for each value |
+| Export Interval (hours) | How often the scheduled export runs (1–24 h, default 12 h) |
+| Export Secret Values | When enabled, secret values are encrypted with the DisCo platform public key before export |
+
+> **Add button**: Each credential dropdown has an inline **Add** button. Clicking it opens the standard Jenkins credential creation dialog pre-filtered to the correct credential type. The newly created credential is automatically selected after saving.
+
+### Step 2: Trigger a discovery run
+
+Click **Run Discovery Now** on the DisCo configuration page to perform an immediate export. The button is rate-limited to once per hour in production environments to avoid excessive API calls.
+
+The scheduled export runs automatically in the background at the configured interval.
+
+### Step 3: Verify the export
+
+After a successful run, the status section on the configuration page shows:
+
+- Last export timestamp
+- Export status (`SUCCESS`, `ERROR`, or `ABORTED`)
+- The `kid` (key ID) used for encryption
+- The JWKS URI embedded in the snapshot
+
+### Environment selection
+
+The DisCo base URL is controlled by the `CYBERARK_DISCO_ENV` environment variable on the Jenkins controller:
+
+| Value | Environment |
+|---|---|
+| *(not set)* | Production (default) |
+| `integration` | Integration |
+| `gov-prod` | FedRAMP Production |
+
+Any non-production environment bypasses the 1-hour rate limit on manual triggers.
+
+### Troubleshooting DisCo
+
+| Error code | Meaning | Resolution |
+|---|---|---|
+| `DISC_010: Access denied` | The Discovery Service returned HTTP 403 for the configured subdomain | Verify the **Subdomain** field is correct and that the tenant is active in the CyberArk platform |
+| `DISC_003: Subdomain not found` | HTTP 404 — the subdomain does not exist in the Discovery Service | Check for typos in the Subdomain field |
+| `DISC_001: Invalid discovery base URL` | The base URL for the Discovery Service is malformed | Verify the `CYBERARK_DISCO_ENV` environment variable or contact support |
+| `DISC_008: Export failed` | The snapshot POST or S3 upload was rejected | Check network connectivity and bearer token validity |
+| `DISC_009: Could not resolve DisCo credentials` | The configured credential ID could not be found in the Jenkins credential store | Ensure the selected credential exists and is accessible |
+| `DISC_002: Rate limit active` | A manual run was triggered less than 1 hour after the previous export | Wait for the rate limit window to pass, or use the scheduled export |
 
 ## Migration Guide
 
