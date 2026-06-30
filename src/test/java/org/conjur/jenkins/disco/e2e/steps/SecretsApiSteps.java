@@ -29,7 +29,7 @@ public final class SecretsApiSteps implements AutoCloseable {
 
     public void authenticate() throws Exception {
         close();
-        byte[] passwordBytes = config.identityPassword().getBytes(StandardCharsets.UTF_8);
+        var passwordBytes = config.identityPassword().getBytes(StandardCharsets.UTF_8);
         try {
             tokenBytes = identityClient.login(
                     config.identityUrl(),
@@ -51,10 +51,68 @@ public final class SecretsApiSteps implements AutoCloseable {
                 config.graphQlWaitIntervalMs());
     }
 
+    public GraphQLResponse waitForSecretCount(String secretName, int expectedCount) throws Exception {
+        ensureAuthenticated();
+        LOG.info("Waiting for exported DisCo secret count in GraphQL: name=" + secretName
+                + ", expectedCount=" + expectedCount);
+
+        var deadline = System.currentTimeMillis() + config.graphQlWaitTimeoutMs();
+        var lastResponse = "";
+        while (System.currentTimeMillis() <= deadline) {
+            var response = graphQLClient.querySecret(new String(tokenBytes, StandardCharsets.UTF_8), secretName);
+            lastResponse = response.toJson();
+            if (response.hasErrors()) {
+                fail("GraphQL returned errors while waiting for secret count for '" + secretName + "':\n"
+                        + response.errors());
+            }
+            if (countSecretsByName(response, secretName) == expectedCount) {
+                return response;
+            }
+            Thread.sleep(config.graphQlWaitIntervalMs());
+        }
+
+        fail("Timed out waiting for exported DisCo secret '" + secretName + "' count to be " + expectedCount
+                + ". Last GraphQL response:\n" + lastResponse);
+        return waitForSecret(secretName);
+    }
+
+    public GraphQLResponse.Secret waitForSecretDescription(String secretName, String expectedDescription) throws Exception {
+        ensureAuthenticated();
+        LOG.info("Waiting for exported DisCo secret description in GraphQL: name=" + secretName
+                + ", expectedDescription=" + expectedDescription);
+
+        long deadline = System.currentTimeMillis() + config.graphQlWaitTimeoutMs();
+        var lastResponse = "";
+        GraphQLResponse.Secret lastSecret = null;
+        while (System.currentTimeMillis() <= deadline) {
+            var response = graphQLClient.querySecret(new String(tokenBytes, StandardCharsets.UTF_8), secretName);
+            lastResponse = response.toJson();
+            if (response.hasErrors()) {
+                fail("GraphQL returned errors while waiting for secret description for '" + secretName + "':\n"
+                        + response.errors());
+            }
+
+            var secret = response.secretNamed(secretName);
+            if (secret != null) {
+                lastSecret = secret;
+                if (expectedDescription.equals(secret.description())) {
+                    return secret;
+                }
+            }
+            Thread.sleep(config.graphQlWaitIntervalMs());
+        }
+
+        fail("Timed out waiting for DisCo secret '" + secretName + "' description to be '" + expectedDescription
+                + "'. Last observed description was '"
+                + (lastSecret == null ? "<missing>" : lastSecret.description())
+                + "'. Last GraphQL response:\n" + lastResponse);
+        return lastSecret;
+    }
+
     public GraphQLResponse fetchSecretRisksBySecretId(String secretId) throws Exception {
         ensureAuthenticated();
         LOG.info("Fetching DisCo secret risks from GraphQL for secret id: " + secretId);
-        GraphQLResponse response = graphQLClient.querySecretRisks(
+        var response = graphQLClient.querySecretRisks(
                 new String(tokenBytes, StandardCharsets.UTF_8),
                 secretId);
         if (response.hasErrors()) {

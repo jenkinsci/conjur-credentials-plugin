@@ -10,6 +10,7 @@ declare -x DISCO_ONLY='false'
 declare -x JENKINS_API_KEY=''
 declare -x ADMIN_API_KEY=''
 declare -x DEFAULT_OPTION='--create'
+declare -x JENKINS_DEBUG='false'
 
 source "$(git rev-parse --show-toplevel)/scripts/util.sh"
 
@@ -23,6 +24,8 @@ $0 [options]
 -c            Deploy Conjur Cloud. (Only for CI/CD pipelines, not for local development)
 -ed           Deploy Conjur Edge. (Only for CI/CD pipelines, not for local development)
 --disco-only  Start Jenkins with DisCo credentials only. Do not start Conjur.
+--debug       Enable Jenkins JVM remote debugging on PORT 5005.
+--no-debug    Disable Jenkins JVM remote debugging.
 -h, --help    Print usage information.
 EOF
 }
@@ -31,6 +34,8 @@ while true ; do
   case "$1" in
     -e ) ENTERPRISE="true" ; shift ;;
     --disco-only ) DISCO_ONLY="true" ; shift ;;
+    --debug ) JENKINS_DEBUG="true" ; shift ;;
+    --no-debug ) JENKINS_DEBUG="false" ; shift ;;
     -c )
       if [[ "$OSTYPE" == "darwin"* ]]; then
         echo "Cannot setup a local environment using Conjur Cloud - this option is intended for CI/CD pipelines only"
@@ -62,6 +67,16 @@ function clean {
   ./stop.sh
 }
 trap clean ERR
+
+function configure_jenkins_debug() {
+  if [[ "$JENKINS_DEBUG" == "true" ]]; then
+    export JENKINS_DEBUG_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+    echo "[INFO] Jenkins JVM debug enabled: attach debugger to localhost:5005"
+  else
+    export JENKINS_DEBUG_OPTS=''
+    echo "[INFO] Jenkins JVM debug disabled"
+  fi
+}
 
 function setup_conjur_resources {
   echo "---- setting up Conjur resources ----"
@@ -347,6 +362,8 @@ function run_disco_only() {
   clean
   mkdir -p tmp
 
+  configure_jenkins_debug
+
   export CYBERARK_DISCO_ENV="${CYBERARK_DISCO_ENV:-INTEGRATION}"
 
   prepare_local_conjur_plugin
@@ -371,6 +388,8 @@ function main() {
   # remove previous environment
   clean
   mkdir -p tmp
+
+  configure_jenkins_debug
 
   # Build/copy the current branch plugin; do not use the Update Center copy.
   prepare_local_conjur_plugin

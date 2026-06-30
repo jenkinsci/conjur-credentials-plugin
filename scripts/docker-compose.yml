@@ -6,11 +6,12 @@ services:
     container_name: jenkins
     ports:
       - "8080:8080"
-      - "50000:50000" 
+      - "5005:5005"
+      - "50000:50000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false ${JENKINS_DEBUG_OPTS:-}
       - JAVA_ARGS=-Djavax.net.ssl.trustStore=/opt/java/openjdk/lib/security/cacerts
     networks:
       - "${DOCKER_NETWORK}"
@@ -65,7 +66,7 @@ services:
       dockerfile: Dockerfile_nginx
     entrypoint: nginx-debug -g 'daemon off;'
     environment:
-        TERM: xterm
+      TERM: xterm
     depends_on:
       - conjur
 

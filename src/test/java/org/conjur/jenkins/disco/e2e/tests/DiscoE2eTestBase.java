@@ -1,4 +1,4 @@
-package org.conjur.jenkins.disco.manual;
+package org.conjur.jenkins.disco.e2e.tests;
 
 import org.conjur.jenkins.disco.e2e.config.DiscoE2eConfig;
 import org.conjur.jenkins.disco.e2e.config.JenkinsCredentialType;
@@ -29,6 +29,8 @@ public abstract class DiscoE2eTestBase {
             "scripts/templates/disco/disco-global-conjur-secret-credential.xml");
     protected static final Path ROOT_FOLDER_WITH_STRING_CREDENTIAL_XML = Path.of(
             "scripts/templates/disco/jobs/disco-folder/config.xml");
+    protected static final Path ROOT_FOLDER_WITHOUT_CREDENTIALS_XML = Path.of(
+            "scripts/templates/disco/jobs/disco-folder-without-credentials/config.xml");
     protected static final Path FOLDER_WITH_CONJUR_PIPELINE_CREDENTIAL_XML = Path.of(
             "scripts/templates/disco/jobs/disco-conjur-pipeline-folder/config.xml");
     protected static final Path CONJUR_SECRET_PIPELINE_XML = Path.of(
