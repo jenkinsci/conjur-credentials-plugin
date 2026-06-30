@@ -1,11 +1,15 @@
 package org.conjur.jenkins.conjursecrets;
 
+import org.conjur.jenkins.CjplCode;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static org.conjur.jenkins.CjplCode.*;
 
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.credentialsbinding.BindingDescriptor;
@@ -90,7 +94,7 @@ public class ConjurSecretCredentialsBinding extends MultiBinding<ConjurSecretCre
 
 		}catch( CredentialNotFoundException e )
 		{
-			LOGGER.log(Level.SEVERE, String.format("No credentials found for: %s", build.getFullDisplayName() ) );
+			LOGGER.log(Level.SEVERE, NO_CREDENTIALS_FOR_BUILD.format(build.getFullDisplayName()));
 
 			multiEnv = new MultiEnvironment(
 					new HashMap<String,String>());
@@ -121,7 +125,7 @@ public class ConjurSecretCredentialsBinding extends MultiBinding<ConjurSecretCre
 
 		if(cred==null)
 		{
-			throw new CredentialNotFoundException("Could not find credentials entry with ID '" + credentialsId + "'");
+			throw new CredentialNotFoundException(CREDENTIAL_ID_NOT_FOUND.format(credentialsId));
 		}
 
 		if (!type().isInstance(cred))
@@ -131,8 +135,8 @@ public class ConjurSecretCredentialsBinding extends MultiBinding<ConjurSecretCre
 			long execution = end - start;
 			LOGGER.log(Level.OFF, String.format("Execution of Class ConjurSecretCredentialsBinding -->Method getCredentialsFor() time: %d milliseconds", (int)(execution / 1000000d) ) );
 			throw new CredentialNotFoundException(
-					"Credentials '" + credentialsId + "' not found '" + cred + "' where '"
-							+ (expected != null ? expected.getDisplayName() : type().getName()) + "' was expected");
+					CREDENTIAL_WRONG_TYPE.format(credentialsId, cred,
+							expected != null ? expected.getDisplayName() : type().getName()));
 		}
 		CredentialsProvider.track(build, cred);
 

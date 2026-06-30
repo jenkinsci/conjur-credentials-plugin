@@ -13,9 +13,13 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
 
+import org.conjur.jenkins.CjplCode;
+
 import java.io.Serializable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static org.conjur.jenkins.CjplCode.*;
 
 /**
  * Example of Jenkins global configuration.
@@ -30,7 +34,7 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
     private String jwtAudience = "cyberark-conjur";
     private long keyLifetimeInMinutes = 60;
     private long tokenDurationInSeconds = 120;
-    private String selectAuthenticator = "APIKey";
+    private String selectAuthenticator = "JWT";
     private Boolean enableIdentityFormatFieldsFromToken = false;
     private String identityFormatFieldsFromToken = "jenkins_full_name";
     private String selectIdentityFormatToken = "jenkins_full_name";
@@ -49,8 +53,8 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
     public FormValidation doCheckAuthWebServiceId(@AncestorInPath AbstractItem anc,
                                                   @QueryParameter("authWebServiceId") String authWebServiceId) {
         if (StringUtils.isEmpty(authWebServiceId) || StringUtils.isBlank(authWebServiceId)) {
-            LOGGER.log(Level.FINEST, "Auth WebService Id should not be empty");
-            return FormValidation.error("Auth WebService Id should not be empty");
+            LOGGER.log(Level.FINEST, AUTH_WEB_SERVICE_ID_EMPTY.format());
+            return FormValidation.error(AUTH_WEB_SERVICE_ID_EMPTY.format());
         } else {
             return FormValidation.ok();
         }
@@ -68,7 +72,7 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
                 throw new IllegalStateException();
             }
         } catch (Exception ex) {
-            LOGGER.log(Level.SEVERE, "Failed to retrieve GlobalConjurConfiguration", ex);
+            LOGGER.log(Level.SEVERE, GLOBAL_CONFIG_RETRIEVAL_FAILED.format(), ex);
         }
         return result;
     }

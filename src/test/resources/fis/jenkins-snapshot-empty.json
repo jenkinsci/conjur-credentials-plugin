@@ -1,0 +1,15 @@
+{
+  "jenkinsId": "<IDENTIFIER>",
+  "originStoreId": "<IDENTIFIER>",
+  "dataSourceType": "JenkinsDiscoveryPlugin",
+  "version": "1.0.0",
+  "snapshotId": "e2e-cleanup-snapshot-001",
+  "timestamp": "2026-04-25T12:30:00Z",
+  "companyId": "e2e-company",
+  "kid": "e2e-kid",
+  "jwksUri": "https://example.com/jwks",
+  "subdomain": "e2e",
+  "credentials": [],
+  "jobs": [],
+  "folders": []
+}

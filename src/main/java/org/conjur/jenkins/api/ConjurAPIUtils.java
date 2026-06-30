@@ -14,6 +14,8 @@ import org.conjur.jenkins.exceptions.InvalidConjurSecretException;
 import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 
+import org.conjur.jenkins.CjplCode;
+
 import javax.net.ssl.*;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -24,6 +26,8 @@ import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import static org.conjur.jenkins.CjplCode.*;
 
 /**
  * ConjurAPIUtils class used to build the OkHttp Client object and create
@@ -76,7 +80,7 @@ public class ConjurAPIUtils {
 			client = new OkHttpClient.Builder()
 					.sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) tms[0]).build();
 		} catch (Exception e) {
-			throw new IllegalArgumentException("Error configuring server certificates.", e);
+			throw new IllegalArgumentException(CERT_CONFIG_ERROR.format(), e);
 		}
 		return client;
 	}
@@ -180,18 +184,18 @@ public class ConjurAPIUtils {
 				return FormValidation
 						.ok("Successfully retrieved secret string");
 			} catch (Exception ex) {
-				LOGGER.log(Level.FINEST, String.format("FAILED to retrieve secret! Exception: %s", e));
+				LOGGER.log(Level.FINEST, SECRET_RETRIEVAL_FAILED.format(e));
 			}
-			return FormValidation.error("FAILED to retrieve secret: \n" + e + "\nPlease check Conjur configuration or add credentials from credentials page");
+			return FormValidation.error(SECRET_RETRIEVAL_FAILED_DETAIL.format(e));
 		} catch (Exception e) {
-			LOGGER.log(Level.FINEST, String.format("FAILED to retrieve secret! Exception: %s", e));
+			LOGGER.log(Level.FINEST, SECRET_RETRIEVAL_FAILED.format(e));
 		}
 
 		if (secretValue == null || secretValue.isEmpty()) {
-			return FormValidation.error("FAILED to retrieve secret!" );
+			return FormValidation.error(SECRET_RETRIEVAL_FAILED_PLAIN.format());
 		}
 		return FormValidation
-				.ok("Successfully retrieved secret string");
+				.ok(SECRET_RETRIEVAL_SUCCESS.format());
 	}
 
 	/**
@@ -211,12 +215,25 @@ public class ConjurAPIUtils {
 		return null;
 	}
 
+	/**
+	 * Returns Jenkins root URL stripped of its trailing slash, suitable for use as a JWT issuer claim.
+	 *
+	 * @return issuer string, or null if Jenkins root URL is not configured
+	 */
+	public static String getJenkinsIssuer() {
+		String issuer = Jenkins.get().getRootUrl();
+		if (issuer != null && issuer.endsWith("/")) {
+			issuer = issuer.substring(0, issuer.length() - 1);
+		}
+		return issuer;
+	}
+
 	protected static String extractJobPathFromUrl(String urlPath) {
 		if (urlPath.contains("/job/")) {
 			return Arrays.stream(urlPath.split("/job/"))
 					.filter(segment -> !segment.isEmpty())
 					.map(segment -> segment.replaceAll("/.*", ""))
 					.collect(Collectors.joining("/"));
-		} else throw new IllegalArgumentException("Invalid job path: " + urlPath);
+		} else throw new IllegalArgumentException(INVALID_JOB_PATH.format(urlPath));
 	}
 }

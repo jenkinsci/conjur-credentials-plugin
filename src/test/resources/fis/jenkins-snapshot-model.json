@@ -1,0 +1,157 @@
+{
+  "jenkinsId": "<IDENTIFIER>",
+  "originStoreId": "<IDENTIFIER>",
+  "dataSourceType": "JenkinsDiscoveryPlugin",
+  "version": "3.1.0",
+  "snapshotId": "e2e-snapshot-001",
+  "timestamp": "2026-04-25T12:00:00Z",
+  "kid": "e2e-kid",
+  "jwksUri": "https://jenkins.example.com/jwtauth/conjur-jwk-set",
+  "jwksData": null,
+  "disCoConfig": {
+    "subdomain": "your-tenant",
+    "authMode": "CYBERARK_IDENTITY",
+    "conjurCredentialId": null,
+    "discoUsernameCredentialId": null,
+    "discoPasswordCredentialId": null,
+    "exportIntervalHours": 4,
+    "exportSecretValues": false,
+    "discoveryBaseUrl": "https://your-tenant.inventory.integration-cyberark.cloud",
+    "testEnvironment": false
+  },
+  "conjurConfig": {
+    "applianceURL": "https://conjur.example.com",
+    "account": "myaccount",
+    "credentialID": null,
+    "certificateCredentialID": null,
+    "inheritFromParent": null,
+    "authWebServiceId": null,
+    "jwtAudience": null,
+    "keyLifetimeInMinutes": 0,
+    "tokenDurationInSeconds": 0,
+    "selectAuthenticator": null,
+    "selectIdentityFormatToken": null,
+    "selectIdentityFieldsSeparator": null,
+    "identityFormatFieldsFromToken": null,
+    "identityFieldName": null
+  },
+  "credentials": [
+    {
+      "credentialId": "cred-A",
+      "name": "cred-A",
+      "displayName": null,
+      "originId": "jenkins/production/finance:cred-A",
+      "type": "org.conjur.jenkins.conjursecrets.ConjurSecretCredentialsImpl",
+      "location": "jenkins/production/finance",
+      "description": "Certificate credentials",
+      "error": null,
+      "additionalData": {
+        "storeProvider": "FolderCredentialsProvider",
+        "storeProviderVersion": "unknown",
+        "scope": "folder",
+        "scopePath": "jenkins/production/finance"
+      },
+      "conjurization": {
+        "variable:annotation:jenkins_credential_type": "stringcredential",
+        "variable:value": "secret"
+      },
+      "fields": {
+        "secret": "hudson.util.Secret"
+      },
+      "values": null,
+      "valuesWithError": [],
+      "whereUsed": [
+        "finance/deploy-production"
+      ],
+      "inheritancePath": null,
+      "levelUpdatedAt": "2026-04-25T12:00:00Z",
+      "createdAt": null,
+      "updatedAt": null
+    },
+    {
+      "credentialId": "cred-B",
+      "name": "cred-B",
+      "displayName": null,
+      "originId": "jenkins/production/finance:cred-B",
+      "type": "com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl",
+      "location": "jenkins/production/finance",
+      "description": "Database password",
+      "error": null,
+      "additionalData": {
+        "storeProvider": "FolderCredentialsProvider",
+        "storeProviderVersion": "unknown",
+        "scope": "folder",
+        "scopePath": "jenkins/production/finance"
+      },
+      "conjurization": {
+        "variable:annotation:jenkins_credential_type": "usernamecredential",
+        "variable:annotation:jenkins_credential_username": "username",
+        "variable:value": "password",
+        "variable:annotation:jenkins_credential_type_alt": "stringcredential"
+      },
+      "fields": {
+        "username": "java.lang.String",
+        "password": "hudson.util.Secret"
+      },
+      "values": null,
+      "valuesWithError": [],
+      "whereUsed": [],
+      "inheritancePath": null,
+      "levelUpdatedAt": "2026-04-25T12:00:00Z",
+      "createdAt": null,
+      "updatedAt": null
+    }
+  ],
+  "folders": [
+    {
+      "path": "",
+      "description": null,
+      "scmUrl": "",
+      "type": "GlobalConfiguration",
+      "jenkins_pronoun": "GlobalConfiguration",
+      "lastBuildTs": ""
+    },
+    {
+      "path": "jenkins",
+      "description": null,
+      "scmUrl": "",
+      "type": "com.cloudbees.hudson.plugins.folder.Folder",
+      "jenkins_pronoun": "Folder",
+      "lastBuildTs": ""
+    },
+    {
+      "path": "jenkins/production",
+      "description": null,
+      "scmUrl": "",
+      "type": "com.cloudbees.hudson.plugins.folder.Folder",
+      "jenkins_pronoun": "Folder",
+      "lastBuildTs": ""
+    },
+    {
+      "path": "jenkins/production/finance",
+      "description": null,
+      "scmUrl": "",
+      "type": "com.cloudbees.hudson.plugins.folder.Folder",
+      "jenkins_pronoun": "Folder",
+      "lastBuildTs": ""
+    }
+  ],
+  "jobs": [
+    {
+      "path": "finance/deploy-production",
+      "description": "Deploy to production",
+      "scmUrl": "hudson.plugins.git.GitSCM",
+      "type": "org.jenkinsci.plugins.workflow.job.WorkflowJob",
+      "jenkins_pronoun": "Pipeline",
+      "lastBuildTs": "2026-04-25T10:00:00Z"
+    },
+    {
+      "path": "finance/build-service",
+      "description": "Build service",
+      "scmUrl": "",
+      "type": "hudson.model.FreeStyleProject",
+      "jenkins_pronoun": "Project",
+      "lastBuildTs": "2026-04-24T08:00:00Z"
+    }
+  ]
+}

@@ -20,6 +20,9 @@ release.properties
 target
 VERSION
 .env
+integration-tests/.env
+integration-tests/env_details_config.json
+integration-tests/LOCAL_RUN_GUIDE.md
 api_key
 conf/tls/nginx.*
 *.jar

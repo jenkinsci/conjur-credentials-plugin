@@ -4,10 +4,13 @@ import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.ModelObject;
+import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.conjursecrets.ConjurSecretCredentials;
 
 import java.util.ArrayList;
+
+import static org.conjur.jenkins.CjplCode.*;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Supplier;
@@ -79,7 +82,7 @@ public class ConjurCredentialsSupplier implements Supplier<Collection<StandardCr
             }
         }catch( Exception e )
         {
-            LOGGER.log(Level.SEVERE, String.format("EXCEPTION: ConjurCredentialsSupplier: returned %s", e.getMessage() ) );
+            LOGGER.log(Level.SEVERE, CREDENTIALS_SUPPLIER_EXCEPTION.format(e.getMessage()));
         }
         return allCredentials;
     }

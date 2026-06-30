@@ -7,8 +7,11 @@ import hudson.model.ItemGroup;
 import hudson.model.ModelObject;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.api.ConjurAPIUtils;
 import org.kohsuke.stapler.AncestorInPath;
+
+import static org.conjur.jenkins.CjplCode.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -107,7 +110,7 @@ public class ConjurSecretDockerCertCredentialsImpl extends ConjurSecretDockerCer
                 @QueryParameter("caCertificateId") String caCertificateId) {
 
             if (clientKeyId == null || clientCertificateId == null || caCertificateId == null) {
-                return FormValidation.error("All certificate fields are required");
+                return FormValidation.error(DOCKER_CERT_FIELDS_REQUIRED.format());
             }
 
             ConjurSecretDockerCertCredentialsImpl credential = new ConjurSecretDockerCertCredentialsImpl(

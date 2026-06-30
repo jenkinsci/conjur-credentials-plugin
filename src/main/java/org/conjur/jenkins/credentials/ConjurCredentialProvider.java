@@ -13,9 +13,12 @@ import hudson.model.ModelObject;
 import hudson.security.ACL;
 import jenkins.model.Jenkins;
 import org.acegisecurity.Authentication;
+import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.api.ConjurAPI;
 
 import java.time.Duration;
+
+import static org.conjur.jenkins.CjplCode.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -98,7 +101,7 @@ public class ConjurCredentialProvider extends CredentialsProvider {
 				}
 			}
 		} catch (Exception e) {
-			LOGGER.log(Level.SEVERE, String.format("Getting credentials failed. Exception: %s", e.toString() ) );
+			LOGGER.log(Level.SEVERE, CREDENTIALS_PROVIDER_FAILED.format(e.toString()));
 		}
 
 		return creds;
@@ -207,7 +210,7 @@ public class ConjurCredentialProvider extends CredentialsProvider {
 					allCredentialSuppliers.put(key, supplier);
 				}
 			} catch (Exception ex) {
-				LOGGER.log(Level.SEVERE, String.format("There is a problem with Storage: %s", ex.getMessage() ) );
+				LOGGER.log(Level.SEVERE, CREDENTIAL_STORE_PROBLEM.format(ex.getMessage()));
 			}
 		}
 

@@ -4,9 +4,13 @@ import hudson.model.*;
 import jenkins.model.Jenkins;
 import org.acegisecurity.Authentication;
 import org.apache.commons.lang.StringUtils;
+import org.conjur.jenkins.CjplCode;
+import org.conjur.jenkins.api.ConjurAPIUtils;
 import org.conjur.jenkins.configuration.GlobalConjurConfiguration;
 import org.conjur.jenkins.exceptions.JwtException;
 import org.jose4j.jws.AlgorithmIdentifiers;
+
+import static org.conjur.jenkins.CjplCode.*;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwx.HeaderParameterNames;
 import org.jose4j.lang.JoseException;
@@ -56,7 +60,7 @@ public class JwtToken {
 
             return jsonWebSignature.getCompactSerialization();
         } catch (JoseException e) {
-            throw new JwtException("Failed to sign JWT token: " + e.getMessage(), e);
+            throw new JwtException(JWT_SIGN_FAILED.format(e.getMessage()), e);
         }
 
     }
@@ -98,12 +102,12 @@ public class JwtToken {
      */
     public synchronized static JwtToken getUnsignedToken(String pluginAction, Object context, GlobalConjurConfiguration globalConfig) {
         if (context == null) {
-            LOGGER.log(Level.SEVERE, "Cannot get token for null context!");
+            LOGGER.log(Level.SEVERE, JWT_NULL_CONTEXT.format());
             return null;
         }
 
         if (globalConfig == null) {
-            LOGGER.log(Level.SEVERE, "Cannot get token because globalConfig is not set");
+            LOGGER.log(Level.SEVERE, JWT_NO_GLOBAL_CONFIG.format());
             return null;
         }
 
@@ -116,11 +120,7 @@ public class JwtToken {
         if (user != null) {
             fullName = user.getFullName();
         }
-        // Plugin plugin = Jenkins.get().getPlugin("blueocean-jwt");
-        String issuer = Jenkins.get().getRootUrl();
-        if (issuer != null && issuer.substring(issuer.length() - 1).equals("/")) {
-            issuer = issuer.substring(0, issuer.length() - 1);
-        }
+        String issuer = ConjurAPIUtils.getJenkinsIssuer();
         LOGGER.log(Level.FINEST, "RootURL => {0}", Jenkins.get().getRootUrl());
 
         JwtToken jwtToken = new JwtToken();
@@ -238,6 +238,69 @@ public class JwtToken {
         }
         LOGGER.log(Level.FINEST, String.format("Claim : %s", jwtToken.claim.toString()));
         return jwtToken;
+    }
+
+    /**
+     * Returns the JWT "sub" claim value that would be assigned for a given Jenkins context object,
+     * using the same logic as {@link #getUnsignedToken}. Returns an empty string when the context
+     * produces no sub claim (e.g. null or unknown type).
+     */
+    public static String computeSubClaim(Object context, GlobalConjurConfiguration globalConfig) {
+        if (context == null || globalConfig == null) return "";
+        ModelObject contextObject = (ModelObject) context;
+        if (contextObject instanceof Run) {
+            contextObject = ((Run<?, ?>) contextObject).getParent();
+        }
+        if (contextObject instanceof Hudson) {
+            return "GlobalCredentials";
+        }
+        if (!(contextObject instanceof AbstractItem)) return "";
+
+        AbstractItem item = (AbstractItem) contextObject;
+        // Build the same intermediate claims used for sub resolution
+        JwtToken probe = new JwtToken();
+        probe.claim.put("jenkins_full_name", item.getFullName());
+        probe.claim.put("jenkins_name", item.getName());
+        probe.claim.put("jenkins_task_noun", item.getTaskNoun());
+        if (item instanceof ItemGroup) {
+            probe.claim.put("jenkins_url_child_prefix", ((ItemGroup<?>) item).getUrlChildPrefix());
+        }
+        if (item instanceof Job) {
+            probe.claim.put("jenkins_job_buildir", ((Job<?, ?>) item).getBuildDir().getAbsolutePath());
+        }
+        ItemGroup<?> parent = item.getParent();
+        if (parent instanceof AbstractItem) {
+            AbstractItem parentItem = (AbstractItem) parent;
+            probe.claim.put("jenkins_parent_full_name", parentItem.getFullName());
+            probe.claim.put("jenkins_parent_name", parentItem.getName());
+            probe.claim.put("jenkins_parent_task_noun", parentItem.getTaskNoun());
+        }
+
+        boolean isEnabled = globalConfig.getEnableIdentityFormatFieldsFromToken();
+        if (!isEnabled) {
+            List<String> identityFields = Arrays.asList(globalConfig.getIdentityFormatFieldsFromToken().split(","));
+            String fieldSeparator = globalConfig.getSelectIdentityFieldsSeparator();
+            List<String> identityValues = new ArrayList<>(identityFields.size());
+            for (String identityField : identityFields) {
+                identityValues.add(probe.claim.has(identityField) ? probe.claim.getString(identityField) : "");
+            }
+            return StringUtils.join(identityValues, fieldSeparator);
+        } else {
+            List<String> identityFields = Arrays.asList(globalConfig.getSelectIdentityFormatToken().split("[-,+,|,:,.]"));
+            String token = globalConfig.getSelectIdentityFormatToken();
+            String parentField = identityFields.get(0);
+            String separator = "";
+            if (token.length() > parentField.length() + 1) {
+                separator = token.substring(parentField.length(), parentField.length() + 1);
+            } else {
+                identityFields = Collections.singletonList(token);
+            }
+            List<String> identityValues = new ArrayList<>(identityFields.size());
+            for (String identityField : identityFields) {
+                identityValues.add(probe.claim.has(identityField) ? probe.claim.getString(identityField) : "");
+            }
+            return StringUtils.join(identityValues, separator);
+        }
     }
 
     private static String processIdentityFieldName(String inputIdentityFiledName) {

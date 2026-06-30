@@ -1,0 +1,159 @@
+### GET discovery-context/jwks (bearer token required — run Identity login first to set access_token)
+### Base URL = discoverycontext.api from Platform Discovery API, path = /discovery-context/jwks
+GET https://disco4asaf.inventory.integration-cyberark.cloud/api/discovery-context/jwks
+Accept: application/json
+Authorization: Bearer {{access_token}}
+
+
+### GET Token from CyberArk Identity IDSEC E2E tenant
+POST https://atz5465.id.integration-cyberark.cloud/oauth2/platformtoken
+content-type: application/x-www-form-urlencoded
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+
+grant_type=client_credentials&client_id=<some_user>&client_secret=<some_secret>
+
+> {%
+    client.global.set("access_token", response.body.access_token);
+%}
+
+### GET FQDN from CyberArk Identity Users
+POST https://aoj5620.id.integration-cyberark.cloud/Security/StartAuthentication
+X-IDAP-NATIVE-CLIENT:true
+Content-Type: application/json
+
+{
+  "TenantId": "3ac63bfb-fd47-433a-bb93-2f290e5388b8",
+  "Version": "1.0",
+  "User": "diego@cyberark.cloud.465930"
+}
+
+> {%
+    client.global.set("fqdn", response.body.Result.PodFqdn);
+%}
+
+### GET Challenge mechanism from CyberArk Identity Users and sesh
+POST https://{{fqdn}}/Security/StartAuthentication
+X-IDAP-NATIVE-CLIENT:true
+Content-Type: application/json
+
+{
+  "TenantId": "b1f98537-7179-48fd-861e-d205303c6595",
+  "Version": "1.0",
+  "User": "nimbus_tf_provider@cyberark.cloud.42070"
+}
+
+> {%
+    client.global.set("token", response.body.Result.Token.replace(/[\r\n\s]+/g, ''));
+    client.log("Token: [" + client.global.get("token") + "]");
+%}
+
+### Get Token from CyberArk Identity IDSEC E2E tenant with session token and challenge mechanism
+POST https://aca4698.id.cyberark.cloud/Security/AdvanceAuthentication
+Content-Type: application/json
+
+{
+  "Action": "Answer",
+  "Answer": "Nimbusnumber01",
+  "MechanismId": "Taxl9ishUYqWVC6rNdiw8h7mlgLyBrxPmjSUiyxLQjk1",
+  "SessionId": "jG4EEEI4l0aCQT0N_aYH5-KPIi8TTQzLAsHpKt_L5ac1",
+  "TenantId": "b1f98537-7179-48fd-861e-d205303c6595",
+  "PersistentLogin": true
+}
+
+
+> {%
+    client.log("Token: [" + client.global.get("access_token") + "]");
+%}
+
+### GET platforms
+GET https://mulesoft-itso.privilegecloud.integration-cyberark.cloud/PasswordVault/API/Platforms/
+Authorization: Bearer {{access_token}}
+
+
+### Create target secret store in Secrets Hub
+POST https://itsopcloud.secretshub.integration-cyberark.cloud/api/secret-stores
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+accept: application/json
+
+{
+  "data": {
+    "gcpAuthentication": {
+      "authenticationMethod": "GLOBAL_ROLE_EXTERNAL_ID",
+      "gcpPoolProviderId": "gcp-provider-id-example-2",
+      "gcpProjectNumber": "123456789013",
+      "gcpWorkloadIdentityPoolId": "gcp-pool-id-example-2",
+      "serviceAccountEmail": "svcacct1@exampleproj.iam.gserviceaccount.com"
+    },
+    "gcpProjectName": "gcp-project-name-example-1",
+    "gcpProjectNumber": "123456789013"
+  },
+  "description": "Initial description",
+  "name": "e2e-secret-store-hwaqx1l6",
+  "type": "GCP_GSM"
+}
+
+### GET all secret stores in Secrets Hub
+GET https://9lk45fkya5w7m9.secretshub.integration-cyberark.cloud/api/secret-stores?behavior=SECRETS_SOURCE
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+
+### GET deets for safe member
+GET https://pcloudtpavlova.privilegecloud.integration-cyberark.cloud/PasswordVault/API/Safes/tf-safe-tanya/Members
+Accept: application/json
+Authorization: Bearer {{access_token}}
+
+### Create source secret store in Secrets Hub
+POST https://tf-provider-1.cyberark.cloud/api/secret-stores
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+accept: application/json
+
+{
+  "name": "target_store_p_cloud",
+  "description": "PAM store for CRUD testing",
+  "type": ["PAM_PCLOUD"],
+  "data": {
+    "url": "https://mulesoft-itso.privilegecloud.integration-cyberark.cloud/PasswordVault",
+    "userName": "SecretsHub"
+  }
+}
+
+### Create sync policy in Secrets Hub
+POST https://9lk45fkya5w7m9.secretshub.integration-cyberark.cloud/api/policies
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+accept: application/json
+
+{
+  "filter":{
+    "data":{
+      "safeName":"test_safe_sync_policy_443"
+    },
+    "type":"PAM_SAFE"
+  },
+  "name":"example_sync_policy",
+  "source":{
+    "id":"store-bcb39497-2351-45b4-93f8-4ae1b6be339d"
+  },
+  "target":{
+    "id":"store-df7dfdba-4b5e-462d-9dff-e334bbbfa449"
+  }
+}
+
+### Disable already diabled sync policy in Secrets Hub
+PUT https://mulesoft-itso.secretshub.integration-cyberark.cloud/api/policies/policy-81a3b3aa-9f5d-4cf1-a3e4-4f99ffe422dc/state
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+accept: application/json
+
+{
+  "action": "disable"
+}
+
+### Delete store
+DELETE https://9lk45fkya5w7m9.secretshub.integration-cyberark.cloud/api/secret-stores/store-0d743730-86a0-44f9-94e8-7dd9b2cb2da6
+Authorization: Bearer {{access_token}}

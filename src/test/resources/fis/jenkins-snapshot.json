@@ -1,0 +1,57 @@
+{
+  "jenkinsId": "<IDENTIFIER>",
+  "originStoreId": "<IDENTIFIER>",
+  "dataSourceType": "JenkinsDiscoveryPlugin",
+  "version": "1.0.0",
+  "snapshotId": "e2e-snapshot-001",
+  "timestamp": "2026-04-25T12:00:00Z",
+  "companyId": "e2e-company",
+  "kid": "e2e-kid",
+  "jwksUri": "https://example.com/jwks",
+  "subdomain": "e2e",
+  "credentials": [
+    {
+      "credentialId": "cred-A",
+      "name": "Cert Credentials",
+      "originId": "jenkins/production/finance:cred-A",
+      "type": "Jenkins Credential",
+      "description": "Certificate credentials",
+      "location": "jenkins/production/finance",
+      "whereUsed": {
+        "jobPaths": ["finance/deploy-production"],
+        "folderPaths": []
+      }
+    },
+    {
+      "credentialId": "cred-B",
+      "name": "DB Password",
+      "originId": "jenkins/production/finance:cred-B",
+      "type": "Jenkins Credential",
+      "description": "Database password",
+      "location": "jenkins/production/finance",
+      "whereUsed": {
+        "jobPaths": [],
+        "folderPaths": []
+      }
+    }
+  ],
+  "jobs": [
+    {
+      "path": "finance/deploy-production",
+      "type": "pipeline",
+      "description": "Deploy to production",
+      "scmUrl": "https://github.com/org/deploy.git",
+      "pronoun": "Pipeline",
+      "lastBuildTs": "2026-04-25T10:00:00Z"
+    },
+    {
+      "path": "finance/build-service",
+      "type": "freestyle",
+      "description": "Build service",
+      "scmUrl": "https://github.com/org/build.git",
+      "pronoun": "Project",
+      "lastBuildTs": "2026-04-24T08:00:00Z"
+    }
+  ],
+  "folders": []
+}

@@ -9,6 +9,7 @@ import hudson.model.ItemGroup;
 import hudson.model.ModelObject;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.api.ConjurAPI;
 import org.conjur.jenkins.api.ConjurAPIUtils;
 import org.kohsuke.stapler.AncestorInPath;
@@ -17,6 +18,8 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.util.logging.Level;
+
+import static org.conjur.jenkins.CjplCode.*;
 
 /**
  * Class to get the secret for UserNameCredential
@@ -205,7 +208,7 @@ public class ConjurSecretUsernameCredentialsImpl extends BaseStandardCredentials
 				@QueryParameter("username") String username) {
 
 			if (username == null || variableId == null) {
-				return FormValidation.error("FAILED username,credentialID fields is required");
+				return FormValidation.error(USERNAME_CREDENTIAL_ID_REQUIRED.format());
 			}
 			ConjurSecretUsernameCredentialsImpl credential = new ConjurSecretUsernameCredentialsImpl(CredentialsScope.GLOBAL, "test", username, variableId,
 					"desc");

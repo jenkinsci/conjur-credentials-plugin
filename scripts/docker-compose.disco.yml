@@ -1,0 +1,23 @@
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins.disco
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - disco-e2e
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+      - JAVA_ARGS=-Djavax.net.ssl.trustStore=/opt/java/openjdk/lib/security/cacerts
+      - CYBERARK_DISCO_ENV=${CYBERARK_DISCO_ENV:-INTEGRATION}
+      - JENKINS_ADMIN_ID=${JENKINS_ADMIN_ID:-admin}
+      - JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD:-admin}
+
+networks:
+  disco-e2e:
+    name: ${DISCO_DOCKER_NETWORK:-conjur-credentials-disco}

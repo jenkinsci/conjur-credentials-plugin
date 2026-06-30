@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core"
+         xmlns:st="jelly:stapler"
+         xmlns:f="/lib/form"
+         xmlns:c="/lib/credentials">
+
+  <f:section title="${%CyberArk DisCo Discovery}">
+
+    <!-- ── Connection ────────────────────────────────────────────────────── -->
+    <f:entry title="${%Subdomain}" description="${%Your CyberArk tenant subdomain (e.g. acme)}">
+      <f:textbox field="subdomain" checkMethod="post"/>
+    </f:entry>
+
+    <!-- ── Auth mode ────────────────────────────────────────────────────── -->
+    <!--
+      The <f:select> renders the auth-mode dropdown bound to field="authMode".
+      The two disco-auth-block divs start hidden; initAuthBlocks() in the JS
+      below reads the selected value and shows the matching block immediately.
+    -->
+    <f:entry title="${%Authentication Mode}"
+             description="${%Choose how DisCo authenticates the export request}">
+      <f:select field="authMode" id="discoAuthMode"/>
+    </f:entry>
+
+    <!-- Block shown when USERNAME_PASSWORD is selected -->
+    <div class="disco-auth-block" data-auth-mode="USERNAME_PASSWORD" style="display:none">
+      <f:entry title="${%DisCo Credential (username + password)}"
+               description="${%A single UsernamePasswordCredentials entry}"
+               field="conjurCredentialId">
+        <c:select typeClassName="com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials"/>
+      </f:entry>
+    </div>
+
+    <!-- Block shown when TWO_SECRETS is selected -->
+    <div class="disco-auth-block" data-auth-mode="TWO_SECRETS" style="display:none">
+      <f:entry title="${%Username Secret Credential}"
+               description="${%A Secret Text credential whose value is the DisCo username}"
+               field="discoUsernameCredentialId">
+        <c:select typeClassName="org.jenkinsci.plugins.plaincredentials.StringCredentials"/>
+      </f:entry>
+      <f:entry title="${%Password Secret Credential}"
+               description="${%A Secret Text credential whose value is the DisCo password}"
+               field="discoPasswordCredentialId">
+        <c:select typeClassName="org.jenkinsci.plugins.plaincredentials.StringCredentials"/>
+      </f:entry>
+    </div>
+
+    <!-- ── Schedule ──────────────────────────────────────────────────────── -->
+    <f:entry title="${%Export Interval (hours)}"
+             description="How often the background scan runs (1-24, default 12)">
+      <f:number field="exportIntervalHours" min="1" max="24" step="1" clazz="number"/>
+    </f:entry>
+
+    <!-- ── Behaviour ─────────────────────────────────────────────────────── -->
+    <f:entry title="${%Export Secret Values}"
+             description="${%WARNING: when enabled, credential values are encrypted and sent to DisCo. Disabled by default on upgrade.}">
+      <f:checkbox field="exportSecretValues"/>
+    </f:entry>
+
+    <!-- ── Status + manual trigger ───────────────────────────────────────── -->
+    <f:entry title="${%Discovery Status}">
+      <div id="disco-status-area">
+        <span id="disco-status-text">Loading…</span>
+      </div>
+    </f:entry>
+
+    <f:entry title="${%Manual Trigger}">
+      <f:block>
+        <button type="button" class="jenkins-button jenkins-button--primary"
+                onclick="discoLaunchNow(this)">
+          ${%Run Discovery Now}
+        </button>
+        <span id="disco-launch-msg" style="margin-left:10px;"></span>
+      </f:block>
+    </f:entry>
+
+  </f:section>
+
+  <script type="text/javascript">
+    //<![CDATA[
+    (function () {
+      /* Auth-mode dropdown choose: show the block matching the selected value */
+      function initAuthBlocks() {
+        var sel = document.getElementById('discoAuthMode');
+        if (!sel) return;
+
+        function syncBlocks() {
+          var mode = sel.value;
+          document.querySelectorAll('.disco-auth-block').forEach(function (block) {
+            block.style.display = (block.dataset.authMode === mode) ? '' : 'none';
+          });
+        }
+
+        sel.addEventListener('change', syncBlocks);
+        syncBlocks(); // apply initial state from server-rendered value
+      }
+
+      /* Delay until form is fully painted (Jenkins defers form rendering) */
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAuthBlocks);
+      } else {
+        initAuthBlocks();
+      }
+
+      /* Status poll */
+      function updateStatus() {
+        fetch(rootURL + '/descriptor/org.conjur.jenkins.disco.config.DiscoExporterConfiguration/progress', {
+          credentials: 'same-origin'
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var el = document.getElementById('disco-status-text');
+          if (el) {
+            el.textContent = 'Status: ' + (data.status || 'IDLE') +
+              (data.message ? ' — ' + data.message : '');
+          }
+        })
+        .catch(function () {});
+      }
+
+      updateStatus();
+      setInterval(updateStatus, 10000);
+
+      /* Manual trigger */
+      window.discoLaunchNow = function (btn) {
+        btn.disabled = true;
+        var msg = document.getElementById('disco-launch-msg');
+        if (msg) msg.textContent = 'Starting…';
+
+        fetch(rootURL + '/descriptor/org.conjur.jenkins.disco.config.DiscoExporterConfiguration/launchNow', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'json=%7B%7D&' + crumb.fieldName + '=' + crumb.value
+        })
+        .then(function (r) {
+          if (msg) msg.textContent = r.ok ? 'Discovery started.' : 'Error: HTTP ' + r.status;
+          setTimeout(function () { btn.disabled = false; }, 5000);
+        })
+        .catch(function () {
+          if (msg) msg.textContent = 'Request failed.';
+          btn.disabled = false;
+        });
+      };
+    })();
+    //]]>
+  </script>
+
+</j:jelly>

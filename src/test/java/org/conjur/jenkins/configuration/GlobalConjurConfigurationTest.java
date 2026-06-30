@@ -5,6 +5,7 @@ import hudson.model.AbstractItem;
 import hudson.model.Item;
 import hudson.model.ModelObject;
 import hudson.util.FormValidation;
+import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.jwtauth.impl.JwtToken;
 import org.junit.Rule;
 import org.junit.Test;
@@ -104,7 +105,7 @@ public class GlobalConjurConfigurationTest {
 
         assertNotNull(result);
         assertEquals(FormValidation.Kind.ERROR, result.kind);
-        assertEquals("Auth WebService Id should not be empty", result.getMessage());
+        assertEquals(CjplCode.AUTH_WEB_SERVICE_ID_EMPTY.format(), result.getMessage());
     }
 
     @Test
@@ -115,7 +116,7 @@ public class GlobalConjurConfigurationTest {
 
         assertNotNull(result);
         assertEquals(FormValidation.Kind.ERROR, result.kind);
-        assertEquals("Auth WebService Id should not be empty", result.getMessage());
+        assertEquals(CjplCode.AUTH_WEB_SERVICE_ID_EMPTY.format(), result.getMessage());
     }
 
     @Test

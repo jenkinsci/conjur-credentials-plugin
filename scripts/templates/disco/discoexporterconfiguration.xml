@@ -1,0 +1,11 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<org.conjur.jenkins.disco.config.DiscoExporterConfiguration plugin="conjur-credentials">
+    <subdomain>{{DISCO_SUBDOMAIN}}</subdomain>
+    <authMode>{{DISCO_AUTH_MODE}}</authMode>
+    <conjurCredentialId>{{DISCO_CREDENTIAL_ID}}</conjurCredentialId>
+    <discoUsernameCredentialId>{{DISCO_USERNAME_CREDENTIAL_ID}}</discoUsernameCredentialId>
+    <discoPasswordCredentialId>{{DISCO_PASSWORD_CREDENTIAL_ID}}</discoPasswordCredentialId>
+    <exportIntervalHours>{{DISCO_EXPORT_INTERVAL_HOURS}}</exportIntervalHours>
+    <exportSecretValues>{{DISCO_EXPORT_SECRET_VALUES}}</exportSecretValues>
+    <lastExportTimestamp>0</lastExportTimestamp>
+</org.conjur.jenkins.disco.config.DiscoExporterConfiguration>
