@@ -1,7 +1,6 @@
 package org.conjur.jenkins.disco.e2e.tests;
 
 import org.conjur.jenkins.disco.e2e.config.JenkinsCredentialType;
-import org.conjur.jenkins.disco.e2e.graphql.GraphQLResponse;
 import org.junit.Test;
 import org.junit.jupiter.api.DisplayName;
 
@@ -29,7 +28,7 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
         jenkinsSteps.runJenkinsGroovy(discoExportGroovyScript);
 
         var response = secretsApiSteps.waitForSecret(jenkinsCredentialId);
-        GraphQLResponse.Secret secret = assertSingleSecretNamed(response, jenkinsCredentialId);
+        var secret = assertSingleSecretNamed(response, jenkinsCredentialId);
 
         var expectedDescription = "String secret text credential in a folder";
         var expectedType = JenkinsCredentialType.STRING;
@@ -134,8 +133,9 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
     public void shouldUpdateGlobalSecretTextCredentialMetadataInDisco() throws Exception {
         var jenkinsCredentialId = "disco-e2e-updated-secret-" + config.runId();
         var initialSecretValue = "disco-e2e-initial-secret-value-" + config.runId();
+        var initialDescriptionValue = "disco-e2e-initial-descibtion-value-" + config.runId();
         var updatedSecretValue = "disco-e2e-updated-secret-value-" + config.runId();
-        var updatedDescription = "Updated global secret text credential for DisCo E2E " + config.runId();
+        var updatedDescription = "Updated global secret text credential for DisCo E2E-" + config.runId();
         var discoExportGroovyScript = Path.of(config.triggerGroovyScriptPath());
 
         // Create the original global Jenkins secret text credential.
@@ -143,8 +143,9 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 GLOBAL_SECRET_CREDENTIAL_XML,
                 List.of("create-credentials-by-xml", "system::system::jenkins", "_"),
                 Map.of(
-                        "{{DISCO_GLOBAL_SECRET_CREDENTIAL_ID}}", jenkinsCredentialId,
-                        "{{DISCO_GLOBAL_SECRET}}", initialSecretValue
+                        "{{DISCO_GLOBAL_SECRET}}", initialSecretValue,
+                        "{{DISCO_GLOBAL_SECRET_DESCRIPTION}}", initialDescriptionValue,
+                        "{{DISCO_GLOBAL_SECRET_CREDENTIAL_ID}}", jenkinsCredentialId
                 ));
 
         // Export the original credential to DisCo.
@@ -153,7 +154,7 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
         // Confirm the original credential exists in DisCo before updating it.
         var initialResponse = secretsApiSteps.waitForSecret(jenkinsCredentialId);
         var initialSecret = assertSingleSecretNamed(initialResponse, jenkinsCredentialId);
-        assertSecretMetadata(initialSecret, "Global secret text credential", JenkinsCredentialType.STRING, false);
+        assertSecretMetadata(initialSecret, initialDescriptionValue, JenkinsCredentialType.STRING, false);
 
         // Update the same Jenkins credential. The ID must stay the same because Jenkins rejects
         // update-credentials-by-xml when the path ID and XML ID do not match.
@@ -161,12 +162,13 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 GLOBAL_SECRET_CREDENTIAL_XML,
                 List.of("update-credentials-by-xml", "system::system::jenkins", "_", jenkinsCredentialId),
                 Map.of(
-                        "{{DISCO_GLOBAL_SECRET_CREDENTIAL_ID}}", jenkinsCredentialId,
                         "{{DISCO_GLOBAL_SECRET}}", updatedSecretValue,
-                        "Global secret text credential", updatedDescription
+                        "{{DISCO_GLOBAL_SECRET_DESCRIPTION}}", updatedDescription,
+                        "{{DISCO_GLOBAL_SECRET_CREDENTIAL_ID}}", jenkinsCredentialId
                 ));
 
         // Export again so DisCo receives the updated credential snapshot.
+        System.out.println("Exporting updated global UPDATING secret text credential to DisCo...");
         jenkinsSteps.runJenkinsGroovy(discoExportGroovyScript);
 
         // Wait for the existing DisCo secret to receive the updated metadata. Waiting only by
