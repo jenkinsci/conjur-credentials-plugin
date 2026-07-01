@@ -9,7 +9,12 @@ export DISCO_DOCKER_NETWORK="${DISCO_DOCKER_NETWORK:-container:${jenkins_contain
 export DISCO_E2E_JENKINS_URL="${DISCO_E2E_JENKINS_URL:-http://localhost:8080}"
 export JENKINS_URL="${DISCO_E2E_JENKINS_URL}"
 export JENKINS_ADMIN_ID="${JENKINS_ADMIN_ID:-admin}"
-export JENKINS_ADMIN_PASSWORD="${JENKINS_ADMIN_PASSWORD:-admin}"
+export JENKINS_ADMIN_PASSWORD="${JENKINS_ADMIN_PASSWORD:-}"
+
+if [[ -z "${JENKINS_ADMIN_PASSWORD}" ]]; then
+  echo "[ERROR] JENKINS_ADMIN_PASSWORD is required for DisCo E2E validation. Provide it via Summon or the environment."
+  exit 1
+fi
 
 if [[ -n "${DISCO_E2E_JENKINS_CLI_AUTH:-}" ]]; then
   export JENKINS_CLI_AUTH="${DISCO_E2E_JENKINS_CLI_AUTH}"
@@ -47,6 +52,12 @@ docker run --rm \
   -e DISCO_E2E_JENKINS_URL \
   -e JENKINS_URL \
   -e JENKINS_CLI_AUTH \
+  -e DISCO_TENANT_ID \
+  -e DISCO_SUBDOMAIN \
+  -e DISCO_IDENTITY_URL \
+  -e DISCO_GRAPHQL_URL \
+  -e DISCO_USERNAME \
+  -e DISCO_PASSWORD \
   -e DISCO_E2E_RUN_ID \
   -e DISCO_GRAPHQL_WAIT_TIMEOUT_SECONDS \
   -e DISCO_GRAPHQL_WAIT_INTERVAL_SECONDS \

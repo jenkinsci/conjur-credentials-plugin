@@ -197,13 +197,18 @@ function escape_sed_replacement() {
 }
 
 function render_disco_xml() {
-  local disco_subdomain="${DISCO_SUBDOMAIN:-57s7k26zx9x54w}"
+  local disco_subdomain="${DISCO_SUBDOMAIN:-}"
   local disco_auth_mode="${DISCO_AUTH_MODE:-USERNAME_PASSWORD}"
   local disco_credential_id="${DISCO_CREDENTIAL_ID:-disco}"
   local disco_username_credential_id="${DISCO_USERNAME_CREDENTIAL_ID:-}"
   local disco_password_credential_id="${DISCO_PASSWORD_CREDENTIAL_ID:-}"
   local disco_export_interval_hours="${DISCO_EXPORT_INTERVAL_HOURS:-12}"
   local disco_export_secret_values="${DISCO_EXPORT_SECRET_VALUES:-true}"
+
+  if [[ -z "$disco_subdomain" ]]; then
+    echo "[ERROR] DISCO_SUBDOMAIN is required for DisCo E2E startup. Provide it via environment variables or Summon."
+    exit 1
+  fi
 
   sed -e "s|{{DISCO_SUBDOMAIN}}|$(escape_sed_replacement "$disco_subdomain")|g" \
     -e "s|{{DISCO_AUTH_MODE}}|$(escape_sed_replacement "$disco_auth_mode")|g" \
@@ -214,8 +219,12 @@ function render_disco_xml() {
     -e "s|{{DISCO_EXPORT_SECRET_VALUES}}|$(escape_sed_replacement "$disco_export_secret_values")|g" \
     templates/disco/discoexporterconfiguration.xml > tmp/org.conjur.jenkins.disco.config.DiscoExporterConfiguration.xml
 
-  local disco_username="${DISCO_USERNAME:-itso@cyberark.cloud.712204}"
-  local disco_password="${DISCO_PASSWORD:-t3stP@ss}"
+  local disco_username="${DISCO_USERNAME:-}"
+  local disco_password="${DISCO_PASSWORD:-}"
+  if [[ -z "$disco_username" || -z "$disco_password" ]]; then
+    echo "[ERROR] DISCO_USERNAME and DISCO_PASSWORD are required for DisCo E2E startup. Provide them via environment variables or Summon."
+    exit 1
+  fi
   local disco_global_secret_credential_id="${DISCO_GLOBAL_SECRET_CREDENTIAL_ID:-disco-global-secret-$(openssl rand -hex 4)}"
   local disco_system_secret_credential_id="${DISCO_SYSTEM_SECRET_CREDENTIAL_ID:-disco-system-secret-$(openssl rand -hex 4)}"
   local disco_global_secret="${DISCO_GLOBAL_SECRET:-$(openssl rand -hex 16)}"

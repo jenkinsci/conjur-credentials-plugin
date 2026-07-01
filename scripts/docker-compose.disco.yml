@@ -17,7 +17,7 @@ services:
       - JAVA_ARGS=-Djavax.net.ssl.trustStore=/opt/java/openjdk/lib/security/cacerts
       - CYBERARK_DISCO_ENV=${CYBERARK_DISCO_ENV:-INTEGRATION}
       - JENKINS_ADMIN_ID=${JENKINS_ADMIN_ID:-admin}
-      - JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD:-admin}
+      - JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD:-}
 
 networks:
   disco-e2e:
