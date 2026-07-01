@@ -45,14 +45,16 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
     public void shouldSeeGlobalSecretTextCredentialInDisco() throws Exception {
         var jenkinsCredentialId = "disco-e2e-secret-text-secret-" + config.runId();
         var jenkinsCredentialSecretValue = "disco-e2e-global-secret-text-value-" + config.runId();
+        var jenkinsCredentialDescriptionValue = "disco-e2e-initial-description-value-" + config.runId();
         var discoExportGroovyScript = Path.of(config.triggerGroovyScriptPath());
 
         jenkinsSteps.createFromXml(
                 GLOBAL_SECRET_CREDENTIAL_XML,
                 List.of("create-credentials-by-xml", "system::system::jenkins", "_"),
                 Map.of(
-                        "{{DISCO_GLOBAL_SECRET_CREDENTIAL_ID}}", jenkinsCredentialId,
-                        "{{DISCO_GLOBAL_SECRET}}", jenkinsCredentialSecretValue
+                        "{{DISCO_GLOBAL_SECRET}}", jenkinsCredentialSecretValue,
+                        "{{DISCO_GLOBAL_SECRET_DESCRIPTION}}", jenkinsCredentialDescriptionValue,
+                        "{{DISCO_GLOBAL_SECRET_CREDENTIAL_ID}}", jenkinsCredentialId
                 ));
         jenkinsSteps.runJenkinsGroovy(discoExportGroovyScript);
 
@@ -60,11 +62,10 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
         var secret = assertSingleSecretNamed(response, jenkinsCredentialId);
 
         var expectedPath = buildExpectedGlobalSecretPath(jenkinsCredentialId);
-        var expectedDescription = "Global secret text credential";
         var expectedType = JenkinsCredentialType.STRING;
         var expectedManagedByCyberArk = false;
         assertSecretPath(secret, expectedPath);
-        assertSecretMetadata(secret, expectedDescription, expectedType, expectedManagedByCyberArk);
+        assertSecretMetadata(secret, jenkinsCredentialDescriptionValue, expectedType, expectedManagedByCyberArk);
         assertSecretRiskLevels(secret);
     }
 
@@ -183,14 +184,16 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
     public void shouldNotCreateDuplicateDiscoSecretsWhenExportRunsTwice() throws Exception {
         var jenkinsCredentialId = "disco-e2e-duplicate-sync-secret-" + config.runId();
         var jenkinsCredentialSecretValue = "disco-e2e-duplicate-sync-secret-value-" + config.runId();
+        var jenkinsCredentialDescriptionValue = "disco-e2e-initial-description-value-" + config.runId();
         var discoExportGroovyScript = Path.of(config.triggerGroovyScriptPath());
 
         jenkinsSteps.createFromXml(
                 GLOBAL_SECRET_CREDENTIAL_XML,
                 List.of("create-credentials-by-xml", "system::system::jenkins", "_"),
                 Map.of(
-                        "{{DISCO_GLOBAL_SECRET_CREDENTIAL_ID}}", jenkinsCredentialId,
-                        "{{DISCO_GLOBAL_SECRET}}", jenkinsCredentialSecretValue
+                        "{{DISCO_GLOBAL_SECRET}}", jenkinsCredentialSecretValue,
+                        "{{DISCO_GLOBAL_SECRET_DESCRIPTION}}", jenkinsCredentialDescriptionValue,
+                        "{{DISCO_GLOBAL_SECRET_CREDENTIAL_ID}}", jenkinsCredentialId
                 ));
 
         jenkinsSteps.runJenkinsGroovy(discoExportGroovyScript);
@@ -203,7 +206,7 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
         var secondExportSecret = assertSingleSecretNamed(secondExportResponse, jenkinsCredentialId);
 
         assertSecretPath(secondExportSecret, buildExpectedGlobalSecretPath(jenkinsCredentialId));
-        assertSecretMetadata(secondExportSecret, "Global secret text credential", JenkinsCredentialType.STRING, false);
+        assertSecretMetadata(secondExportSecret, jenkinsCredentialDescriptionValue, JenkinsCredentialType.STRING, false);
         assertSecretRiskLevels(secondExportSecret);
     }
 
