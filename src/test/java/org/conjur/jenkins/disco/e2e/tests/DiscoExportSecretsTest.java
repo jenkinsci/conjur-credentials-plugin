@@ -168,7 +168,6 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 ));
 
         // Export again so DisCo receives the updated credential snapshot.
-        System.out.println("Exporting updated global UPDATING secret text credential to DisCo...");
         jenkinsSteps.runJenkinsGroovy(discoExportGroovyScript);
 
         // Wait for the existing DisCo secret to receive the updated metadata. Waiting only by
