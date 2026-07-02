@@ -10,6 +10,7 @@ declare -x DISCO_ONLY='false'
 declare -x JENKINS_API_KEY=''
 declare -x ADMIN_API_KEY=''
 declare -x DEFAULT_OPTION='--create'
+declare -x JENKINS_DEBUG='false'
 
 source "$(git rev-parse --show-toplevel)/scripts/util.sh"
 
@@ -23,6 +24,8 @@ $0 [options]
 -c            Deploy Conjur Cloud. (Only for CI/CD pipelines, not for local development)
 -ed           Deploy Conjur Edge. (Only for CI/CD pipelines, not for local development)
 --disco-only  Start Jenkins with DisCo credentials only. Do not start Conjur.
+--debug       Enable Jenkins JVM remote debugging on PORT 5005.
+--no-debug    Disable Jenkins JVM remote debugging.
 -h, --help    Print usage information.
 EOF
 }
@@ -31,6 +34,8 @@ while true ; do
   case "$1" in
     -e ) ENTERPRISE="true" ; shift ;;
     --disco-only ) DISCO_ONLY="true" ; shift ;;
+    --debug ) JENKINS_DEBUG="true" ; shift ;;
+    --no-debug ) JENKINS_DEBUG="false" ; shift ;;
     -c )
       if [[ "$OSTYPE" == "darwin"* ]]; then
         echo "Cannot setup a local environment using Conjur Cloud - this option is intended for CI/CD pipelines only"
@@ -62,6 +67,16 @@ function clean {
   ./stop.sh
 }
 trap clean ERR
+
+function configure_jenkins_debug() {
+  if [[ "$JENKINS_DEBUG" == "true" ]]; then
+    export JENKINS_DEBUG_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+    echo "[INFO] Jenkins JVM debug enabled: attach debugger to localhost:5005"
+  else
+    export JENKINS_DEBUG_OPTS=''
+    echo "[INFO] Jenkins JVM debug disabled"
+  fi
+}
 
 function setup_conjur_resources {
   echo "---- setting up Conjur resources ----"
@@ -182,13 +197,18 @@ function escape_sed_replacement() {
 }
 
 function render_disco_xml() {
-  local disco_subdomain="${DISCO_SUBDOMAIN:-57s7k26zx9x54w}"
+  local disco_subdomain="${DISCO_SUBDOMAIN:-}"
   local disco_auth_mode="${DISCO_AUTH_MODE:-USERNAME_PASSWORD}"
   local disco_credential_id="${DISCO_CREDENTIAL_ID:-disco}"
   local disco_username_credential_id="${DISCO_USERNAME_CREDENTIAL_ID:-}"
   local disco_password_credential_id="${DISCO_PASSWORD_CREDENTIAL_ID:-}"
   local disco_export_interval_hours="${DISCO_EXPORT_INTERVAL_HOURS:-12}"
   local disco_export_secret_values="${DISCO_EXPORT_SECRET_VALUES:-true}"
+
+  if [[ -z "$disco_subdomain" ]]; then
+    echo "[ERROR] DISCO_SUBDOMAIN is required for DisCo E2E startup. Provide it via environment variables or Summon."
+    exit 1
+  fi
 
   sed -e "s|{{DISCO_SUBDOMAIN}}|$(escape_sed_replacement "$disco_subdomain")|g" \
     -e "s|{{DISCO_AUTH_MODE}}|$(escape_sed_replacement "$disco_auth_mode")|g" \
@@ -199,8 +219,12 @@ function render_disco_xml() {
     -e "s|{{DISCO_EXPORT_SECRET_VALUES}}|$(escape_sed_replacement "$disco_export_secret_values")|g" \
     templates/disco/discoexporterconfiguration.xml > tmp/org.conjur.jenkins.disco.config.DiscoExporterConfiguration.xml
 
-  local disco_username="${DISCO_USERNAME:-itso@cyberark.cloud.712204}"
-  local disco_password="${DISCO_PASSWORD:-t3stP@ss}"
+  local disco_username="${DISCO_USERNAME:-}"
+  local disco_password="${DISCO_PASSWORD:-}"
+  if [[ -z "$disco_username" || -z "$disco_password" ]]; then
+    echo "[ERROR] DISCO_USERNAME and DISCO_PASSWORD are required for DisCo E2E startup. Provide them via environment variables or Summon."
+    exit 1
+  fi
   local disco_global_secret_credential_id="${DISCO_GLOBAL_SECRET_CREDENTIAL_ID:-disco-global-secret-$(openssl rand -hex 4)}"
   local disco_system_secret_credential_id="${DISCO_SYSTEM_SECRET_CREDENTIAL_ID:-disco-system-secret-$(openssl rand -hex 4)}"
   local disco_global_secret="${DISCO_GLOBAL_SECRET:-$(openssl rand -hex 16)}"
@@ -347,6 +371,8 @@ function run_disco_only() {
   clean
   mkdir -p tmp
 
+  configure_jenkins_debug
+
   export CYBERARK_DISCO_ENV="${CYBERARK_DISCO_ENV:-INTEGRATION}"
 
   prepare_local_conjur_plugin
@@ -371,6 +397,8 @@ function main() {
   # remove previous environment
   clean
   mkdir -p tmp
+
+  configure_jenkins_debug
 
   # Build/copy the current branch plugin; do not use the Update Center copy.
   prepare_local_conjur_plugin

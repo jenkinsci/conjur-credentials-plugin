@@ -166,8 +166,8 @@ pipeline {
         stage('Test Discovery & Context Exporting') {
             steps {
                 script {
-                    infrapool.agentSh 'scripts/start.sh --disco-only' // Run Jenkins with discovery enabled to test discovery and context exporting
-                    infrapool.agentSh 'scripts/validate_disco_secrets.sh' // Validate that the secrets were exported correctly to Discovery
+                    infrapool.agentSh 'summon scripts/start.sh --disco-only' // Run Jenkins with discovery enabled to test discovery and context exporting
+                    infrapool.agentSh 'summon scripts/validate_disco_secrets.sh' // Validate that the secrets were exported correctly to Discovery
                 }
             }
         }

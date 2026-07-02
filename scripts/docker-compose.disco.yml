@@ -6,17 +6,18 @@ services:
     container_name: jenkins
     ports:
       - "8080:8080"
+      - "5005:5005"
       - "50000:50000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - disco-e2e
     environment:
-      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false ${JENKINS_DEBUG_OPTS:-}
       - JAVA_ARGS=-Djavax.net.ssl.trustStore=/opt/java/openjdk/lib/security/cacerts
       - CYBERARK_DISCO_ENV=${CYBERARK_DISCO_ENV:-INTEGRATION}
       - JENKINS_ADMIN_ID=${JENKINS_ADMIN_ID:-admin}
-      - JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD:-admin}
+      - JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD:-}
 
 networks:
   disco-e2e:

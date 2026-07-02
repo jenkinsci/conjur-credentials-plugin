@@ -7,11 +7,12 @@ import java.util.concurrent.TimeUnit;
 
 public final class DiscoE2eConfig {
 
-    private static final String TENANT_ID = "420183a1-b3bb-4125-b851-ff54d9d9bbc2";
-    private static final String IDENTITY_URL = "https://ave5859.id.integration-cyberark.cloud";
-    private static final String GRAPHQL_URL = "https://57s7k26zx9x54w-discoverycontext.integration-cyberark.cloud/api/graphql";
-    private static final String USERNAME = "itso@cyberark.cloud.712204";
-    private static final String PASSWORD = "t3stP@ss";
+    private static final String DISCO_TENANT_ID = "DISCO_TENANT_ID";
+    private static final String DISCO_SUBDOMAIN = "DISCO_SUBDOMAIN";
+    private static final String DISCO_IDENTITY_URL = "DISCO_IDENTITY_URL";
+    private static final String DISCO_GRAPHQL_URL = "DISCO_GRAPHQL_URL";
+    private static final String DISCO_USERNAME = "DISCO_USERNAME";
+    private static final String DISCO_PASSWORD = "DISCO_PASSWORD";
 
     private final String runId;
     private final long graphQlWaitTimeoutMs;
@@ -53,23 +54,27 @@ public final class DiscoE2eConfig {
     }
 
     public String tenantId() {
-        return getConfig("DISCO_TENANT_ID", TENANT_ID);
+        return requireConfig(DISCO_TENANT_ID);
+    }
+
+    public String subdomain() {
+        return requireConfig(DISCO_SUBDOMAIN);
     }
 
     public String identityUrl() {
-        return getConfig("DISCO_IDENTITY_URL", IDENTITY_URL);
+        return requireConfig(DISCO_IDENTITY_URL);
     }
 
     public String graphQlUrl() {
-        return getConfig("DISCO_GRAPHQL_URL", GRAPHQL_URL);
+        return requireConfig(DISCO_GRAPHQL_URL);
     }
 
     public String identityUsername() {
-        return getConfig("DISCO_USERNAME", USERNAME);
+        return requireConfig(DISCO_USERNAME);
     }
 
     public String identityPassword() {
-        return getConfig("DISCO_PASSWORD", PASSWORD);
+        return requireConfig(DISCO_PASSWORD);
     }
 
     public String jenkinsUrl() {
@@ -120,6 +125,15 @@ public final class DiscoE2eConfig {
     public static String getConfig(String key, String defaultValue) {
         String value = getConfig(key);
         return value.isBlank() ? defaultValue : value;
+    }
+
+    private static String requireConfig(String key) {
+        String value = getConfig(key);
+        if (value.isBlank()) {
+            throw new IllegalStateException("Missing required DisCo E2E configuration: " + key
+                    + ". Provide it via Java system property, environment variable, or Summon secrets.yml.");
+        }
+        return value;
     }
 
     private static String sanitizeForJenkinsId(String value) {

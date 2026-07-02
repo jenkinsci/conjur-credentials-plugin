@@ -3,7 +3,7 @@ import hudson.security.HudsonPrivateSecurityRealm
 import jenkins.model.Jenkins
 
 String adminId = System.getenv('JENKINS_ADMIN_ID') ?: 'admin'
-String adminPassword = System.getenv('JENKINS_ADMIN_PASSWORD') ?: 'admin'
+String adminPassword = System.getenv('JENKINS_ADMIN_PASSWORD')
 
 Jenkins jenkins = Jenkins.get()
 
