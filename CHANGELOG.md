@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)an
 
 Please use documentation outlined in the GitHub Readme for this version.  Official CyberArk documentation pages will be updated to reflect these changes once available
 
+## [3.1.1] - 2026-07-10
+
+### Fixed
+- Credentials with the same ID stored in different sibling folders are now each reported as independent records in the DisCo export; previously only the first-encountered credential was reported and the second folder incorrectly appeared in the first credential's `whereUsed` list
+- DisCo credential lookup switched to store-local-only API (`CredentialsProvider.lookupStores` filtered to `store.getContext() == context`) to prevent inherited credentials from bleeding across scope boundaries
+
+### Changed
+- JFrog publish target is now `conjur-credentials-plugin-dist-rc-local` for `main` branch builds and `conjur-credentials-plugin-dist-dev-local` for all other branches
+
 ## [3.1.0] - 2026-06-26
 
 ### Added

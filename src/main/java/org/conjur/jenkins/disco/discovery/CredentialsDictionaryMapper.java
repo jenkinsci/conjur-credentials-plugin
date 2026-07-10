@@ -2,7 +2,9 @@ package org.conjur.jenkins.disco.discovery;
 
 import com.cloudbees.hudson.plugins.folder.AbstractFolder;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.domains.Domain;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
 import hudson.model.Job;
@@ -38,11 +40,18 @@ public class CredentialsDictionaryMapper {
     private final EncryptionService encryptionService;
     private final UsageTracker usageTracker;
 
-    // De-duplication key: credentialId only — lookupCredentials() propagates inherited
-    // credentials into every child scope, so keying by (id, scope) would produce one
-    // record per visible scope. We want exactly one record per credential, placed in
-    // the highest scope where it is first encountered (Global before folders before jobs).
+    // De-duplication key: scopePath + credentialId — credentialsFor() now returns only
+    // credentials stored locally at each scope (not inherited ones), so two credentials
+    // with the same ID in different sibling folders are genuinely distinct and must each
+    // produce their own record. The scope prefix prevents double-counting a credential
+    // that somehow appears twice within the same store.
     private final Set<String> seen = new LinkedHashSet<>();
+
+    // ConjurCredentialStore supplier walks the full parent hierarchy, so the same
+    // Conjur-backed credential appears in every child scope's store. For these credentials
+    // we deduplicate by credentialId alone (without scope prefix) — the first scope
+    // encountered (shallowest, due to top-down traversal) wins.
+    private final Set<String> seenConjurIds = new LinkedHashSet<>();
 
     // Fields already present as top-level CredentialRecord properties — skip from
     // the reflected fields map and encrypted blob to avoid redundant data.
@@ -100,16 +109,35 @@ public class CredentialsDictionaryMapper {
         return (List<Job<?, ?>>) (List<?>) Jenkins.get().getAllItems(Job.class);
     }
 
-    /** Fetches credentials for an ItemGroup; overridden in tests. */
+    /**
+     * Returns only the credentials stored locally at {@code context} — not credentials
+     * inherited from parent scopes. Using store-local lookup instead of the propagating
+     * {@code lookupCredentials} API ensures that two credentials with the same ID in
+     * different sibling folders are each reported independently.
+     */
     protected List<StandardCredentials> credentialsFor(ItemGroup<?> context) {
-        return CredentialsProvider.lookupCredentialsInItemGroup(
-                StandardCredentials.class, context, ACL.SYSTEM2, Collections.emptyList());
+        return localCredentials(context);
     }
 
-    /** Fetches credentials for an Item; overridden in tests. */
+    /** Fetches credentials stored locally at an Item scope; overridden in tests. */
     protected List<StandardCredentials> credentialsFor(Item context) {
-        return CredentialsProvider.lookupCredentialsInItem(
-                StandardCredentials.class, context, ACL.SYSTEM2, Collections.emptyList());
+        return localCredentials(context);
+    }
+
+    private List<StandardCredentials> localCredentials(hudson.model.ModelObject context) {
+        List<StandardCredentials> result = new ArrayList<>();
+        for (CredentialsStore store : CredentialsProvider.lookupStores(context)) {
+            if (store.getContext() != context) continue; // skip inherited stores
+            try {
+                for (com.cloudbees.plugins.credentials.Credentials c : store.getCredentials(Domain.global())) {
+                    if (c instanceof StandardCredentials sc) result.add(sc);
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Failed to read credentials from store at {0}: {1}",
+                        new Object[]{context, e.getMessage()});
+            }
+        }
+        return result;
     }
 
     private List<CredentialRecord> mapItemGroup(ItemGroup<?> context, String scopePath,
@@ -129,7 +157,11 @@ public class CredentialsDictionaryMapper {
                     LOGGER.fine(DISCO_AUTH_CREDENTIAL_SKIPPED.format(cred.getId()));
                     continue;
                 }
-                if (!seen.add(cred.getId())) continue;
+                if (cred instanceof ConjurSecretCredentials) {
+                    if (!seenConjurIds.add(cred.getId())) continue;
+                } else {
+                    if (!seen.add(scopePath + ":" + cred.getId())) continue;
+                }
                 records.add(mapCredential(cred, scopePath, context));
             }
         } catch (Exception e) {
@@ -148,7 +180,11 @@ public class CredentialsDictionaryMapper {
                     LOGGER.fine(DISCO_AUTH_CREDENTIAL_SKIPPED.format(cred.getId()));
                     continue;
                 }
-                if (!seen.add(cred.getId())) continue;
+                if (cred instanceof ConjurSecretCredentials) {
+                    if (!seenConjurIds.add(cred.getId())) continue;
+                } else {
+                    if (!seen.add(scopePath + ":" + cred.getId())) continue;
+                }
                 records.add(mapCredentialFromItem(cred, scopePath));
             }
         } catch (Exception e) {
@@ -186,12 +222,9 @@ public class CredentialsDictionaryMapper {
         record.setType(cred.getClass().getName());
         record.setLocation(scopePath);
         record.setDescription(cred.getDescription());
-        record.setConjurization(
-                cred instanceof ConjurSecretCredentials
-                        ? AnnotationMapper.map(cred)
-                        : null);
+        record.setConjurization(AnnotationMapper.map(cred));
         record.setLevelUpdatedAt(DateTimeFormatter.ISO_INSTANT.format(Instant.now()));
-        record.setWhereUsed(usageTracker.getWhereUsed(cred.getId()));
+        record.setWhereUsed(usageTracker.getWhereUsedInScope(cred.getId(), scopePath));
         record.setInheritancePath(buildInheritancePath(cred.getClass()));
         record.setCreatedAt(reflectTimestamp(cred, "getCreatedTime"));
         record.setUpdatedAt(reflectTimestamp(cred, "getUpdatedTime"));
@@ -215,7 +248,6 @@ public class CredentialsDictionaryMapper {
     private void populateFieldMaps(CredentialRecord record, StandardCredentials cred) {
         Map<String, String> fields = new LinkedHashMap<>();
         Map<String, Object> rawValues = new LinkedHashMap<>();
-        List<String> valuesWithError = new ArrayList<>();
 
         boolean isExternalProvider = isExternalProvider(record);
 
@@ -227,16 +259,11 @@ public class CredentialsDictionaryMapper {
                 try {
                     field.setAccessible(true);
                     Object value = field.get(cred);
-                    fields.put(name, field.getType().getName());
+                    fields.put(name, value instanceof Secret ? "java.lang.String" : field.getType().getName());
 
                     if (!isExternalProvider && config.isExportSecretValues()) {
                         if (value instanceof Secret secret) {
-                            try {
-                                rawValues.put(name, encryptionService.encryptValue(secret.getPlainText()));
-                            } catch (Exception ex) {
-                                valuesWithError.add(name);
-                                rawValues.put(name, null);
-                            }
+                            rawValues.put(name, secret.getPlainText());
                         } else if (value != null) {
                             rawValues.put(name, String.valueOf(value));
                         } else {
@@ -261,9 +288,6 @@ public class CredentialsDictionaryMapper {
             } catch (Exception e) {
                 record.setError(sanitizeErrorMessage(e));
             }
-        }
-        if (!valuesWithError.isEmpty()) {
-            record.setValuesWithError(valuesWithError);
         }
     }
 

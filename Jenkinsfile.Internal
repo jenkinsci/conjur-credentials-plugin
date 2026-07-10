@@ -139,7 +139,10 @@ pipeline {
             steps {
                 script {
                     conjEntArtifactory.jfCliLoginInfrapool(infrapool)
-                    infrapool.agentSh 'jf rt upload target/conjur-credentials.hpi conjur-credentials-plugin-dist-dev-local/'
+                    def targetRepo = env.BRANCH_NAME == 'main'
+                        ? 'conjur-credentials-plugin-dist-rc-local/'
+                        : 'conjur-credentials-plugin-dist-dev-local/'
+                    infrapool.agentSh "jf rt upload target/conjur-credentials.hpi ${targetRepo}"
                 }
             }
         }

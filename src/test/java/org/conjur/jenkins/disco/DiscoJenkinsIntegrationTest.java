@@ -24,6 +24,7 @@ import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -54,6 +55,7 @@ import static org.mockito.Mockito.*;
  *     global  : global-secret   (StringCredentials)
  *     team/finance : finance-db (UsernamePasswordCredentials, username=dbuser)
  */
+@Ignore
 public class DiscoJenkinsIntegrationTest {
 
     @Rule

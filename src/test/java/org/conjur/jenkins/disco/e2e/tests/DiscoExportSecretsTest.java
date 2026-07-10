@@ -36,7 +36,7 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
         var expectedPath = buildExpectedSecretPath(jenkinsFolderName, jenkinsCredentialId);
         assertSecretPath(secret, expectedPath);
         assertSecretMetadata(secret, expectedDescription, expectedType, expectedManagedByCyberArk);
-        assertSecretRiskLevels(secret);
+        assertSecretRiskLevels(secret, MEDIUM_RISK_LEVEL);
     }
 
     @Test
@@ -66,7 +66,7 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
         var expectedManagedByCyberArk = false;
         assertSecretPath(secret, expectedPath);
         assertSecretMetadata(secret, jenkinsCredentialDescriptionValue, expectedType, expectedManagedByCyberArk);
-        assertSecretRiskLevels(secret);
+        assertSecretRiskLevels(secret, MEDIUM_RISK_LEVEL);
     }
 
     @Test
@@ -176,7 +176,7 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
         var updatedSecret = secretsApiSteps.waitForSecretDescription(jenkinsCredentialId, updatedDescription);
         assertSecretPath(updatedSecret, buildExpectedGlobalSecretPath(jenkinsCredentialId));
         assertSecretMetadata(updatedSecret, updatedDescription, JenkinsCredentialType.STRING, false);
-        assertSecretRiskLevels(updatedSecret);
+        assertSecretRiskLevels(updatedSecret, MEDIUM_RISK_LEVEL);
     }
 
     @Test
@@ -207,7 +207,7 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
 
         assertSecretPath(secondExportSecret, buildExpectedGlobalSecretPath(jenkinsCredentialId));
         assertSecretMetadata(secondExportSecret, jenkinsCredentialDescriptionValue, JenkinsCredentialType.STRING, false);
-        assertSecretRiskLevels(secondExportSecret);
+        assertSecretRiskLevels(secondExportSecret, MEDIUM_RISK_LEVEL);
     }
 
     @Test
@@ -274,18 +274,18 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
         var rootSecret = assertSingleSecretNamed(rootResponse, rootCredentialId);
         assertSecretPath(rootSecret, buildExpectedSecretPath(rootFolderName, rootCredentialId));
         assertSecretMetadata(rootSecret, rootCredentialDescription, JenkinsCredentialType.STRING, false);
-        assertSecretRiskLevels(rootSecret);
+        assertSecretRiskLevels(rootSecret, MEDIUM_RISK_LEVEL);
 
         var teamAlphaResponse = secretsApiSteps.waitForSecret(teamAlphaCredentialId);
         var teamAlphaSecret = assertSingleSecretNamed(teamAlphaResponse, teamAlphaCredentialId);
         assertSecretPath(teamAlphaSecret, buildExpectedSecretPath(teamAlphaFolderPath, teamAlphaCredentialId));
         assertSecretMetadata(teamAlphaSecret, teamAlphaCredentialDescription, JenkinsCredentialType.STRING, false);
-        assertSecretRiskLevels(teamAlphaSecret);
+        assertSecretRiskLevels(teamAlphaSecret, MEDIUM_RISK_LEVEL);
 
         var auditResponse = secretsApiSteps.waitForSecret(auditCredentialId);
         var auditSecret = assertSingleSecretNamed(auditResponse, auditCredentialId);
         assertSecretPath(auditSecret, buildExpectedSecretPath(auditFolderPath, auditCredentialId));
         assertSecretMetadata(auditSecret, auditCredentialDescription, JenkinsCredentialType.STRING, false);
-        assertSecretRiskLevels(auditSecret);
+        assertSecretRiskLevels(auditSecret, MEDIUM_RISK_LEVEL);
     }
 }

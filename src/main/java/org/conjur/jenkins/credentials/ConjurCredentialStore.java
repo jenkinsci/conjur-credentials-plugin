@@ -168,12 +168,20 @@ public class ConjurCredentialStore extends CredentialsStore {
 		StaplerRequest currentStaplerRequest = Stapler.getCurrentRequest();
 		Item currentContext = currentStaplerRequest != null ? currentStaplerRequest.findAncestorObject(Item.class) : null;
 
-				// if we are on the top then we always return global credentials if avaiable
-		if( context instanceof hudson.model.Hudson || currentContext == null )
+		// if we are on the top then we always return global credentials if available
+		if( context instanceof hudson.model.Hudson )
 		{
 			LOGGER.log(Level.FINEST, "ConjurCredentialStore: Global credentials found!");
-
 			return provider.getCredentials(Credentials.class, Jenkins.get());
+		}
+
+		// No Stapler request means we are running in a background thread (e.g. DisCo
+		// discovery, AsyncPeriodicWork). In that case deliver credentials for the store's
+		// own context directly — there is no HTTP request to infer the caller scope from.
+		if( currentContext == null )
+		{
+			LOGGER.log(Level.FINEST, "ConjurCredentialStore: No Stapler request — returning credentials for own context: {0}", context.getDisplayName());
+			return provider.getCredentials(Credentials.class, getContext());
 		}
 
 		//

@@ -53,7 +53,9 @@ public class CredentialRecord {
     public void setAdditionalData(Map<String, String> additionalData) { this.additionalData = additionalData; }
 
     public Map<String, String> getConjurization() { return conjurization; }
-    public void setConjurization(Map<String, String> conjurization) { this.conjurization = conjurization; }
+    public void setConjurization(Map<String, String> conjurization) {
+        this.conjurization = (conjurization == null || conjurization.isEmpty()) ? null : conjurization;
+    }
 
     public Map<String, String> getFields() { return fields; }
     public void setFields(Map<String, String> fields) { this.fields = fields; }
