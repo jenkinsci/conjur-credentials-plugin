@@ -21,12 +21,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 /**
- * Verifies that CredentialsDictionaryMapper never produces duplicate credential records.
+ * Verifies that CredentialsDictionaryMapper produces exactly one record per
+ * (scope, credentialId) pair, and that two credentials with the same ID stored
+ * in different sibling folders are both reported as independent records.
  *
- * The root cause: CredentialsProvider.lookupCredentials() is scope-propagating — calling
- * it on a folder or job returns inherited credentials from all parent scopes in addition
- * to the ones defined locally. Without the credentialId-only dedup key every inherited
- * credential would appear once per scope it is visible in.
+ * credentialsFor() is store-local-only: it never returns credentials that are merely
+ * inherited from a parent scope, so inheritance-based duplication cannot occur at the
+ * data layer. The seen set uses (scopePath + ":" + credentialId) to guard against any
+ * store that vends the same credential twice within a single scope.
  */
 public class CredentialsDictionaryMapperDuplicateTest {
 
@@ -66,18 +68,18 @@ public class CredentialsDictionaryMapperDuplicateTest {
     }
 
     // ── a credential defined globally must not appear again for a folder ──────
+    // credentialsFor() is store-local-only, so inherited credentials simply never appear
+    // in the folder's list — the folder fixture has no entries here.
 
     @Test
-    public void globalCredential_doesNotAppearAgain_whenFolderAlsoReturnsItAsInherited() {
+    public void globalCredential_doesNotAppearAgain_forFolder_withNoLocalCreds() {
         StandardCredentials global = mockCred("shared-secret");
 
-        // A folder that stores no credentials of its own, but lookupCredentials() on it
-        // returns the globally-defined credential because it is inherited.
         AbstractFolder<?> folder = mockFolder("my-folder");
 
         TestableMapper mapper = new TestableMapper(config, encryptionService, usageTracker)
                 .withGlobalCreds(global)
-                .withFolder(folder, global)   // folder "inherits" the global credential
+                .withFolder(folder /* no local creds */)
                 .withNoJobs();
 
         List<CredentialRecord> records = mapper.mapAll();
@@ -87,32 +89,37 @@ public class CredentialsDictionaryMapperDuplicateTest {
         assertThat(records.get(0).getLocation()).isEqualTo("Global");
     }
 
-    // ── credential local to a folder is not duplicated across that folder ─────
+    // ── same credential ID in two sibling folders → two independent records ───
 
     @Test
-    public void folderCredential_appearsOnce_evenIfMultipleFolderLevels() {
-        StandardCredentials folderCred = mockCred("folder-secret");
+    public void sameIdInSiblingFolders_bothReported_independently() {
+        // Each folder owns a credential with the same ID but potentially different
+        // descriptions/values. Both must appear as separate records.
+        StandardCredentials folder1Cred = mockCred("my-secret");
+        StandardCredentials folder2Cred = mockCred("my-secret");
 
-        AbstractFolder<?> folder1 = mockFolder("folder1");
-        AbstractFolder<?> folder2 = mockFolder("folder2");
+        AbstractFolder<?> folder1 = mockFolder("Folder1");
+        AbstractFolder<?> folder2 = mockFolder("Folder2");
 
-        // folder1 owns the credential; folder2 also returns it via inheritance
         TestableMapper mapper = new TestableMapper(config, encryptionService, usageTracker)
                 .withGlobalCreds()
-                .withFolder(folder1, folderCred)
-                .withFolder(folder2, folderCred)   // same cred visible from another folder
+                .withFolder(folder1, folder1Cred)
+                .withFolder(folder2, folder2Cred)
                 .withNoJobs();
 
         List<CredentialRecord> records = mapper.mapAll();
 
-        assertThat(records).hasSize(1);
-        assertNoDuplicateIds(records);
+        assertThat(records).hasSize(2);
+        assertThat(records).extracting(CredentialRecord::getCredentialId)
+                .containsExactlyInAnyOrder("my-secret", "my-secret");
+        assertThat(records).extracting(CredentialRecord::getLocation)
+                .containsExactlyInAnyOrder("Folder1", "Folder2");
     }
 
     // ── global credential must not appear again in a pipeline job scope ───────
 
     @Test
-    public void globalCredential_doesNotAppearAgain_whenJobAlsoReturnsItAsInherited() {
+    public void globalCredential_doesNotAppearAgain_forJob_withNoLocalCreds() {
         StandardCredentials global = mockCred("pipeline-visible-cred");
 
         Job<?, ?> job = mockJob("my-pipeline");
@@ -120,31 +127,31 @@ public class CredentialsDictionaryMapperDuplicateTest {
         TestableMapper mapper = new TestableMapper(config, encryptionService, usageTracker)
                 .withGlobalCreds(global)
                 .withNoFolders()
-                .withJob(job, global);   // job "sees" the credential through scope inheritance
+                .withJob(job /* no local creds */);
 
         List<CredentialRecord> records = mapper.mapAll();
 
         assertThat(records).hasSize(1);
-        assertNoDuplicateIds(records);
+        assertThat(records.get(0).getCredentialId()).isEqualTo("pipeline-visible-cred");
+        assertThat(records.get(0).getLocation()).isEqualTo("Global");
     }
 
     // ── mixed: global + folder-own + job-own — all appear exactly once ────────
 
     @Test
     public void mixedCredentials_eachAppearExactlyOnce() {
-        StandardCredentials globalCred   = mockCred("global-cred");
-        StandardCredentials folderCred   = mockCred("folder-cred");
-        StandardCredentials jobCred      = mockCred("job-cred");
+        StandardCredentials globalCred = mockCred("global-cred");
+        StandardCredentials folderCred = mockCred("folder-cred");
+        StandardCredentials jobCred    = mockCred("job-cred");
 
         AbstractFolder<?> folder = mockFolder("team-folder");
         Job<?, ?>         job    = mockJob("team-folder/my-job");
 
-        // folder sees: its own credential + the inherited global one
-        // job   sees: its own credential + folder + global (all inherited)
+        // Each scope returns only its own credential — no inherited entries.
         TestableMapper mapper = new TestableMapper(config, encryptionService, usageTracker)
                 .withGlobalCreds(globalCred)
-                .withFolder(folder, globalCred, folderCred)
-                .withJob(job, globalCred, folderCred, jobCred);
+                .withFolder(folder, folderCred)
+                .withJob(job, jobCred);
 
         List<CredentialRecord> records = mapper.mapAll();
 
@@ -220,6 +227,174 @@ public class CredentialsDictionaryMapperDuplicateTest {
         List<CredentialRecord> records = mapper.mapAll();
 
         assertThat(records.get(0).getAdditionalData()).containsEntry("scope", "folder");
+    }
+
+    // ── same ID in three sibling folders → three records ─────────────────────
+
+    @Test
+    public void sameIdInThreeSiblingFolders_allThreeReported() {
+        StandardCredentials cred1 = mockCred("shared-id");
+        StandardCredentials cred2 = mockCred("shared-id");
+        StandardCredentials cred3 = mockCred("shared-id");
+
+        AbstractFolder<?> folder1 = mockFolder("Folder1");
+        AbstractFolder<?> folder2 = mockFolder("Folder2");
+        AbstractFolder<?> folder3 = mockFolder("Folder3");
+
+        TestableMapper mapper = new TestableMapper(config, encryptionService, usageTracker)
+                .withGlobalCreds()
+                .withFolder(folder1, cred1)
+                .withFolder(folder2, cred2)
+                .withFolder(folder3, cred3)
+                .withNoJobs();
+
+        List<CredentialRecord> records = mapper.mapAll();
+
+        assertThat(records).hasSize(3);
+        assertThat(records).extracting(CredentialRecord::getLocation)
+                .containsExactlyInAnyOrder("Folder1", "Folder2", "Folder3");
+    }
+
+    // ── same ID in global and a folder → both reported ────────────────────────
+
+    @Test
+    public void sameIdInGlobalAndFolder_bothReported_withCorrectLocations() {
+        StandardCredentials globalCred = mockCred("shared-id");
+        StandardCredentials folderCred = mockCred("shared-id");
+
+        AbstractFolder<?> folder = mockFolder("TeamA");
+
+        TestableMapper mapper = new TestableMapper(config, encryptionService, usageTracker)
+                .withGlobalCreds(globalCred)
+                .withFolder(folder, folderCred)
+                .withNoJobs();
+
+        List<CredentialRecord> records = mapper.mapAll();
+
+        assertThat(records).hasSize(2);
+        assertThat(records).extracting(CredentialRecord::getLocation)
+                .containsExactlyInAnyOrder("Global", "TeamA");
+    }
+
+    // ── originId encodes scope + id independently per record ─────────────────
+
+    @Test
+    public void sameIdInSiblingFolders_originIdEncodesCorrectScopePerRecord() {
+        StandardCredentials cred1 = mockCred("my-secret");
+        StandardCredentials cred2 = mockCred("my-secret");
+
+        AbstractFolder<?> folder1 = mockFolder("Folder1");
+        AbstractFolder<?> folder2 = mockFolder("Folder2");
+
+        TestableMapper mapper = new TestableMapper(config, encryptionService, usageTracker)
+                .withGlobalCreds()
+                .withFolder(folder1, cred1)
+                .withFolder(folder2, cred2)
+                .withNoJobs();
+
+        List<CredentialRecord> records = mapper.mapAll();
+
+        assertThat(records).extracting(CredentialRecord::getOriginId)
+                .containsExactlyInAnyOrder("Folder1:my-secret", "Folder2:my-secret");
+    }
+
+    // ── same ID in global + sibling folders → all three reported, correct originIds ──
+
+    @Test
+    public void sameIdInGlobalAndTwoFolders_allThreeReported_withDistinctOriginIds() {
+        StandardCredentials globalCred = mockCred("my-secret");
+        StandardCredentials cred1     = mockCred("my-secret");
+        StandardCredentials cred2     = mockCred("my-secret");
+
+        AbstractFolder<?> folder1 = mockFolder("Folder1");
+        AbstractFolder<?> folder2 = mockFolder("Folder2");
+
+        TestableMapper mapper = new TestableMapper(config, encryptionService, usageTracker)
+                .withGlobalCreds(globalCred)
+                .withFolder(folder1, cred1)
+                .withFolder(folder2, cred2)
+                .withNoJobs();
+
+        List<CredentialRecord> records = mapper.mapAll();
+
+        assertThat(records).hasSize(3);
+        assertThat(records).extracting(CredentialRecord::getOriginId)
+                .containsExactlyInAnyOrder("Global:my-secret", "Folder1:my-secret", "Folder2:my-secret");
+    }
+
+    // ── same ID in two job scopes → both reported ─────────────────────────────
+
+    @Test
+    public void sameIdInTwoJobScopes_bothReported() {
+        StandardCredentials jobCred1 = mockCred("job-secret");
+        StandardCredentials jobCred2 = mockCred("job-secret");
+
+        Job<?, ?> job1 = mockJob("pipeline-A");
+        Job<?, ?> job2 = mockJob("pipeline-B");
+
+        TestableMapper mapper = new TestableMapper(config, encryptionService, usageTracker)
+                .withGlobalCreds()
+                .withNoFolders()
+                .withJob(job1, jobCred1)
+                .withJob(job2, jobCred2);
+
+        List<CredentialRecord> records = mapper.mapAll();
+
+        assertThat(records).hasSize(2);
+        assertThat(records).extracting(CredentialRecord::getLocation)
+                .containsExactlyInAnyOrder("pipeline-A", "pipeline-B");
+    }
+
+    // ── same ID in folder and job → both reported ─────────────────────────────
+
+    @Test
+    public void sameIdInFolderAndJob_bothReported() {
+        StandardCredentials folderCred = mockCred("shared-secret");
+        StandardCredentials jobCred    = mockCred("shared-secret");
+
+        AbstractFolder<?> folder = mockFolder("team");
+        Job<?, ?>         job    = mockJob("team/pipeline");
+
+        TestableMapper mapper = new TestableMapper(config, encryptionService, usageTracker)
+                .withGlobalCreds()
+                .withFolder(folder, folderCred)
+                .withJob(job, jobCred);
+
+        List<CredentialRecord> records = mapper.mapAll();
+
+        assertThat(records).hasSize(2);
+        assertThat(records).extracting(CredentialRecord::getLocation)
+                .containsExactlyInAnyOrder("team", "team/pipeline");
+    }
+
+    // ── each record receives the whereUsed list from UsageTracker ────────────
+
+    @Test
+    public void sameIdInSiblingFolders_eachRecordHasWhereUsedPopulated() {
+        StandardCredentials cred1 = mockCred("my-secret");
+        StandardCredentials cred2 = mockCred("my-secret");
+
+        AbstractFolder<?> folder1 = mockFolder("Folder1");
+        AbstractFolder<?> folder2 = mockFolder("Folder2");
+
+        when(usageTracker.getWhereUsedInScope("my-secret", "Folder1"))
+                .thenReturn(Arrays.asList("Folder1/some-job"));
+        when(usageTracker.getWhereUsedInScope("my-secret", "Folder2"))
+                .thenReturn(Arrays.asList("Folder2/some-job"));
+
+        TestableMapper mapper = new TestableMapper(config, encryptionService, usageTracker)
+                .withGlobalCreds()
+                .withFolder(folder1, cred1)
+                .withFolder(folder2, cred2)
+                .withNoJobs();
+
+        List<CredentialRecord> records = mapper.mapAll();
+
+        assertThat(records).hasSize(2);
+        records.forEach(rec -> assertThat(rec.getWhereUsed())
+                .as("whereUsed must be populated for record at %s", rec.getLocation())
+                .isNotNull()
+                .isNotEmpty());
     }
 
     // ── disco auth credentials are excluded (not deduplicated into output) ────

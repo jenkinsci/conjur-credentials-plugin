@@ -1,11 +1,15 @@
 package org.conjur.jenkins.disco;
 
+import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.SecretBytes;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import org.conjur.jenkins.conjursecrets.ConjurSecretDockerCertCredentials;
-import org.conjur.jenkins.conjursecrets.ConjurSecretFileCredentials;
-import org.conjur.jenkins.conjursecrets.ConjurSecretStringCredentials;
-import org.conjur.jenkins.conjursecrets.ConjurSecretUsernameCredentials;
-import org.conjur.jenkins.conjursecrets.ConjurSecretUsernameSSHKeyCredentials;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import hudson.model.Descriptor;
+import hudson.util.Secret;
+import org.jenkinsci.plugins.docker.commons.credentials.DockerServerCredentials;
+import org.jenkinsci.plugins.plaincredentials.impl.FileCredentialsImpl;
+import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.conjur.jenkins.disco.discovery.AnnotationMapper;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -16,12 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class AnnotationMapperTest {
 
-    // ── ConjurSecretStringCredentials ─────────────────────────────────────────
+    // ── StringCredentialsImpl ─────────────────────────────────────────────────
 
     @Test
     public void stringCredential_mapsToStringcredentialType() {
-        ConjurSecretStringCredentials cred = Mockito.mock(ConjurSecretStringCredentials.class);
-        Mockito.when(cred.getId()).thenReturn("my-secret");
+        StringCredentialsImpl cred = new StringCredentialsImpl(
+                CredentialsScope.GLOBAL, "my-secret", "desc", Secret.fromString("val"));
 
         Map<String, String> result = AnnotationMapper.map(cred);
 
@@ -30,8 +34,8 @@ public class AnnotationMapperTest {
 
     @Test
     public void stringCredential_hasValuePlaceholder() {
-        ConjurSecretStringCredentials cred = Mockito.mock(ConjurSecretStringCredentials.class);
-        Mockito.when(cred.getId()).thenReturn("my-secret");
+        StringCredentialsImpl cred = new StringCredentialsImpl(
+                CredentialsScope.GLOBAL, "my-secret", "desc", Secret.fromString("val"));
 
         Map<String, String> result = AnnotationMapper.map(cred);
 
@@ -40,21 +44,20 @@ public class AnnotationMapperTest {
 
     @Test
     public void stringCredential_noDoubleMapping() {
-        ConjurSecretStringCredentials cred = Mockito.mock(ConjurSecretStringCredentials.class);
-        Mockito.when(cred.getId()).thenReturn("my-secret");
+        StringCredentialsImpl cred = new StringCredentialsImpl(
+                CredentialsScope.GLOBAL, "my-secret", "desc", Secret.fromString("val"));
 
         Map<String, String> result = AnnotationMapper.map(cred);
 
         assertThat(result).doesNotContainKey("variable:annotation:jenkins_credential_type_alt");
     }
 
-    // ── ConjurSecretUsernameCredentials ───────────────────────────────────────
+    // ── UsernamePasswordCredentialsImpl ───────────────────────────────────────
 
     @Test
-    public void usernamePassword_mapsToUsernamecredentialType() {
-        ConjurSecretUsernameCredentials cred = Mockito.mock(ConjurSecretUsernameCredentials.class);
-        Mockito.when(cred.getId()).thenReturn("up-cred");
-        Mockito.when(cred.getUsername()).thenReturn("alice");
+    public void usernamePassword_mapsToUsernamecredentialType() throws Descriptor.FormException {
+        UsernamePasswordCredentialsImpl cred = new UsernamePasswordCredentialsImpl(
+                CredentialsScope.GLOBAL, "up-cred", "desc", "alice", "pass");
 
         Map<String, String> result = AnnotationMapper.map(cred);
 
@@ -62,10 +65,9 @@ public class AnnotationMapperTest {
     }
 
     @Test
-    public void usernamePassword_includesUsernameAnnotation() {
-        ConjurSecretUsernameCredentials cred = Mockito.mock(ConjurSecretUsernameCredentials.class);
-        Mockito.when(cred.getId()).thenReturn("up-cred");
-        Mockito.when(cred.getUsername()).thenReturn("alice");
+    public void usernamePassword_includesUsernameAnnotation() throws Descriptor.FormException {
+        UsernamePasswordCredentialsImpl cred = new UsernamePasswordCredentialsImpl(
+                CredentialsScope.GLOBAL, "up-cred", "desc", "alice", "pass");
 
         Map<String, String> result = AnnotationMapper.map(cred);
 
@@ -73,10 +75,9 @@ public class AnnotationMapperTest {
     }
 
     @Test
-    public void usernamePassword_hasDoubleMapping() {
-        ConjurSecretUsernameCredentials cred = Mockito.mock(ConjurSecretUsernameCredentials.class);
-        Mockito.when(cred.getId()).thenReturn("up-cred");
-        Mockito.when(cred.getUsername()).thenReturn("alice");
+    public void usernamePassword_hasDoubleMapping() throws Descriptor.FormException {
+        UsernamePasswordCredentialsImpl cred = new UsernamePasswordCredentialsImpl(
+                CredentialsScope.GLOBAL, "up-cred", "desc", "alice", "pass");
 
         Map<String, String> result = AnnotationMapper.map(cred);
 
@@ -96,36 +97,39 @@ public class AnnotationMapperTest {
     }
 
     @Test
-    public void unknownCredential_mapReturnsEmptyMap() {
-        StandardCredentials cred = Mockito.mock(StandardCredentials.class);
-        Mockito.when(cred.getId()).thenReturn("generic-cred");
+    public void unknownCredential_mapReturnsStringcredentialFallback() {
+        StringCredentialsImpl cred = new StringCredentialsImpl(
+                CredentialsScope.GLOBAL, "generic-cred", "desc", Secret.fromString("x"));
 
         Map<String, String> result = AnnotationMapper.map(cred);
 
-        assertThat(result).isEmpty();
+        assertThat(result).containsEntry("variable:annotation:jenkins_credential_type", AnnotationMapper.TYPE_STRING);
+        assertThat(result).containsEntry("variable:value", "{{secret}}");
     }
 
     // ── getCredentialType ─────────────────────────────────────────────────────
 
     @Test
-    public void getCredentialType_usernameCredential() {
-        ConjurSecretUsernameCredentials cred = Mockito.mock(ConjurSecretUsernameCredentials.class);
+    public void getCredentialType_usernameCredential() throws Descriptor.FormException {
+        UsernamePasswordCredentialsImpl cred = new UsernamePasswordCredentialsImpl(
+                CredentialsScope.GLOBAL, "up", "desc", "user", "pass");
         assertThat(AnnotationMapper.getCredentialType(cred)).isEqualTo(AnnotationMapper.TYPE_USERNAME);
     }
 
     @Test
     public void getCredentialType_stringCredential() {
-        ConjurSecretStringCredentials cred = Mockito.mock(ConjurSecretStringCredentials.class);
+        StringCredentialsImpl cred = new StringCredentialsImpl(
+                CredentialsScope.GLOBAL, "str", "desc", Secret.fromString("v"));
         assertThat(AnnotationMapper.getCredentialType(cred)).isEqualTo(AnnotationMapper.TYPE_STRING);
     }
 
-    // ── ConjurSecretUsernameSSHKeyCredentials ─────────────────────────────────
+    // ── BasicSSHUserPrivateKey ────────────────────────────────────────────────
 
     @Test
     public void sshKey_mapsToUsernamesshkeycredentialType() {
-        ConjurSecretUsernameSSHKeyCredentials cred = Mockito.mock(ConjurSecretUsernameSSHKeyCredentials.class);
-        Mockito.when(cred.getId()).thenReturn("ssh-key");
-        Mockito.when(cred.getUsername()).thenReturn("git");
+        BasicSSHUserPrivateKey cred = new BasicSSHUserPrivateKey(
+                CredentialsScope.GLOBAL, "ssh-key", "git",
+                new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource("key"), "", "desc");
 
         Map<String, String> result = AnnotationMapper.map(cred);
 
@@ -134,9 +138,9 @@ public class AnnotationMapperTest {
 
     @Test
     public void sshKey_includesUsernameAnnotation() {
-        ConjurSecretUsernameSSHKeyCredentials cred = Mockito.mock(ConjurSecretUsernameSSHKeyCredentials.class);
-        Mockito.when(cred.getId()).thenReturn("ssh-key");
-        Mockito.when(cred.getUsername()).thenReturn("git");
+        BasicSSHUserPrivateKey cred = new BasicSSHUserPrivateKey(
+                CredentialsScope.GLOBAL, "ssh-key", "git",
+                new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource("key"), "", "desc");
 
         Map<String, String> result = AnnotationMapper.map(cred);
 
@@ -145,9 +149,9 @@ public class AnnotationMapperTest {
 
     @Test
     public void sshKey_hasDoubleMapping() {
-        ConjurSecretUsernameSSHKeyCredentials cred = Mockito.mock(ConjurSecretUsernameSSHKeyCredentials.class);
-        Mockito.when(cred.getId()).thenReturn("ssh-key");
-        Mockito.when(cred.getUsername()).thenReturn("git");
+        BasicSSHUserPrivateKey cred = new BasicSSHUserPrivateKey(
+                CredentialsScope.GLOBAL, "ssh-key", "git",
+                new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource("key"), "", "desc");
 
         Map<String, String> result = AnnotationMapper.map(cred);
 
@@ -156,9 +160,9 @@ public class AnnotationMapperTest {
 
     @Test
     public void sshKey_valueKeyIsPassphrase() {
-        ConjurSecretUsernameSSHKeyCredentials cred = Mockito.mock(ConjurSecretUsernameSSHKeyCredentials.class);
-        Mockito.when(cred.getId()).thenReturn("ssh-key");
-        Mockito.when(cred.getUsername()).thenReturn("git");
+        BasicSSHUserPrivateKey cred = new BasicSSHUserPrivateKey(
+                CredentialsScope.GLOBAL, "ssh-key", "git",
+                new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource("key"), "", "desc");
 
         Map<String, String> result = AnnotationMapper.map(cred);
 
@@ -167,16 +171,19 @@ public class AnnotationMapperTest {
 
     @Test
     public void getCredentialType_sshKey() {
-        ConjurSecretUsernameSSHKeyCredentials cred = Mockito.mock(ConjurSecretUsernameSSHKeyCredentials.class);
+        BasicSSHUserPrivateKey cred = new BasicSSHUserPrivateKey(
+                CredentialsScope.GLOBAL, "ssh-key", "git",
+                new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource("key"), "", "desc");
         assertThat(AnnotationMapper.getCredentialType(cred)).isEqualTo(AnnotationMapper.TYPE_SSH_KEY);
     }
 
-    // ── ConjurSecretFileCredentials ───────────────────────────────────────────
+    // ── FileCredentialsImpl ───────────────────────────────────────────────────
 
     @Test
     public void fileCredential_mapsToFilecredentialType() {
-        ConjurSecretFileCredentials fileCred = Mockito.mock(ConjurSecretFileCredentials.class);
-        Mockito.when(fileCred.getId()).thenReturn("file-cred");
+        FileCredentialsImpl fileCred = new FileCredentialsImpl(
+                CredentialsScope.GLOBAL, "file-cred", "desc", "file.txt",
+                SecretBytes.fromBytes(new byte[0]));
 
         Map<String, String> result = AnnotationMapper.map(fileCred);
 
@@ -187,16 +194,18 @@ public class AnnotationMapperTest {
 
     @Test
     public void getCredentialType_fileCredential() {
-        ConjurSecretFileCredentials cred = Mockito.mock(ConjurSecretFileCredentials.class);
+        FileCredentialsImpl cred = new FileCredentialsImpl(
+                CredentialsScope.GLOBAL, "file-cred", "desc", "file.txt",
+                SecretBytes.fromBytes(new byte[0]));
         assertThat(AnnotationMapper.getCredentialType(cred)).isEqualTo(AnnotationMapper.TYPE_SECRET_FILE);
     }
 
-    // ── ConjurSecretDockerCertCredentials ─────────────────────────────────────
+    // ── DockerServerCredentials ───────────────────────────────────────────────
 
     @Test
     public void dockerCert_mapsToDockerCertCredentialType() {
-        ConjurSecretDockerCertCredentials dockerCred = Mockito.mock(ConjurSecretDockerCertCredentials.class);
-        Mockito.when(dockerCred.getId()).thenReturn("docker-cert-id");
+        DockerServerCredentials dockerCred = new DockerServerCredentials(
+                CredentialsScope.GLOBAL, "docker-cert-id", "desc", (Secret) null, "", "");
 
         Map<String, String> result = AnnotationMapper.map(dockerCred);
 
@@ -209,8 +218,8 @@ public class AnnotationMapperTest {
 
     @Test
     public void dockerCert_keyValueContainsCredentialId() {
-        ConjurSecretDockerCertCredentials dockerCred = Mockito.mock(ConjurSecretDockerCertCredentials.class);
-        Mockito.when(dockerCred.getId()).thenReturn("docker-cert-id");
+        DockerServerCredentials dockerCred = new DockerServerCredentials(
+                CredentialsScope.GLOBAL, "docker-cert-id", "desc", (Secret) null, "", "");
 
         Map<String, String> result = AnnotationMapper.map(dockerCred);
 
@@ -221,7 +230,8 @@ public class AnnotationMapperTest {
 
     @Test
     public void getCredentialType_dockerCert() {
-        ConjurSecretDockerCertCredentials cred = Mockito.mock(ConjurSecretDockerCertCredentials.class);
+        DockerServerCredentials cred = new DockerServerCredentials(
+                CredentialsScope.GLOBAL, "docker-cert-id", "desc", (Secret) null, "", "");
         assertThat(AnnotationMapper.getCredentialType(cred)).isEqualTo(AnnotationMapper.TYPE_DOCKER_CERT);
     }
 }

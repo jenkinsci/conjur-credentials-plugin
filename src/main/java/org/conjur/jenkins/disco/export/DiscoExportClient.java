@@ -60,7 +60,7 @@ public class DiscoExportClient {
                      String instanceId) throws ExportException {
 
         byte[] payload = new Gson().toJson(snapshot).getBytes(StandardCharsets.UTF_8);
-        uploadViaSnapshotLinks(payload, snapshotLinksUrl, bearerToken, agentVersion,
+         uploadViaSnapshotLinks(payload, snapshotLinksUrl, bearerToken, agentVersion,
                 tenantId, username, instanceId);
     }
 

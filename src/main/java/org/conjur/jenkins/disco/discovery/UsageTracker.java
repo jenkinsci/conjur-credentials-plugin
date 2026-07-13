@@ -1,7 +1,5 @@
 package org.conjur.jenkins.disco.discovery;
 
-import com.cloudbees.hudson.plugins.folder.AbstractFolder;
-import com.cloudbees.hudson.plugins.folder.properties.FolderCredentialsProvider;
 import hudson.model.Job;
 import hudson.security.ACL;
 import hudson.security.ACLContext;
@@ -35,12 +33,31 @@ public class UsageTracker {
     public void scan() {
         try (ACLContext ignored = ACL.as2(ACL.SYSTEM2)) {
             scanJobs();
-            scanFolders();
         }
     }
 
     public List<String> getWhereUsed(String credentialId) {
         return usage.getOrDefault(credentialId, new ArrayList<>()).stream()
+                .distinct()
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Returns only the usage entries that fall within the given scope — i.e. jobs
+     * whose full path starts with {@code scopePath}. This prevents a credential
+     * defined in Folder1 and a same-ID credential defined in Folder2 from sharing
+     * each other's job references.
+     *
+     * "Global" scope matches everything (globally-defined credentials are visible
+     * everywhere, so any job could use them).
+     */
+    public List<String> getWhereUsedInScope(String credentialId, String scopePath) {
+        List<String> all = usage.getOrDefault(credentialId, new ArrayList<>());
+        if ("Global".equals(scopePath)) {
+            return all.stream().distinct().collect(java.util.stream.Collectors.toList());
+        }
+        return all.stream()
+                .filter(path -> path.equals(scopePath) || path.startsWith(scopePath + "/"))
                 .distinct()
                 .collect(java.util.stream.Collectors.toList());
     }
@@ -72,28 +89,6 @@ public class UsageTracker {
             }
         } catch (Throwable t) {
             LOGGER.log(Level.WARNING, JOB_SCAN_FAILED.format(), t);
-        }
-    }
-
-    private void scanFolders() {
-        try {
-            for (AbstractFolder<?> folder : Jenkins.get().getAllItems(AbstractFolder.class)) {
-                try {
-                    String folderPath = folder.getFullName();
-                    FolderCredentialsProvider.FolderCredentialsProperty prop =
-                            folder.getProperties().get(FolderCredentialsProvider.FolderCredentialsProperty.class);
-                    if (prop == null) continue;
-                    prop.getCredentials().forEach(cred -> {
-                        if (!(cred instanceof com.cloudbees.plugins.credentials.common.IdCredentials)) return;
-                        String credId = ((com.cloudbees.plugins.credentials.common.IdCredentials) cred).getId();
-                        usage.computeIfAbsent(credId, k -> new ArrayList<>()).add(folderPath);
-                    });
-                } catch (Throwable t) {
-                    LOGGER.log(Level.WARNING, FOLDER_ITEM_SCAN_FAILED.format(folder.getFullName()), t);
-                }
-            }
-        } catch (Throwable t) {
-            LOGGER.log(Level.WARNING, FOLDER_SCAN_FAILED.format(), t);
         }
     }
 

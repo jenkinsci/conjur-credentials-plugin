@@ -5,9 +5,7 @@ import org.conjur.jenkins.disco.e2e.config.JenkinsCredentialType;
 import org.conjur.jenkins.disco.e2e.graphql.GraphQLResponse;
 import org.conjur.jenkins.disco.e2e.steps.JenkinsSteps;
 import org.conjur.jenkins.disco.e2e.steps.SecretsApiSteps;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
+import org.junit.*;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -17,10 +15,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class DiscoE2eTestBase {
 
-    protected final DiscoE2eConfig config = new DiscoE2eConfig();
+    protected static final DiscoE2eConfig config = new DiscoE2eConfig();
 
-    protected JenkinsSteps jenkinsSteps;
-    protected SecretsApiSteps secretsApiSteps;
+    protected static JenkinsSteps jenkinsSteps;
+    protected static SecretsApiSteps secretsApiSteps;
 
     protected static final Logger LOG = Logger.getLogger(DiscoE2eTestBase.class.getName());
     protected static final Path GLOBAL_SECRET_CREDENTIAL_XML = Path.of(
@@ -44,16 +42,16 @@ public abstract class DiscoE2eTestBase {
     protected static final String HIGH_RISK_LEVEL = "HIGH";
     protected static final String MEDIUM_RISK_LEVEL = "MEDIUM";
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeClass
+    public static void setUp() throws Exception {
         assumeLiveGraphQlEnabled();
         jenkinsSteps = new JenkinsSteps(config);
         secretsApiSteps = new SecretsApiSteps(config);
         secretsApiSteps.authenticate();
     }
 
-    @After
-    public void tearDown() {
+    @AfterClass
+    public static void tearDown() {
         if (secretsApiSteps != null) {
             secretsApiSteps.close();
         }
@@ -140,7 +138,7 @@ public abstract class DiscoE2eTestBase {
                 .containsExactlyInAnyOrder(expectedRiskLevels);
     }
 
-    private void assumeLiveGraphQlEnabled() {
+    private static void assumeLiveGraphQlEnabled() {
         Assume.assumeTrue(
                 "Skipping live DisCo GraphQL validation unless DISCO_GRAPHQL_RUN=true is set by the runner",
                 config.isLiveGraphQlEnabled());

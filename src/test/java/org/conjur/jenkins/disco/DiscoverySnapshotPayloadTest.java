@@ -2,8 +2,6 @@ package org.conjur.jenkins.disco;
 
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.gson.Gson;
-import org.conjur.jenkins.conjursecrets.ConjurSecretStringCredentials;
-import org.conjur.jenkins.conjursecrets.ConjurSecretUsernameCredentials;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -430,6 +428,127 @@ public class DiscoverySnapshotPayloadTest {
         }
     }
 
+    // ── same credential ID in sibling folders — JSON assertions ─────────────────
+
+    @Test
+    public void json_siblingFolderCreds_sameId_produceTwoDistinctCredentialObjects() {
+        List<CredentialRecord> creds = new ArrayList<>();
+        creds.add(buildStringCredRecord("duplicate-id", "Folder1",
+                "FolderCredentialsProvider", "folder", Collections.emptyList()));
+        creds.add(buildStringCredRecord("duplicate-id", "Folder2",
+                "FolderCredentialsProvider", "folder", Collections.emptyList()));
+
+        DiscoverySnapshot snapshot = buildSnapshot(creds, buildFolders(), buildJobs());
+        JsonArray json = gson.toJsonTree(snapshot).getAsJsonObject().getAsJsonArray("credentials");
+
+        assertThat(json.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void json_siblingFolderCreds_sameId_eachHasDistinctOriginId() {
+        List<CredentialRecord> creds = new ArrayList<>();
+        creds.add(buildStringCredRecord("duplicate-id", "Folder1",
+                "FolderCredentialsProvider", "folder", Collections.emptyList()));
+        creds.add(buildStringCredRecord("duplicate-id", "Folder2",
+                "FolderCredentialsProvider", "folder", Collections.emptyList()));
+
+        DiscoverySnapshot snapshot = buildSnapshot(creds, buildFolders(), buildJobs());
+        JsonArray json = gson.toJsonTree(snapshot).getAsJsonObject().getAsJsonArray("credentials");
+
+        List<String> originIds = new ArrayList<>();
+        json.forEach(el -> originIds.add(el.getAsJsonObject().get("originId").getAsString()));
+        assertThat(originIds).containsExactlyInAnyOrder("Folder1:duplicate-id", "Folder2:duplicate-id");
+    }
+
+    @Test
+    public void json_siblingFolderCreds_sameId_eachHasCorrectLocation() {
+        List<CredentialRecord> creds = new ArrayList<>();
+        creds.add(buildStringCredRecord("duplicate-id", "Folder1",
+                "FolderCredentialsProvider", "folder", Collections.emptyList()));
+        creds.add(buildStringCredRecord("duplicate-id", "Folder2",
+                "FolderCredentialsProvider", "folder", Collections.emptyList()));
+
+        DiscoverySnapshot snapshot = buildSnapshot(creds, buildFolders(), buildJobs());
+        JsonArray json = gson.toJsonTree(snapshot).getAsJsonObject().getAsJsonArray("credentials");
+
+        List<String> locations = new ArrayList<>();
+        json.forEach(el -> locations.add(el.getAsJsonObject().get("location").getAsString()));
+        assertThat(locations).containsExactlyInAnyOrder("Folder1", "Folder2");
+    }
+
+    @Test
+    public void json_globalAndFolderCreds_sameId_bothPresent_withDistinctScopeInAdditionalData() {
+        List<CredentialRecord> creds = new ArrayList<>();
+        creds.add(buildStringCredRecord("shared-id", "Global",
+                "SystemCredentialsProvider", "global", Collections.emptyList()));
+        creds.add(buildStringCredRecord("shared-id", "TeamA",
+                "FolderCredentialsProvider", "folder", Collections.emptyList()));
+
+        DiscoverySnapshot snapshot = buildSnapshot(creds, buildFolders(), buildJobs());
+        JsonArray json = gson.toJsonTree(snapshot).getAsJsonObject().getAsJsonArray("credentials");
+
+        assertThat(json.size()).isEqualTo(2);
+
+        List<String> scopes = new ArrayList<>();
+        json.forEach(el -> scopes.add(
+                el.getAsJsonObject().getAsJsonObject("additionalData").get("scope").getAsString()));
+        assertThat(scopes).containsExactlyInAnyOrder("global", "folder");
+    }
+
+    @Test
+    public void json_siblingFolderCreds_sameId_credentialIdFieldPresentOnBoth() {
+        List<CredentialRecord> creds = new ArrayList<>();
+        creds.add(buildStringCredRecord("dup", "Folder1",
+                "FolderCredentialsProvider", "folder", Collections.emptyList()));
+        creds.add(buildStringCredRecord("dup", "Folder2",
+                "FolderCredentialsProvider", "folder", Collections.emptyList()));
+
+        DiscoverySnapshot snapshot = buildSnapshot(creds, buildFolders(), buildJobs());
+        JsonArray json = gson.toJsonTree(snapshot).getAsJsonObject().getAsJsonArray("credentials");
+
+        json.forEach(el -> {
+            JsonObject obj = el.getAsJsonObject();
+            assertThat(obj.has("credentialId")).isTrue();
+            assertThat(obj.get("credentialId").getAsString()).isEqualTo("dup");
+        });
+    }
+
+    @Test
+    public void json_siblingFolderCreds_noDuplicateOriginIds() {
+        List<CredentialRecord> creds = new ArrayList<>();
+        creds.add(buildStringCredRecord("dup", "Folder1",
+                "FolderCredentialsProvider", "folder", Collections.emptyList()));
+        creds.add(buildStringCredRecord("dup", "Folder2",
+                "FolderCredentialsProvider", "folder", Collections.emptyList()));
+        creds.add(buildStringCredRecord("dup", "Folder3",
+                "FolderCredentialsProvider", "folder", Collections.emptyList()));
+
+        DiscoverySnapshot snapshot = buildSnapshot(creds, buildFolders(), buildJobs());
+        JsonArray json = gson.toJsonTree(snapshot).getAsJsonObject().getAsJsonArray("credentials");
+
+        List<String> originIds = new ArrayList<>();
+        json.forEach(el -> originIds.add(el.getAsJsonObject().get("originId").getAsString()));
+        assertThat(new HashSet<>(originIds)).hasSize(3);
+    }
+
+    @Test
+    public void json_siblingFolderCreds_whereUsedFieldPresentOnBoth() {
+        List<CredentialRecord> creds = new ArrayList<>();
+        creds.add(buildStringCredRecord("my-secret", "Folder1",
+                "FolderCredentialsProvider", "folder", Arrays.asList("Folder1", "job-A")));
+        creds.add(buildStringCredRecord("my-secret", "Folder2",
+                "FolderCredentialsProvider", "folder", Arrays.asList("Folder2", "job-B")));
+
+        DiscoverySnapshot snapshot = buildSnapshot(creds, buildFolders(), buildJobs());
+        JsonArray json = gson.toJsonTree(snapshot).getAsJsonObject().getAsJsonArray("credentials");
+
+        json.forEach(el -> {
+            JsonArray whereUsed = el.getAsJsonObject().getAsJsonArray("whereUsed");
+            assertThat(whereUsed).as("whereUsed must be present on every credential").isNotNull();
+            assertThat(whereUsed.size()).isGreaterThan(0);
+        });
+    }
+
     // ── UsageTracker.extractCredentialIds ────────────────────────────────────────
 
     @Test
@@ -469,32 +588,6 @@ public class DiscoverySnapshotPayloadTest {
     @Test
     public void usageTracker_handlesNullInput() {
         assertThat(UsageTracker.extractCredentialIds(null)).isEmpty();
-    }
-
-    // ── AnnotationMapper reference-key conventions ────────────────────────────────
-
-    @Test
-    public void annotationMapper_stringCred_valueIsNonBlank() {
-        ConjurSecretStringCredentials cred = Mockito.mock(ConjurSecretStringCredentials.class);
-        Mockito.when(cred.getId()).thenReturn("my-secret");
-
-        Map<String, String> result = AnnotationMapper.map(cred);
-
-        String value = result.get("variable:value");
-        assertThat(value).isNotBlank();
-    }
-
-    @Test
-    public void annotationMapper_usernamePasswordCred_usernameAndValueAreSet() {
-        ConjurSecretUsernameCredentials cred = Mockito.mock(ConjurSecretUsernameCredentials.class);
-        Mockito.when(cred.getId()).thenReturn("my-up");
-        Mockito.when(cred.getUsername()).thenReturn("dbuser");
-
-        Map<String, String> result = AnnotationMapper.map(cred);
-
-        assertThat(result.get("variable:annotation:jenkins_credential_username"))
-                .isEqualTo("{{username}}");
-        assertThat(result.get("variable:value")).isEqualTo("{{password}}");
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
