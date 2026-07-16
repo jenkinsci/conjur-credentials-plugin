@@ -130,6 +130,32 @@ public class DiscoveryServiceClientTest {
                 .hasMessageContaining("DISCO_005");
     }
 
+    // ── Query parameters ───────────────────────────────────────────────────
+
+    @Test
+    public void resolve_sendsRequiredQueryParameters() throws Exception {
+        org.mockito.ArgumentCaptor<Request> captor = org.mockito.ArgumentCaptor.forClass(Request.class);
+        Response response = new Response.Builder()
+                .request(new Request.Builder().url(BASE_URL).build())
+                .protocol(Protocol.HTTP_1_1)
+                .code(200).message("OK")
+                .body(ResponseBody.create(VALID_RESPONSE, MediaType.get("application/json")))
+                .build();
+        Call call = Mockito.mock(Call.class);
+        Mockito.when(call.execute()).thenReturn(response);
+        OkHttpClient http = Mockito.mock(OkHttpClient.class);
+        Mockito.when(http.newCall(captor.capture())).thenReturn(call);
+
+        DiscoveryServiceClient client = new DiscoveryServiceClient(http);
+        client.resolve(BASE_URL, SUBDOMAIN);
+
+        String url = captor.getValue().url().toString();
+        assertThat(url).contains("bySubdomain=acme");
+        assertThat(url).contains("allEndpoints=false");
+        assertThat(url).contains("selectedFields=tenant_id%2Cservices");
+        assertThat(url).contains("selectedServices=identity_administration%2Cdiscoverycontext");
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
 
     private DiscoveryServiceClient clientWithResponse(int code, String message, String body) {
