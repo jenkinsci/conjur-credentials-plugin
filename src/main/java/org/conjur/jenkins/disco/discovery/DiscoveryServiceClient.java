@@ -63,6 +63,9 @@ public class DiscoveryServiceClient {
 
         HttpUrl requestUrl = url.newBuilder()
                 .addQueryParameter("bySubdomain", subdomain)
+                .addQueryParameter("allEndpoints", "false")
+                .addQueryParameter("selectedFields", "tenant_id,services")
+                .addQueryParameter("selectedServices", IDENTITY_SERVICE + "," + DISCOVERY_SERVICE)
                 .build();
 
         Request request = new Request.Builder()
