@@ -6,10 +6,17 @@ cd "${repo_dir}"
 
 jenkins_container="${JENKINS_CONTAINER_NAME:-jenkins}"
 export DISCO_DOCKER_NETWORK="${DISCO_DOCKER_NETWORK:-container:${jenkins_container}}"
-export DISCO_E2E_JENKINS_URL="${DISCO_E2E_JENKINS_URL:-http://localhost:8080}"
+export DISCO_E2E_JENKINS_URL="${DISCO_E2E_JENKINS_URL:-http://jenkins:8080}"
 export JENKINS_URL="${DISCO_E2E_JENKINS_URL}"
 export JENKINS_ADMIN_ID="${JENKINS_ADMIN_ID:-admin}"
 export JENKINS_ADMIN_PASSWORD="${JENKINS_ADMIN_PASSWORD:-}"
+export DISCO_E2E_HEADLESS="${DISCO_E2E_HEADLESS:-true}"
+export DISCO_SECRETS_URL="${DISCO_SECRETS_URL:-}"
+export DISCO_E2E_TEST_SELECTOR="${DISCO_E2E_TEST_SELECTOR:-org.conjur.jenkins.disco.e2e.tests.DiscoExportSecretsTest,org.conjur.jenkins.disco.e2e.tests.DiscoExportAndOnboardTests}"
+export DISCO_GRAPHQL_RUN="${DISCO_GRAPHQL_RUN:-true}"
+export PLAYWRIGHT_TEST_IMAGE="${PLAYWRIGHT_TEST_IMAGE:-conjur-playwright-test:latest}"
+export PLAYWRIGHT_DOCKERFILE="${PLAYWRIGHT_DOCKERFILE:-${repo_dir}/Dockerfile.playwright}"
+export PLAYWRIGHT_BUILD_IMAGE="${PLAYWRIGHT_BUILD_IMAGE:-true}"
 
 if [[ -z "${JENKINS_ADMIN_PASSWORD}" ]]; then
   echo "[ERROR] JENKINS_ADMIN_PASSWORD is required for DisCo E2E validation. Provide it via Summon or the environment."
@@ -43,11 +50,18 @@ else
 fi
 
 mkdir -p "${HOME}/.m2/repository"
+mkdir -p "${repo_dir}/target/playwright-screenshots"
+
+if [[ "${PLAYWRIGHT_BUILD_IMAGE}" == "true" ]]; then
+  echo "[INFO] Building Playwright test image '${PLAYWRIGHT_TEST_IMAGE}' from ${PLAYWRIGHT_DOCKERFILE}"
+  docker build -f "${PLAYWRIGHT_DOCKERFILE}" -t "${PLAYWRIGHT_TEST_IMAGE}" "${repo_dir}"
+fi
 
 docker run --rm \
   "${docker_args[@]}" \
   -v "${repo_dir}:/workspace" \
   -v "${HOME}/.m2/repository:/root/.m2/repository" \
+  -v "${repo_dir}/target/playwright-screenshots:/workspace/target/playwright-screenshots" \
   -w /workspace \
   -e DISCO_E2E_JENKINS_URL \
   -e JENKINS_URL \
@@ -62,8 +76,11 @@ docker run --rm \
   -e DISCO_GRAPHQL_WAIT_TIMEOUT_SECONDS \
   -e DISCO_GRAPHQL_WAIT_INTERVAL_SECONDS \
   -e JENKINS_CLI_TIMEOUT_SECONDS \
-  "${DISCO_GRAPHQL_TEST_IMAGE:-maven:3.9.9-eclipse-temurin-21}" \
+  -e DISCO_GRAPHQL_RUN \
+  -e DISCO_E2E_HEADLESS \
+  -e DISCO_SECRETS_URL \
+  "${PLAYWRIGHT_TEST_IMAGE}" \
   mvn test \
-    -DDISCO_GRAPHQL_RUN=true \
-    -Dtest=org.conjur.jenkins.disco.e2e.tests.Disco* \
+    -DDISCO_GRAPHQL_RUN="${DISCO_GRAPHQL_RUN}" \
+    -Dtest="${DISCO_E2E_TEST_SELECTOR}" \
     -DfailIfNoTests=false

@@ -1,0 +1,16 @@
+FROM mcr.microsoft.com/playwright/java:v1.50.0-noble
+
+# Install Maven and additional build tools
+RUN apt-get update && apt-get install -y \
+    maven \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy the entire project
+COPY . .
+
+# Ensure target directory exists for screenshots
+RUN mkdir -p target/playwright-screenshots
