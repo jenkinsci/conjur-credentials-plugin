@@ -10,9 +10,6 @@ import org.conjur.jenkins.disco.e2e.pages.IdiraLoginPage;
 import org.conjur.jenkins.disco.e2e.pages.IdiraOnboardUnmanagedSecretPage;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.logging.Logger;
 

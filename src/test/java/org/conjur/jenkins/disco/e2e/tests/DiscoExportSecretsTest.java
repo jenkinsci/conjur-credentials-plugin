@@ -1,7 +1,6 @@
 package org.conjur.jenkins.disco.e2e.tests;
 
 import org.conjur.jenkins.disco.e2e.config.JenkinsCredentialType;
-import org.conjur.jenkins.disco.e2e.graphql.GraphQLResponse;
 import org.junit.Test;
 import org.junit.jupiter.api.DisplayName;
 
