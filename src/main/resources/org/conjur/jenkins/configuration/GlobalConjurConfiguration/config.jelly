@@ -8,9 +8,9 @@
          xmlns:f="/lib/form"
          xmlns:c="/lib/credentials">
 
-  <f:section title="${%CyberArk Secrets Manager Conjur Configuration}">
+  <f:section title="${%Secrets Manager Configuration}">
    <div id="divListAuthenticator">
-        <f:entry title="${%Select Conjur Authentication Type}" name="selectAuthenticatorEntry" field="selectAuthenticatorEntryField">
+        <f:entry title="${%Select Secrets Manager Authentication Type}" name="selectAuthenticatorEntry" field="selectAuthenticatorEntryField">
             <select id="listAuthenticator" name="selectAuthenticator" class="jenkins-select_input" data-authenticator="${instance.selectAuthenticator}"
             data-token="${instance.selectIdentityFormatToken}">
                 <option value="APIKey">APIKey</option>
@@ -19,12 +19,12 @@
         </f:entry>
     </div>
     <div>
-        <f:property field="conjurConfiguration" header="${%Conjur Configuration}"/>
+        <f:property field="conjurConfiguration" header="${%Secrets Manager Configuration}"/>
      </div>
    </f:section>
 
     <div id="conjurGlobalJWTSection">
-    <f:section title="${%Conjur JWT Authentication}">
+    <f:section title="${%Secrets Manager JWT Authentication}">
 
         <f:entry title="${%Service Id}">
             <f:textbox field="authWebServiceId" name="authWebServiceId"/>
