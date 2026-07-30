@@ -7,6 +7,7 @@ import org.conjur.jenkins.disco.security.CyberArkIdentityClient;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 
 import static org.junit.Assert.fail;
@@ -47,8 +48,8 @@ public final class SecretsApiSteps implements AutoCloseable {
         return graphQLClient.waitForSecret(
                 new String(tokenBytes, StandardCharsets.UTF_8),
                 secretName,
-                config.graphQlWaitTimeoutMs(),
-                config.graphQlWaitIntervalMs());
+                DiscoE2eConfig.GRAPHQL_WAIT_TIMEOUT_MS,
+                DiscoE2eConfig.GRAPHQL_WAIT_INTERVAL_MS);
     }
 
     public GraphQLResponse waitForSecretCount(String secretName, int expectedCount) throws Exception {
@@ -56,7 +57,7 @@ public final class SecretsApiSteps implements AutoCloseable {
         LOG.info("Waiting for exported DisCo secret count in GraphQL: name=" + secretName
                 + ", expectedCount=" + expectedCount);
 
-        var deadline = System.currentTimeMillis() + config.graphQlWaitTimeoutMs();
+        var deadline = System.currentTimeMillis() + DiscoE2eConfig.GRAPHQL_WAIT_TIMEOUT_MS;
         var lastResponse = "";
         while (System.currentTimeMillis() <= deadline) {
             var response = graphQLClient.querySecret(new String(tokenBytes, StandardCharsets.UTF_8), secretName);
@@ -68,7 +69,7 @@ public final class SecretsApiSteps implements AutoCloseable {
             if (countSecretsByName(response, secretName) == expectedCount) {
                 return response;
             }
-            Thread.sleep(config.graphQlWaitIntervalMs());
+            Thread.sleep(DiscoE2eConfig.GRAPHQL_WAIT_INTERVAL_MS);
         }
 
         fail("Timed out waiting for exported DisCo secret '" + secretName + "' count to be " + expectedCount
@@ -81,7 +82,7 @@ public final class SecretsApiSteps implements AutoCloseable {
         LOG.info("Waiting for exported DisCo secret description in GraphQL: name=" + secretName
                 + ", expectedDescription=" + expectedDescription);
 
-        long deadline = System.currentTimeMillis() + config.graphQlWaitTimeoutMs();
+        long deadline = System.currentTimeMillis() + DiscoE2eConfig.GRAPHQL_WAIT_TIMEOUT_MS;
         var lastResponse = "";
         GraphQLResponse.Secret lastSecret = null;
         while (System.currentTimeMillis() <= deadline) {
@@ -99,7 +100,7 @@ public final class SecretsApiSteps implements AutoCloseable {
                     return secret;
                 }
             }
-            Thread.sleep(config.graphQlWaitIntervalMs());
+            Thread.sleep(DiscoE2eConfig.GRAPHQL_WAIT_INTERVAL_MS);
         }
 
         fail("Timed out waiting for DisCo secret '" + secretName + "' description to be '" + expectedDescription
@@ -119,6 +120,14 @@ public final class SecretsApiSteps implements AutoCloseable {
             fail("GraphQL returned errors while fetching risks for secret id '" + secretId + "':\n" + response.errors());
         }
         return response;
+    }
+
+    public GraphQLResponse.Secret secretNamed(GraphQLResponse response, String secretName) {
+        return response.secretNamed(secretName);
+    }
+
+    public List<String> fetchRiskLevelsBySecretId(String secretId) throws Exception {
+        return fetchSecretRisksBySecretId(secretId).riskLevelsForFirstSecret();
     }
 
     public int countSecretsByName(GraphQLResponse response, String secretName) {

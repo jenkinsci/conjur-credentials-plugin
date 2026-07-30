@@ -98,7 +98,7 @@ function setup_conjur_resources {
     conjur variable set -i conjur/authn-jwt/jenkins/token-app-property -v 'jenkins_name'
     conjur variable set -i  conjur/authn-jwt/jenkins/audience -v 'cyberark-conjur'
     conjur variable set -i conjur/authn-jwt/jenkins/identity-path -v 'jenkins/projects'
-    conjur variable set -i  conjur/authn-jwt/jenkins/issuer -v 'http://localhost:8080'
+    conjur variable set -i  conjur/authn-jwt/jenkins/issuer -v 'http://jenkins:8080'
     conjur variable set -i conjur/authn-jwt/jenkins/jwks-uri -v 'http://jenkins:8080/jwtauth/conjur-jwk-set'
     conjur policy load -f $policy_path/authn-jwt-jenkins-host.yml -b root
     conjur policy load -f $policy_path/authn-jwt-jenkins-secrets.yml -b root

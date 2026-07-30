@@ -8,6 +8,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+import static org.conjur.jenkins.disco.e2e.config.DiscoE2eFixtures.*;
+import static org.conjur.jenkins.disco.e2e.helpers.ExpectedCredentialPathBuilder.buildExpectedGlobalSecretPath;
+import static org.conjur.jenkins.disco.e2e.helpers.ExpectedCredentialPathBuilder.buildExpectedSecretPath;
+
 public class DiscoExportSecretsTest extends DiscoE2eTestBase {
 
     @Test
@@ -28,15 +32,14 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
         jenkinsSteps.runJenkinsGroovy(discoExportGroovyScript);
 
         var response = secretsApiSteps.waitForSecret(jenkinsCredentialId);
-        var secret = assertSingleSecretNamed(response, jenkinsCredentialId);
-
-        var expectedDescription = "String secret text credential in a folder";
-        var expectedType = JenkinsCredentialType.STRING;
-        var expectedManagedByCyberArk = false;
-        var expectedPath = buildExpectedSecretPath(jenkinsFolderName, jenkinsCredentialId);
-        assertSecretPath(secret, expectedPath);
-        assertSecretMetadata(secret, expectedDescription, expectedType, expectedManagedByCyberArk);
-        assertSecretRiskLevels(secret, MEDIUM_RISK_LEVEL);
+        assertExportedSecret(
+                response,
+                jenkinsCredentialId,
+                buildExpectedSecretPath(jenkinsFolderName, jenkinsCredentialId),
+                "String secret text credential in a folder",
+                JenkinsCredentialType.STRING,
+                false,
+                MEDIUM_RISK_LEVEL);
     }
 
     @Test
@@ -59,14 +62,14 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
         jenkinsSteps.runJenkinsGroovy(discoExportGroovyScript);
 
         var response = secretsApiSteps.waitForSecret(jenkinsCredentialId);
-        var secret = assertSingleSecretNamed(response, jenkinsCredentialId);
-
-        var expectedPath = buildExpectedGlobalSecretPath(jenkinsCredentialId);
-        var expectedType = JenkinsCredentialType.STRING;
-        var expectedManagedByCyberArk = false;
-        assertSecretPath(secret, expectedPath);
-        assertSecretMetadata(secret, jenkinsCredentialDescriptionValue, expectedType, expectedManagedByCyberArk);
-        assertSecretRiskLevels(secret, MEDIUM_RISK_LEVEL);
+        assertExportedSecret(
+                response,
+                jenkinsCredentialId,
+                buildExpectedGlobalSecretPath(jenkinsCredentialId),
+                jenkinsCredentialDescriptionValue,
+                JenkinsCredentialType.STRING,
+                false,
+                MEDIUM_RISK_LEVEL);
     }
 
     @Test
@@ -86,16 +89,13 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
         jenkinsSteps.runJenkinsGroovy(discoExportGroovyScript);
 
         var response = secretsApiSteps.waitForSecret(jenkinsCredentialId);
-        var secret = assertSingleSecretNamed(response, jenkinsCredentialId);
-
-        var expectedPath = buildExpectedGlobalSecretPath(jenkinsCredentialId);
-        var expectedDescription = "Global Conjur secret credential";
-        var expectedType = JenkinsCredentialType.CONJUR_SECRET;
-        var expectedManagedByCyberArk = true;
-
-        assertSecretPath(secret, expectedPath);
-        assertSecretMetadata(secret, expectedDescription, expectedType, expectedManagedByCyberArk);
-        assertSecretRiskLevels(secret);
+        assertExportedSecret(
+                response,
+                jenkinsCredentialId,
+                buildExpectedGlobalSecretPath(jenkinsCredentialId),
+                "Global Conjur secret credential",
+                JenkinsCredentialType.CONJUR_SECRET,
+                true);
     }
 
     @Test
@@ -116,8 +116,14 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
         jenkinsSteps.runJenkinsGroovy(discoExportGroovyScript);
 
         var createdResponse = secretsApiSteps.waitForSecret(jenkinsCredentialId);
-        var createdSecret = assertSingleSecretNamed(createdResponse, jenkinsCredentialId);
-        assertSecretPath(createdSecret, buildExpectedSecretPath(jenkinsFolderName, jenkinsCredentialId));
+        assertExportedSecret(
+                createdResponse,
+                jenkinsCredentialId,
+                buildExpectedSecretPath(jenkinsFolderName, jenkinsCredentialId),
+                "String secret text credential in a folder",
+                JenkinsCredentialType.STRING,
+                false,
+                MEDIUM_RISK_LEVEL);
 
         jenkinsSteps.createFromXml(
                 ROOT_FOLDER_WITHOUT_CREDENTIALS_XML,
@@ -154,8 +160,14 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
 
         // Confirm the original credential exists in DisCo before updating it.
         var initialResponse = secretsApiSteps.waitForSecret(jenkinsCredentialId);
-        var initialSecret = assertSingleSecretNamed(initialResponse, jenkinsCredentialId);
-        assertSecretMetadata(initialSecret, initialDescriptionValue, JenkinsCredentialType.STRING, false);
+        assertExportedSecret(
+                initialResponse,
+                jenkinsCredentialId,
+                buildExpectedGlobalSecretPath(jenkinsCredentialId),
+                initialDescriptionValue,
+                JenkinsCredentialType.STRING,
+                false,
+                MEDIUM_RISK_LEVEL);
 
         // Update the same Jenkins credential. The ID must stay the same because Jenkins rejects
         // update-credentials-by-xml when the path ID and XML ID do not match.
@@ -173,10 +185,16 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
 
         // Wait for the existing DisCo secret to receive the updated metadata. Waiting only by
         // secret name is not enough here because the secret already exists from the first export.
-        var updatedSecret = secretsApiSteps.waitForSecretDescription(jenkinsCredentialId, updatedDescription);
-        assertSecretPath(updatedSecret, buildExpectedGlobalSecretPath(jenkinsCredentialId));
-        assertSecretMetadata(updatedSecret, updatedDescription, JenkinsCredentialType.STRING, false);
-        assertSecretRiskLevels(updatedSecret, MEDIUM_RISK_LEVEL);
+        secretsApiSteps.waitForSecretDescription(jenkinsCredentialId, updatedDescription);
+        var updatedResponse = secretsApiSteps.waitForSecret(jenkinsCredentialId);
+        assertExportedSecret(
+                updatedResponse,
+                jenkinsCredentialId,
+                buildExpectedGlobalSecretPath(jenkinsCredentialId),
+                updatedDescription,
+                JenkinsCredentialType.STRING,
+                false,
+                MEDIUM_RISK_LEVEL);
     }
 
     @Test
@@ -198,16 +216,25 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
 
         jenkinsSteps.runJenkinsGroovy(discoExportGroovyScript);
         var firstExportResponse = secretsApiSteps.waitForSecretCount(jenkinsCredentialId, 1);
-        var firstExportSecret = assertSingleSecretNamed(firstExportResponse, jenkinsCredentialId);
-        assertSecretPath(firstExportSecret, buildExpectedGlobalSecretPath(jenkinsCredentialId));
+        assertExportedSecret(
+                firstExportResponse,
+                jenkinsCredentialId,
+                buildExpectedGlobalSecretPath(jenkinsCredentialId),
+                jenkinsCredentialDescriptionValue,
+                JenkinsCredentialType.STRING,
+                false,
+                MEDIUM_RISK_LEVEL);
 
         jenkinsSteps.runJenkinsGroovy(discoExportGroovyScript);
         var secondExportResponse = secretsApiSteps.waitForSecretCount(jenkinsCredentialId, 1);
-        var secondExportSecret = assertSingleSecretNamed(secondExportResponse, jenkinsCredentialId);
-
-        assertSecretPath(secondExportSecret, buildExpectedGlobalSecretPath(jenkinsCredentialId));
-        assertSecretMetadata(secondExportSecret, jenkinsCredentialDescriptionValue, JenkinsCredentialType.STRING, false);
-        assertSecretRiskLevels(secondExportSecret, MEDIUM_RISK_LEVEL);
+        assertExportedSecret(
+                secondExportResponse,
+                jenkinsCredentialId,
+                buildExpectedGlobalSecretPath(jenkinsCredentialId),
+                jenkinsCredentialDescriptionValue,
+                JenkinsCredentialType.STRING,
+                false,
+                MEDIUM_RISK_LEVEL);
     }
 
     @Test
@@ -271,21 +298,33 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
         jenkinsSteps.runJenkinsGroovy(Path.of(config.triggerGroovyScriptPath()));
 
         var rootResponse = secretsApiSteps.waitForSecret(rootCredentialId);
-        var rootSecret = assertSingleSecretNamed(rootResponse, rootCredentialId);
-        assertSecretPath(rootSecret, buildExpectedSecretPath(rootFolderName, rootCredentialId));
-        assertSecretMetadata(rootSecret, rootCredentialDescription, JenkinsCredentialType.STRING, false);
-        assertSecretRiskLevels(rootSecret, MEDIUM_RISK_LEVEL);
+        assertExportedSecret(
+                rootResponse,
+                rootCredentialId,
+                buildExpectedSecretPath(rootFolderName, rootCredentialId),
+                rootCredentialDescription,
+                JenkinsCredentialType.STRING,
+                false,
+                MEDIUM_RISK_LEVEL);
 
         var teamAlphaResponse = secretsApiSteps.waitForSecret(teamAlphaCredentialId);
-        var teamAlphaSecret = assertSingleSecretNamed(teamAlphaResponse, teamAlphaCredentialId);
-        assertSecretPath(teamAlphaSecret, buildExpectedSecretPath(teamAlphaFolderPath, teamAlphaCredentialId));
-        assertSecretMetadata(teamAlphaSecret, teamAlphaCredentialDescription, JenkinsCredentialType.STRING, false);
-        assertSecretRiskLevels(teamAlphaSecret, MEDIUM_RISK_LEVEL);
+        assertExportedSecret(
+                teamAlphaResponse,
+                teamAlphaCredentialId,
+                buildExpectedSecretPath(teamAlphaFolderPath, teamAlphaCredentialId),
+                teamAlphaCredentialDescription,
+                JenkinsCredentialType.STRING,
+                false,
+                MEDIUM_RISK_LEVEL);
 
         var auditResponse = secretsApiSteps.waitForSecret(auditCredentialId);
-        var auditSecret = assertSingleSecretNamed(auditResponse, auditCredentialId);
-        assertSecretPath(auditSecret, buildExpectedSecretPath(auditFolderPath, auditCredentialId));
-        assertSecretMetadata(auditSecret, auditCredentialDescription, JenkinsCredentialType.STRING, false);
-        assertSecretRiskLevels(auditSecret, MEDIUM_RISK_LEVEL);
+        assertExportedSecret(
+                auditResponse,
+                auditCredentialId,
+                buildExpectedSecretPath(auditFolderPath, auditCredentialId),
+                auditCredentialDescription,
+                JenkinsCredentialType.STRING,
+                false,
+                MEDIUM_RISK_LEVEL);
     }
 }

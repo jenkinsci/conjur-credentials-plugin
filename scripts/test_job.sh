@@ -3,7 +3,7 @@
 declare -x TOTAL_SUCCESS=0
 declare -x TOTAL_FAILURE=0
 
-JENKINS_URL="${JENKINS_URL:-http://localhost:8080}"
+JENKINS_URL="${JENKINS_URL:-http://jenkins:8080}"
 if [[ -z "${JENKINS_CLI_AUTH:-}" && -n "${JENKINS_ADMIN_ID:-}" && -n "${JENKINS_ADMIN_PASSWORD:-}" ]]; then
     JENKINS_CLI_AUTH="${JENKINS_ADMIN_ID}:${JENKINS_ADMIN_PASSWORD}"
 fi
@@ -29,7 +29,7 @@ check_command_success() {
 # Function to download Jenkins CLI
 download_jenkins_cli() {
     echo "Downloading Jenkins CLI..."
-    wget http://localhost:8080/jnlpJars/jenkins-cli.jar -O /tmp/jenkins-cli.jar
+    wget http://jenkins:8080/jnlpJars/jenkins-cli.jar -O /tmp/jenkins-cli.jar
     check_command_success "Downloading Jenkins CLI"
 
     # Verify if the file was downloaded successfully

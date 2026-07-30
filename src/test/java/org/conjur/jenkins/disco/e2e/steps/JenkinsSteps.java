@@ -15,6 +15,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import static org.conjur.jenkins.disco.e2e.config.DiscoE2eFixtures.APPLY_GLOBAL_CONJUR_JWT_CONFIGURATION_GROOVY;
+import static org.conjur.jenkins.disco.e2e.config.DiscoE2eFixtures.RELOAD_GLOBAL_CONJUR_CONFIGURATION_GROOVY;
 import static org.junit.Assert.fail;
 
 public final class JenkinsSteps {
@@ -47,14 +49,14 @@ public final class JenkinsSteps {
             }
         }
 
-        List<Map.Entry<String, String>> orderedReplacements = new ArrayList<>(replacements.entrySet());
+        var orderedReplacements = new ArrayList<>(replacements.entrySet());
         orderedReplacements.sort((left, right) -> Integer.compare(right.getKey().length(), left.getKey().length()));
         for (Map.Entry<String, String> replacement : orderedReplacements) {
             String token = replacement.getKey();
             xml = xml.replace(token, replacement.getValue());
         }
 
-        String output = runJenkinsCli(cliArgs, xml.getBytes(StandardCharsets.UTF_8));
+        var output = runJenkinsCli(cliArgs, xml.getBytes(StandardCharsets.UTF_8));
         log.info("Created Jenkins object from XML template: " + xmlTemplate.toAbsolutePath() + "\n" + output);
     }
 
@@ -63,24 +65,37 @@ public final class JenkinsSteps {
             fail("Jenkins Groovy script does not exist: " + groovyScript.toAbsolutePath());
         }
 
-        String script = Files.readString(groovyScript, StandardCharsets.UTF_8);
+        var script = Files.readString(groovyScript, StandardCharsets.UTF_8);
         if (script.isBlank()) {
             fail("Jenkins Groovy script is empty: " + groovyScript.toAbsolutePath());
         }
 
         log.info("Running Jenkins Groovy script: " + groovyScript.toAbsolutePath());
-        String output = runJenkinsCli(List.of("groovy", "="), script.getBytes(StandardCharsets.UTF_8));
+        var output = runJenkinsCli(List.of("groovy", "="), script.getBytes(StandardCharsets.UTF_8));
         log.info("Jenkins CLI Groovy output:\n" + output);
     }
 
     public void runJenkinsBuild(String jobFullName) throws Exception {
-        String output = runJenkinsCli(List.of("build", jobFullName, "-s", "-v"), new byte[0]);
+        var output = runJenkinsCli(List.of("build", jobFullName, "-s", "-v"), new byte[0]);
         log.info("Jenkins build completed for job: " + jobFullName + "\n" + output);
     }
 
+
+    public void applyGlobalConjurJwtConfig(String applianceUrl, String conjurAccount, String serviceId) throws Exception {
+        createFromXml(
+                APPLY_GLOBAL_CONJUR_JWT_CONFIGURATION_GROOVY,
+                List.of("groovy", "="),
+                Map.of(
+                        "{{CONJUR_APPLIANCE_URL}}", applianceUrl,
+                        "{{CONJUR_ACCOUNT}}", conjurAccount,
+                        "{{CONJUR_SERVICE_ID}}", serviceId
+                ));
+        runJenkinsGroovy(RELOAD_GLOBAL_CONJUR_CONFIGURATION_GROOVY);
+    }
+
     private String runJenkinsCli(List<String> cliArgs, byte[] stdinBytes) throws Exception {
-        Path cliJar = downloadJenkinsCliJarIfMissing();
-        List<String> command = new ArrayList<>(List.of(
+        var cliJar = downloadJenkinsCliJarIfMissing();
+        var command = new ArrayList<>(List.of(
                 config.javaExecutable(),
                 "-jar",
                 cliJar.toString(),
@@ -92,8 +107,8 @@ public final class JenkinsSteps {
         }
         command.addAll(cliArgs);
 
-        Path outputFile = Files.createTempFile("jenkins-cli-groovy-", ".log");
-        Process process = new ProcessBuilder(command)
+        var outputFile = Files.createTempFile("jenkins-cli-groovy-", ".log");
+        var process = new ProcessBuilder(command)
                 .redirectErrorStream(true)
                 .redirectOutput(outputFile.toFile())
                 .start();
@@ -101,13 +116,13 @@ public final class JenkinsSteps {
             stdin.write(stdinBytes);
         }
 
-        boolean completed = process.waitFor(config.jenkinsCliTimeoutMs(), TimeUnit.MILLISECONDS);
+        var completed = process.waitFor(DiscoE2eConfig.JENKINS_CLI_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         if (!completed) {
             process.destroyForcibly();
             process.waitFor(10, TimeUnit.SECONDS);
         }
 
-        String output = Files.readString(outputFile, StandardCharsets.UTF_8);
+        var output = Files.readString(outputFile, StandardCharsets.UTF_8);
         Files.deleteIfExists(outputFile);
         if (!completed) {
             fail("Timed out running Jenkins CLI command. Output:\n" + output);
@@ -124,21 +139,21 @@ public final class JenkinsSteps {
     }
 
     private Path downloadJenkinsCliJarIfMissing() throws IOException {
-        Path cliJar = Path.of(config.jenkinsCliJarPath());
+        var cliJar = Path.of(config.jenkinsCliJarPath());
         if (Files.exists(cliJar)) {
             return cliJar;
         }
 
-        Path parent = cliJar.getParent();
+        var parent = cliJar.getParent();
         if (parent != null) {
             Files.createDirectories(parent);
         }
-        Request request = new Request.Builder()
+        var request = new Request.Builder()
                 .url(config.joinUrl(config.jenkinsUrl(), "jnlpJars/jenkins-cli.jar"))
                 .get()
                 .build();
         try (Response response = config.httpClient().newCall(request).execute()) {
-            byte[] responseBody = response.body() != null ? response.body().bytes() : new byte[0];
+            var responseBody = response.body() != null ? response.body().bytes() : new byte[0];
             if (!response.isSuccessful()) {
                 throw new IOException("Could not download Jenkins CLI from " + config.jenkinsUrl()
                         + ": HTTP " + response.code() + " " + new String(responseBody, StandardCharsets.UTF_8));

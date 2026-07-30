@@ -167,6 +167,12 @@
 			<version>4.12.0</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.microsoft.playwright</groupId>
+			<artifactId>playwright</artifactId>
+			<version>1.60.0</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>
@@ -229,6 +235,8 @@
 					<argLine>${jacoco.agent.argLine} --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/sun.reflect.generics.parser=ALL-UNNAMED</argLine>
 					<excludes>
 						<exclude>${surefire.manual.exclude}</exclude>
+						<!-- DisCo E2E tests run in a dedicated pipeline step. Excluding them from unit test execution -->
+						<exclude>**/disco/e2e/tests/**</exclude>
 					</excludes>
 					<useSystemClassLoader>false</useSystemClassLoader>
 					<systemPropertyVariables>

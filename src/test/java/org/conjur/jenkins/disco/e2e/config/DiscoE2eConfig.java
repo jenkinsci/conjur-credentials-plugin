@@ -11,22 +11,21 @@ public final class DiscoE2eConfig {
     private static final String DISCO_SUBDOMAIN = "DISCO_SUBDOMAIN";
     private static final String DISCO_IDENTITY_URL = "DISCO_IDENTITY_URL";
     private static final String DISCO_GRAPHQL_URL = "DISCO_GRAPHQL_URL";
+    private static final String DISCO_SECRETS_URL = "DISCO_SECRETS_URL";
     private static final String DISCO_USERNAME = "DISCO_USERNAME";
     private static final String DISCO_PASSWORD = "DISCO_PASSWORD";
 
+    public static final long GRAPHQL_WAIT_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(Long.parseLong(
+            getConfig("DISCO_GRAPHQL_WAIT_TIMEOUT_SECONDS", "180")));
+    public static final long GRAPHQL_WAIT_INTERVAL_MS = TimeUnit.SECONDS.toMillis(Long.parseLong(
+            getConfig("DISCO_GRAPHQL_WAIT_INTERVAL_SECONDS", "10")));
+    public static final long JENKINS_CLI_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(Long.parseLong(
+            getConfig("JENKINS_CLI_TIMEOUT_SECONDS", "300")));
+
     private final String runId;
-    private final long graphQlWaitTimeoutMs;
-    private final long graphQlWaitIntervalMs;
-    private final long jenkinsCliTimeoutMs;
 
     public DiscoE2eConfig() {
         this.runId = sanitizeForJenkinsId(getConfig("DISCO_E2E_RUN_ID", "run-" + System.currentTimeMillis()));
-        this.graphQlWaitTimeoutMs = TimeUnit.SECONDS.toMillis(Long.parseLong(
-                getConfig("DISCO_GRAPHQL_WAIT_TIMEOUT_SECONDS", "180")));
-        this.graphQlWaitIntervalMs = TimeUnit.SECONDS.toMillis(Long.parseLong(
-                getConfig("DISCO_GRAPHQL_WAIT_INTERVAL_SECONDS", "10")));
-        this.jenkinsCliTimeoutMs = TimeUnit.SECONDS.toMillis(Long.parseLong(
-                getConfig("JENKINS_CLI_TIMEOUT_SECONDS", "300")));
     }
 
     public OkHttpClient httpClient() {
@@ -39,18 +38,6 @@ public final class DiscoE2eConfig {
 
     public String runId() {
         return runId;
-    }
-
-    public long graphQlWaitTimeoutMs() {
-        return graphQlWaitTimeoutMs;
-    }
-
-    public long graphQlWaitIntervalMs() {
-        return graphQlWaitIntervalMs;
-    }
-
-    public long jenkinsCliTimeoutMs() {
-        return jenkinsCliTimeoutMs;
     }
 
     public String tenantId() {
@@ -78,7 +65,20 @@ public final class DiscoE2eConfig {
     }
 
     public String jenkinsUrl() {
-        return getConfig("DISCO_E2E_JENKINS_URL", "http://localhost:8080");
+        return getConfig("DISCO_E2E_JENKINS_URL", "http://jenkins:8080");
+    }
+
+    public boolean isPlaywrightHeadless() {
+        return Boolean.parseBoolean(getConfig("DISCO_E2E_HEADLESS", "true"));
+    }
+
+    public String uiTargetUrl() {
+        return requireConfig(DISCO_SECRETS_URL);
+    }
+
+    public String playwrightUserAgent() {
+        return getConfig("DISCO_PLAYWRIGHT_USER_AGENT",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36");
     }
 
     public String javaExecutable() {
