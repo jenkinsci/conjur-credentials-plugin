@@ -111,11 +111,6 @@ public final class JenkinsSteps {
                 + "'. Last error: " + (lastFailure == null ? "unknown" : lastFailure.getMessage()));
     }
 
-    public void deleteJob(String jobFullName) throws Exception {
-        var output = runJenkinsCli(List.of("delete-job", jobFullName), new byte[0]);
-        log.info("Deleted Jenkins job: " + jobFullName + "\n" + output);
-    }
-
     public String getLastBuildArtifact(String jobFullName, String artifactFileName) throws Exception {
         // Use Jenkins REST API to fetch the archived artifact from the last build
         var url = config.joinUrl(config.jenkinsUrl(),

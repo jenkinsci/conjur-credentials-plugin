@@ -20,6 +20,8 @@ public class DiscoExportAndOnboardTests extends DiscoE2eTestBase {
     @Rule
     public ScreenshotExtension screenshotRule = new ScreenshotExtension(page);
 
+    private static String artifactFileName = "retrieved-secret.txt";
+
     @Test
     @DisplayName("Creates a global Jenkins secret, validates DisCo export, onboards it in UI, and applies detected Conjur JWT configuration")
     public void shouldExportAndOnboardSecret() throws Exception {
@@ -87,7 +89,7 @@ public class DiscoExportAndOnboardTests extends DiscoE2eTestBase {
         jenkinsSteps.runJenkinsBuildWithRetries(pipelineJobName, 15, 10_000L);
 
         // Fetch the artifact and compare retrieved secret with the expected value
-        var actualSecret = jenkinsSteps.getLastBuildArtifact(pipelineJobName, "retrieved-secret.txt");
+        var actualSecret = jenkinsSteps.getLastBuildArtifact(pipelineJobName, artifactFileName);
         assertEquals(actualSecret, jenkinsCredentialExpectedSecretValue);
     }
 }

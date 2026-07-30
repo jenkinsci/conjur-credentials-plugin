@@ -25,7 +25,7 @@ public class IdiraOnboardUnmanagedSecretPage extends BasePage {
     public void clickCreateAndOnboard(String parentFrameId, String childFrameId) {
         executeInNestedIframes(parentFrameId, childFrameId, frame -> {
             var btn = frame.locator(CREATE_AND_ONBOARD_BUTTON).first();
-            Waiter.waitUntil(() -> btn.isVisible(), (long) FRAME_WAIT_TIMEOUT_MS, 500);
+            Waiter.waitUntil(btn::isVisible, (long) FRAME_WAIT_TIMEOUT_MS, 500);
             btn.click();
         });
     }
@@ -62,7 +62,7 @@ public class IdiraOnboardUnmanagedSecretPage extends BasePage {
     ) {
         executeInNestedIframes(parentFrameId, childFrameId, frame -> {
             var statusLocator = frame.locator(String.format(statusXpathTemplate, expectedStatus)).first();
-            Waiter.waitUntil(() -> statusLocator.isVisible(), (long) FRAME_WAIT_TIMEOUT_MS, 500);
+            Waiter.waitUntil(statusLocator::isVisible, (long) FRAME_WAIT_TIMEOUT_MS, 500);
         });
     }
 
