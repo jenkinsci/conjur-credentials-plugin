@@ -40,7 +40,7 @@ public class DiscoExportAndOnboardTests extends DiscoE2eTestBase {
                         "{{DISCO_GLOBAL_SECRET_CREDENTIAL_ID}}", jenkinsCredentialId
                 ));
 
-        // 2. Create pipeline that uses the global string credential with withCredentials([string(...)])
+        // Create pipeline that uses the native Jenkins credentials retrieval
         jenkinsSteps.createFromXml(
                 STRING_CREDENTIAL_PIPELINE_XML,
                 List.of("create-job", pipelineJobName),
