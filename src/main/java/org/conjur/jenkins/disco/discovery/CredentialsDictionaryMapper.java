@@ -17,8 +17,6 @@ import org.conjur.jenkins.disco.config.DiscoExporterConfiguration;
 import org.conjur.jenkins.disco.model.CredentialRecord;
 import org.conjur.jenkins.disco.security.EncryptionService;
 
-import org.conjur.jenkins.disco.DiscoCode;
-
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -304,8 +302,12 @@ public class CredentialsDictionaryMapper {
 
     private String resolvePluginVersion(String pluginName) {
         try {
-            hudson.PluginWrapper plugin = Jenkins.get().getPlugin(pluginName).getWrapper();
-            return plugin != null ? plugin.getVersion() : "unknown";
+            hudson.Plugin p = Jenkins.get().getPlugin(pluginName);
+            if (p == null) {
+                return "unknown";
+            }
+            hudson.PluginWrapper wrapper = p.getWrapper();
+            return wrapper != null ? wrapper.getVersion() : "unknown";
         } catch (Exception e) {
             return "unknown";
         }
