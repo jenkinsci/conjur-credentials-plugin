@@ -5,10 +5,10 @@
          xmlns:f="/lib/form"
          xmlns:c="/lib/credentials">
 
-  <f:section title="${%CyberArk DisCo Discovery}">
+  <f:section title="${%Idira Secrets and Machine Identities Discovery Configuration}">
 
     <!-- ── Connection ────────────────────────────────────────────────────── -->
-    <f:entry title="${%Subdomain}" description="${%Your CyberArk tenant subdomain (e.g. acme)}">
+    <f:entry title="${%Subdomain}" description="${%Your Idira tenant subdomain (e.g. acme)}">
       <f:textbox field="subdomain" checkMethod="post"/>
     </f:entry>
 
@@ -54,9 +54,24 @@
 
     <!-- ── Behaviour ─────────────────────────────────────────────────────── -->
     <f:entry title="${%Export Secret Values}"
-             description="${%WARNING: when enabled, credential values are encrypted and sent to DisCo. Disabled by default on upgrade.}">
+             field="exportSecretValues">
       <f:checkbox field="exportSecretValues"/>
     </f:entry>
+
+    <div class="jenkins-alert jenkins-alert-warning">
+      <p><b>Secret value collection behavior</b></p>
+
+      <p>When Export Secret Values is enabled, the Jenkins Conjur Secrets plugin encrypts and exports Jenkins credential values to Idira secrets and machine identities inventories to support automated remediation of unmanaged secrets.</p>
+
+      <p>Security and privacy safeguards:</p>
+      <ul>
+        <li>Encryption at source – Credential values are encrypted within your Jenkins instance before transmission.</li>
+        <li>Secure storage – Encrypted values are stored in an isolated internal branch of your Secrets Manager SaaS instance. Stored values automatically expire after 30 days.</li>
+      </ul>
+
+      <p>Control and opt-out<br/>
+      You can disable secret value collection at any time by clearing the Export Secret Values checkbox. When disabled, risk analysis and text-only remediation guidance remain available.</p>
+    </div>
 
     <!-- ── Status + manual trigger ───────────────────────────────────────── -->
     <f:entry title="${%Discovery Status}">

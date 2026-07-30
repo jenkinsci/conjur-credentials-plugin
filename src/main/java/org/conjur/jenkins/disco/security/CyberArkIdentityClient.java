@@ -3,11 +3,7 @@ package org.conjur.jenkins.disco.security;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import okhttp3.*;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -106,7 +102,8 @@ public class CyberArkIdentityClient {
                 .build();
 
         try (Response response = httpClient.newCall(request).execute()) {
-            String respBody = response.body() != null ? response.body().string() : "";
+            ResponseBody rb0 = response.body();
+            String respBody = rb0 != null ? rb0.string() : "";
             if (!response.isSuccessful()) {
                 throw new IOException(START_AUTH_HTTP_ERROR.format(response.code()));
             }
@@ -164,7 +161,8 @@ public class CyberArkIdentityClient {
                 .build();
 
         try (Response response = httpClient.newCall(request).execute()) {
-            String respBody = response.body() != null ? response.body().string() : "";
+            ResponseBody rb1 = response.body();
+            String respBody = rb1 != null ? rb1.string() : "";
             if (!response.isSuccessful()) {
                 throw new IOException(ADVANCE_AUTH_HTTP_ERROR.format(response.code()));
             }
