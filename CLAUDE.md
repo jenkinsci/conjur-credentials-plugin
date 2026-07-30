@@ -2,7 +2,7 @@
 
 ## What this repo is
 
-A Jenkins HPI plugin (`conjur-credentials`) that integrates Jenkins with CyberArk Conjur for secret retrieval. Version **3.0.9**, built with Maven against Jenkins core **2.455**, Java **11**.
+A Jenkins HPI plugin (`conjur-credentials`) that integrates Jenkins with CyberArk Conjur for secret retrieval. Version **3.1.1**, built with Maven against Jenkins core **2.462.3**, Java **11**.
 
 It has two distinct feature areas:
 
