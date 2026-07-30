@@ -1,0 +1,32 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job">
+    <actions/>
+    <description>CyberArk DisCo Discovery pipeline that verifies an onboarded Conjur secret by running a pipeline and compare secret value.</description>
+    <keepDependencies>false</keepDependencies>
+    <properties/>
+    <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+        <script><![CDATA[node {
+    stage('Verify Conjur credential') {
+        withCredentials([
+            conjurSecretCredential(credentialsId: '{{DISCO-CONJUR-PIPELINE-CREDENTIAL-ID}}', variable: 'DISCO_CONJUR_SECRET')
+        ]) {
+            sh '''#!/bin/bash
+            set -euo pipefail
+            test -n "$DISCO_CONJUR_SECRET"
+            echo "DisCo Conjur onboarded credential binding succeeded"
+            printf '%s' "$DISCO_CONJUR_SECRET" > retrieved-secret.txt
+            '''
+        }
+        archiveArtifacts artifacts: 'retrieved-secret.txt', onlyIfSuccessful: true
+    }
+}
+]]></script>
+        <sandbox>true</sandbox>
+    </definition>
+    <triggers/>
+    <disabled>false</disabled>
+</flow-definition>
+
+
+
+

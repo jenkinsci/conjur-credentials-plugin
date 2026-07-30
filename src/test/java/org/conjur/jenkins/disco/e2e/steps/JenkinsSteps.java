@@ -1,18 +1,18 @@
 package org.conjur.jenkins.disco.e2e.steps;
-
 import okhttp3.Request;
 import okhttp3.Response;
 import org.conjur.jenkins.disco.e2e.config.DiscoE2eConfig;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.logging.Logger;
 
 import static org.conjur.jenkins.disco.e2e.config.DiscoE2eFixtures.APPLY_GLOBAL_CONJUR_JWT_CONFIGURATION_GROOVY;
@@ -80,6 +80,59 @@ public final class JenkinsSteps {
         log.info("Jenkins build completed for job: " + jobFullName + "\n" + output);
     }
 
+    public void runJenkinsBuildWithRetries(String jobFullName, int maxAttempts, long waitBetweenAttemptsMs) throws Exception {
+        Throwable lastFailure = null;
+        /*
+         When a secret is onboarded from an external source (in our case Conjur), there is a propagation delay
+         before the secret becomes available in Jenkins. We cannot directly query Jenkins CLI to verify
+         the secret presence due to Jenkins CLI limitation (credentials from external sources are not listed).
+         Instead, we use the build itself as a confirmation mechanism: if the build succeeds, it means the pipelines
+         withCredentials binding worked, which proves the secret is available in Jenkins.
+         */
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                runJenkinsBuild(jobFullName);
+                if (attempt > 1) {
+                    log.info("Jenkins build succeeded on retry attempt " + attempt + " for job: " + jobFullName);
+                }
+                return;
+            } catch (Throwable t) {
+                lastFailure = t;
+                if (attempt == maxAttempts) {
+                    break;
+                }
+                log.warning("Jenkins build attempt " + attempt + " failed for job '" + jobFullName
+                        + "'. Retrying in " + waitBetweenAttemptsMs + " ms. Error: " + t.getMessage());
+                Thread.sleep(waitBetweenAttemptsMs);
+            }
+        }
+
+        fail("Jenkins build did not succeed after " + maxAttempts + " attempts for job '" + jobFullName
+                + "'. Last error: " + (lastFailure == null ? "unknown" : lastFailure.getMessage()));
+    }
+
+    public void deleteJob(String jobFullName) throws Exception {
+        var output = runJenkinsCli(List.of("delete-job", jobFullName), new byte[0]);
+        log.info("Deleted Jenkins job: " + jobFullName + "\n" + output);
+    }
+
+    public String getLastBuildArtifact(String jobFullName, String artifactFileName) throws Exception {
+        // Use Jenkins REST API to fetch the archived artifact from the last build
+        var url = config.joinUrl(config.jenkinsUrl(),
+                "job/" + jobFullName.replace("/", "/job/") + "/lastBuild/artifact/" + artifactFileName);
+        var requestBuilder = new Request.Builder().url(url).get();
+        if (config.isJenkinsCliAuthConfigured()) {
+            var parts = config.jenkinsCliAuth().split(":", 2);
+            requestBuilder.header("Authorization", okhttp3.Credentials.basic(parts[0], parts[1]));
+        }
+        try (var response = config.httpClient().newCall(requestBuilder.build()).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("Failed to fetch artifact '" + artifactFileName + "' for job '"
+                        + jobFullName + "': HTTP " + response.code());
+            }
+            return response.body() != null ? response.body().string() : "";
+        }
+    }
 
     public void applyGlobalConjurJwtConfig(String applianceUrl, String conjurAccount, String serviceId) throws Exception {
         createFromXml(

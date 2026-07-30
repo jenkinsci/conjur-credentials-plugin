@@ -1,0 +1,27 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job">
+    <actions/>
+    <description>CyberArk DisCo Discovery pipeline using a string credential.</description>
+    <keepDependencies>false</keepDependencies>
+    <properties/>
+    <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+        <script><![CDATA[node {
+    stage('Use string credential') {
+        withCredentials([
+            string(credentialsId: '{{DISCO-STRING-CREDENTIAL-ID}}', variable: 'DISCO_STRING_SECRET')
+        ]) {
+            sh '''#!/bin/bash
+            set -euo pipefail
+            test -n "$DISCO_STRING_SECRET"
+            echo "DisCo string credential binding succeeded"
+            '''
+        }
+    }
+}
+]]></script>
+        <sandbox>true</sandbox>
+    </definition>
+    <triggers/>
+    <disabled>false</disabled>
+</flow-definition>
+
