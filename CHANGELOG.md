@@ -5,16 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)an
 
 Please use documentation outlined in the GitHub Readme for this version.  Official CyberArk documentation pages will be updated to reflect these changes once available
 
-## [3.1.1] - 2026-07-10
-
-### Fixed
-- Credentials with the same ID stored in different sibling folders are now each reported as independent records in the DisCo export; previously only the first-encountered credential was reported and the second folder incorrectly appeared in the first credential's `whereUsed` list
-- DisCo credential lookup switched to store-local-only API (`CredentialsProvider.lookupStores` filtered to `store.getContext() == context`) to prevent inherited credentials from bleeding across scope boundaries
-
-### Changed
-- JFrog publish target is now `conjur-credentials-plugin-dist-rc-local` for `main` branch builds and `conjur-credentials-plugin-dist-dev-local` for all other branches
-
-## [3.1.0] - 2026-06-26
+## [3.1.2] - 2026-07-28
 
 ### Added
 - DisCo (Discovery & Context Collection) pipeline: automatically discovers all Jenkins credentials across the folder/job hierarchy and exports them to the CyberArk DisCo ingestion platform
@@ -22,27 +13,17 @@ Please use documentation outlined in the GitHub Readme for this version.  Offici
 - Scheduled background export via configurable interval with manual "Run Discovery Now" trigger
 - Where-used engine: scans Pipeline script bodies and job configuration XML to identify which jobs reference each credential
 - Encryption service: fetches public keys from the DisCo platform and selects the key with the longest remaining validity; keys without an expiry are treated as having infinite validity
-- Environment-selectable DisCo base URLs via `CYBERARK_DISCO_ENV` environment variable; defaults to Production when the variable is absent or unrecognised
+- Environment-selectable DisCo base URLs via `CYBERARK_DISCO_ENV` environment variable; defaults to Production when the variable is absent or unrecognized
 - FedRAMP environment URLs included (`GOV_DEV`, `GOV_TEST`, `GOV_STAGE`, `GOV_PROD`, etc.)
-- JWKS URI and full JWKS data embedded in each exported snapshot
 - Conjur appliance URL read from the existing Global Conjur Configuration (not duplicated in DisCo settings)
 - DisCo credential fields now show an **Add** button next to each dropdown, allowing credentials to be created inline without leaving the configuration page; the newly created credential is automatically selected after saving
 - `StandardUsernamePasswordCredentials` type filter on the Username+Password credential picker; `StringCredentials` type filter on both Secret Text pickers
 - Unit tests for `CyberArkIdentityClient`, `DiscoveryScheduler`, `AnnotationMapper`, and `DiscoExporterConfiguration`
 
-### Fixed
-- HTTP 403 response from the Discovery Service is now reported as `DISC_010: Access denied` with a clear message that includes the subdomain and a hint to verify tenant configuration; previously it surfaced as a generic `DISC_001` error with no actionable guidance
-- Discovery pipeline IOExceptions (including `DISC_010`, `DISC_003`) are now surfaced in the UI status panel with their original error code intact; previously they were overwritten with a `DISC_008` prefix
-
 ### Changed
-- Minimum required Jenkins version raised to 2.492 (Java 21 baseline)
+- Minimum required Jenkins version raised to 2.462.3 (Java 21 baseline)
 - Plugin version in telemetry header is now read from the JAR manifest (`Plugin-Version` attribute) instead of the changelog file
-- `testEnvironment` setting removed from the DisCo UI — rate-limit bypass is derived automatically from the active `CYBERARK_DISCO_ENV` value (any non-production environment bypasses the 1-hour manual trigger limit)
-- DisCo snapshot exports `folders` and `jobs` as separate JSON arrays (both typed as `JenkinsObject`)
-- `providerId` field in `DiscoverySnapshot` renamed to `jenkinsId` for consistency with the DisCo API contract; `originStoreId` is set to the same Jenkins instance ID value
-- `DiscoveryOrchestrator.getPluginVersion()` now delegates to `TelemetryConfiguration.getPluginVersion()` — eliminates the duplicate implementation
-- `EncryptionService` `User-Agent` header now reads the version from `TelemetryConfiguration.getPluginVersion()` instead of a hardcoded string
-- `CredentialsProvider.lookupCredentials()` with `ACL.SYSTEM` replaced by `lookupCredentialsInItemGroup()` / `lookupCredentialsInItem()` with `ACL.SYSTEM2` across all call sites (deprecated API removed)
+- Rebranded user-facing labels from CyberArk/Conjur to Secrets Manager/Idira across the plugin UI (global, folder, and job configuration pages; credential and JWT authentication views; DisCo Discovery configuration) and documentation. No configuration field names, environment variables, or persisted class names changed — existing installations upgrade without any manual action
 
 ## [3.0.12] - 2026-04-23
 

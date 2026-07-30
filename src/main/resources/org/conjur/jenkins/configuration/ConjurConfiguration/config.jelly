@@ -6,19 +6,19 @@
        <f:textbox field="globalAuthenticator" name="globalAuthenticator" style="display: none;"/>
        
       </div>
-    <f:entry title="${%Conjur Account}">
+    <f:entry title="${%Secrets Manager Account}">
         <f:textbox field="account" name="account"/>
     </f:entry>
-    <f:entry title="${%Conjur Appliance URL}">
+    <f:entry title="${%Secrets Manager Appliance URL}">
         <f:textbox field="applianceURL" name="applianceURL"/>
     </f:entry>
-    
-    <f:entry title="${%Conjur SSL Certificate}" field="certificateCredentialID" name="certificateCredentialID">
+
+    <f:entry title="${%Secrets Manager SSL Certificate}" field="certificateCredentialID" name="certificateCredentialID">
     	<c:select/>
     </f:entry>
 
      <div id="conjurLocalAPIKeyCredentials">
-        <f:entry title="${%Conjur APIKey Credential}" field="credentialID" id="credentialID">
+        <f:entry title="${%Secrets Manager APIKey Credential}" field="credentialID" id="credentialID">
             <c:select name="_.credentialID" onchange="validateJWTButton(this)"/>
         </f:entry>
     </div>

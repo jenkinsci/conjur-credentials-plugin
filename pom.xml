@@ -21,7 +21,7 @@
 	</properties>
 	<name>Conjur Secrets Plugin</name>
 	<description>Plugin to retrieve secrets from CyberArk/Conjur</description>
-	<version>3.1.1</version>
+	<version>3.1.2</version>
 	<url>https://github.com/jenkinsci/conjur-credentials-plugin</url>
 	<licenses>
 		<license>
