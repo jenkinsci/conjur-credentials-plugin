@@ -3,12 +3,7 @@ package org.conjur.jenkins.disco.discovery;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import okhttp3.HttpUrl;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-
-import org.conjur.jenkins.disco.DiscoCode;
+import okhttp3.*;
 import org.conjur.jenkins.disco.config.DiscoEnvironment;
 
 import java.io.IOException;
@@ -85,7 +80,8 @@ public class DiscoveryServiceClient {
             if (!response.isSuccessful()) {
                 throw new IOException(DISCOVERY_HTTP_ERROR.format(response.code(), subdomain));
             }
-            String body = response.body() != null ? response.body().string() : "";
+            ResponseBody responseBody = response.body();
+            String body = responseBody != null ? responseBody.string() : "";
             if (body.isEmpty()) {
                 throw new IOException(DISCOVERY_EMPTY_RESPONSE.format());
             }
