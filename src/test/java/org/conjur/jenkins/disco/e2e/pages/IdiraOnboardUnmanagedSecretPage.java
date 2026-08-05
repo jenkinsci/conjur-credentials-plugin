@@ -12,6 +12,7 @@ public class IdiraOnboardUnmanagedSecretPage extends BasePage {
     private static final String WORKLOAD_STATUS = "//div[@data-testid='workload-resource-status']//span[text()='%s']";
     private static final String SECRET_STATUS = "//div[@data-testid='secrets-resource-status']//span[text()='%s']";
     private static final String SERVICE_INFO_XPATH = "//span[text()='%s']/following-sibling::code";
+    private static final String SECRET_PATH = "//div[contains(text(),'Conjur credential ID')]//span[contains(text(),'data/static')]";
 
     public IdiraOnboardUnmanagedSecretPage(Page page) {
         super(page);
@@ -24,7 +25,7 @@ public class IdiraOnboardUnmanagedSecretPage extends BasePage {
     public void clickCreateAndOnboard(String parentFrameId, String childFrameId) {
         executeInNestedIframes(parentFrameId, childFrameId, frame -> {
             var btn = frame.locator(CREATE_AND_ONBOARD_BUTTON).first();
-            Waiter.waitUntil(() -> btn.isVisible(), (long) FRAME_WAIT_TIMEOUT_MS, 500);
+            Waiter.waitUntil(btn::isVisible, (long) FRAME_WAIT_TIMEOUT_MS, 500);
             btn.click();
         });
     }
@@ -61,13 +62,23 @@ public class IdiraOnboardUnmanagedSecretPage extends BasePage {
     ) {
         executeInNestedIframes(parentFrameId, childFrameId, frame -> {
             var statusLocator = frame.locator(String.format(statusXpathTemplate, expectedStatus)).first();
-            Waiter.waitUntil(() -> statusLocator.isVisible(), (long) FRAME_WAIT_TIMEOUT_MS, 500);
+            Waiter.waitUntil(statusLocator::isVisible, (long) FRAME_WAIT_TIMEOUT_MS, 500);
         });
     }
 
     public String getOnboardSecretConfiguration(OnboardSecretConfiguration onboardSecretConfiguration) {
         return getFromNestedIframes(PARENT_FRAME_ID, DISCOVERY_CONTEXT_FRAME_ID, frame -> {
             var locator = frame.locator(String.format(SERVICE_INFO_XPATH, onboardSecretConfiguration.label)).first();
+            Waiter.waitUntil(locator::isVisible, (long) FRAME_WAIT_TIMEOUT_MS, 500);
+
+            var text = locator.textContent();
+            return text.replace("\u00A0", "");
+        });
+    }
+
+    public String getSecretPath(){
+        return getFromNestedIframes(PARENT_FRAME_ID, DISCOVERY_CONTEXT_FRAME_ID, frame -> {
+            var locator = frame.locator(SECRET_PATH);
             Waiter.waitUntil(locator::isVisible, (long) FRAME_WAIT_TIMEOUT_MS, 500);
 
             var text = locator.textContent();

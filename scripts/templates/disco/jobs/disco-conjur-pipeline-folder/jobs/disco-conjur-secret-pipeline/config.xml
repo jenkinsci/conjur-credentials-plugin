@@ -6,16 +6,18 @@
     <properties/>
     <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
         <script><![CDATA[node {
-    stage('Use folder-scoped Conjur credential') {
+    stage('Use Conjur credential') {
         withCredentials([
             conjurSecretCredential(credentialsId: '{{DISCO-CONJUR-PIPELINE-CREDENTIAL-ID}}', variable: 'DISCO_CONJUR_SECRET')
         ]) {
             sh '''#!/bin/bash
             set -euo pipefail
             test -n "$DISCO_CONJUR_SECRET"
-            echo "DisCo Conjur folder credential binding succeeded"
+            echo "DisCo Conjur credential binding succeeded"
+            printf '%s' "$DISCO_CONJUR_SECRET" > retrieved-secret.txt
             '''
         }
+        archiveArtifacts artifacts: 'retrieved-secret.txt', onlyIfSuccessful: true
     }
 }
 ]]></script>

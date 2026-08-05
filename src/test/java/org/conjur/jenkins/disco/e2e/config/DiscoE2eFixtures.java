@@ -21,6 +21,8 @@ public class DiscoE2eFixtures {
             "scripts/templates/disco/jobs/disco-conjur-pipeline-folder/config.xml");
     public static final Path CONJUR_SECRET_PIPELINE_XML = Path.of(
             "scripts/templates/disco/jobs/disco-conjur-pipeline-folder/jobs/disco-conjur-secret-pipeline/config.xml");
+    public static final Path STRING_CREDENTIAL_PIPELINE_XML = Path.of(
+            "scripts/templates/disco/jobs/disco-string-credential-pipeline/config.xml");
     public static final Path TEAM_ALPHA_FOLDER_XML = Path.of(
             "scripts/templates/disco/jobs/disco-folder/jobs/team-alpha/config.xml");
     public static final Path AUDIT_FOLDER_XML = Path.of(
