@@ -3,7 +3,6 @@ package org.conjur.jenkins.jwtauth.impl;
 import hudson.model.*;
 import jenkins.model.Jenkins;
 import org.acegisecurity.Authentication;
-import org.apache.commons.lang.StringUtils;
 import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.api.ConjurAPIUtils;
 import org.conjur.jenkins.configuration.GlobalConjurConfiguration;
@@ -202,7 +201,7 @@ public class JwtToken {
                 }
                 identityFieldName = processIdentityFieldName(globalConfig.getidentityFieldName());
                 LOGGER.log(Level.FINE, "end of processIdentityFieldName()) identityFieldName : " + identityFieldName);
-                final String identityFieldValue = StringUtils.join(identityValues, fieldSeparator);
+                final String identityFieldValue = String.join(fieldSeparator == null ? "" : fieldSeparator, identityValues);
                 jwtToken.claim.put(identityFieldName, identityFieldValue);
                 jwtToken.claim.put("sub", identityFieldValue);
 
@@ -224,7 +223,7 @@ public class JwtToken {
                     identityValues.add(identityFieldValue);
                     LOGGER.log(Level.FINE, "getUnsignedToken() *** processed identity field:" + identityField + " and value:" + identityFieldValue);
                 }
-                jwtToken.claim.put("sub", StringUtils.join(identityValues, separator));
+                jwtToken.claim.put("sub", String.join(separator, identityValues));
             }
 
         } else if (contextObject instanceof Hudson) {
@@ -284,7 +283,7 @@ public class JwtToken {
             for (String identityField : identityFields) {
                 identityValues.add(probe.claim.has(identityField) ? probe.claim.getString(identityField) : "");
             }
-            return StringUtils.join(identityValues, fieldSeparator);
+            return String.join(fieldSeparator == null ? "" : fieldSeparator, identityValues);
         } else {
             List<String> identityFields = Arrays.asList(globalConfig.getSelectIdentityFormatToken().split("[-,+,|,:,.]"));
             String token = globalConfig.getSelectIdentityFormatToken();
@@ -299,7 +298,7 @@ public class JwtToken {
             for (String identityField : identityFields) {
                 identityValues.add(probe.claim.has(identityField) ? probe.claim.getString(identityField) : "");
             }
-            return StringUtils.join(identityValues, separator);
+            return String.join(separator, identityValues);
         }
     }
 

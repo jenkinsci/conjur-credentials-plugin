@@ -5,6 +5,7 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.Util;
 import hudson.model.*;
 import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
@@ -13,7 +14,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-import org.apache.commons.lang.StringUtils;
 import org.conjur.jenkins.authenticator.AbstractAuthenticator;
 import org.conjur.jenkins.authenticator.ConjurAPIKeyAuthenticator;
 import org.conjur.jenkins.authenticator.ConjurJWTAuthenticator;
@@ -296,13 +296,13 @@ public class ConjurAPI {
 
         if (resultingConfig == null) {
             LOGGER.log(Level.SEVERE, MISSING_CONJUR_CONFIG.format());
-        } else if (StringUtils.isEmpty(resultingConfig.getAccount())) {
+        } else if (Util.fixEmpty(resultingConfig.getAccount()) == null) {
             LOGGER.log(Level.SEVERE, MISSING_ACCOUNT_FIELD.format());
-        } else if (StringUtils.isEmpty(resultingConfig.getApplianceURL())) {
+        } else if (Util.fixEmpty(resultingConfig.getApplianceURL()) == null) {
             LOGGER.log(Level.SEVERE, MISSING_APPLIANCE_URL.format());
         } else if (globalConfig != null &&
                 globalConfig.getSelectAuthenticator().equals("APIKey") &&
-                StringUtils.isEmpty(resultingConfig.getCredentialID())) {
+                Util.fixEmpty(resultingConfig.getCredentialID()) == null) {
             LOGGER.log(Level.SEVERE, MISSING_APIKEY_CREDENTIALS.format());
         }
 

@@ -6,6 +6,7 @@ import com.cloudbees.plugins.credentials.common.*;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Item;
@@ -14,7 +15,6 @@ import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
 import org.conjur.jenkins.jwtauth.impl.JwtToken;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -346,24 +346,24 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
         }
         ConjurConfiguration result = new ConjurConfiguration(this);
 
-        if (StringUtils.isBlank(result.getAccount())) {
+        if (Util.fixEmptyAndTrim(result.getAccount()) == null) {
             result.setAccount(parent.getAccount());
         }
-        if (StringUtils.isBlank(result.getOwnerFullName())) {
+        if (Util.fixEmptyAndTrim(result.getOwnerFullName()) == null) {
             result.setOwnerFullName(parent.getOwnerFullName());
         }
-        if (StringUtils.isBlank(result.getCertificateCredentialID())) {
+        if (Util.fixEmptyAndTrim(result.getCertificateCredentialID()) == null) {
             result.setCertificateCredentialID(parent.getCertificateCredentialID());
         }
         // credentialIDContext are assigned to credentialID
-        if (StringUtils.isBlank(result.getCredentialID())) {
+        if (Util.fixEmptyAndTrim(result.getCredentialID()) == null) {
             result.setCredentialID(parent.getCredentialID());
             result.setCredentialIDContext(parent.getCredentialIDContext());
         }
         if (result.certificateCredentials == null) {
             result.setCertificateCredentials(parent.getCertificateCredentials());
         }
-        if (StringUtils.isBlank(result.getApplianceURL())) {
+        if (Util.fixEmptyAndTrim(result.getApplianceURL()) == null) {
             result.setApplianceURL(parent.getApplianceURL());
         }
         return result;

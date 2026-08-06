@@ -6,13 +6,13 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.Extension;
+import hudson.Util;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
 import org.conjur.jenkins.configuration.GlobalConjurConfiguration;
 import org.conjur.jenkins.disco.discovery.DiscoveryOrchestrator;
 import org.conjur.jenkins.disco.model.DiscoveryRunResult;
@@ -217,7 +217,7 @@ public class DiscoExporterConfiguration extends GlobalConfiguration implements S
     public void doLaunchNow(StaplerRequest req, StaplerResponse rsp) throws Exception {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
 
-        if (StringUtils.isBlank(subdomain)) {
+        if (Util.fixEmptyAndTrim(subdomain) == null) {
             rsp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             rsp.getWriter().write("{\"error\":\"" + SUBDOMAIN_NOT_CONFIGURED_UI.format() + "\"}");
             return;
@@ -245,7 +245,7 @@ public class DiscoExporterConfiguration extends GlobalConfiguration implements S
     // -------------------------------------------------------------------------
 
     public FormValidation doCheckSubdomain(@QueryParameter String subdomain) {
-        if (StringUtils.isBlank(subdomain)) return FormValidation.error("Subdomain is required");
+        if (Util.fixEmptyAndTrim(subdomain) == null) return FormValidation.error("Subdomain is required");
         if (!SUBDOMAIN_PATTERN.matcher(subdomain).matches())
             return FormValidation.error("Subdomain must match ^[a-zA-Z0-9-]+$");
         return FormValidation.ok();
@@ -258,19 +258,19 @@ public class DiscoExporterConfiguration extends GlobalConfiguration implements S
     }
 
     public FormValidation doCheckConjurCredentialId(@QueryParameter String conjurCredentialId) {
-        if (StringUtils.isBlank(conjurCredentialId))
+        if (Util.fixEmptyAndTrim(conjurCredentialId) == null)
             return FormValidation.warning("A credential is required for authenticated export");
         return FormValidation.ok();
     }
 
     public FormValidation doCheckDiscoUsernameCredentialId(@QueryParameter String discoUsernameCredentialId) {
-        if (StringUtils.isBlank(discoUsernameCredentialId))
+        if (Util.fixEmptyAndTrim(discoUsernameCredentialId) == null)
             return FormValidation.warning("Username secret credential is required");
         return FormValidation.ok();
     }
 
     public FormValidation doCheckDiscoPasswordCredentialId(@QueryParameter String discoPasswordCredentialId) {
-        if (StringUtils.isBlank(discoPasswordCredentialId))
+        if (Util.fixEmptyAndTrim(discoPasswordCredentialId) == null)
             return FormValidation.warning("Password secret credential is required");
         return FormValidation.ok();
     }
@@ -332,7 +332,7 @@ public class DiscoExporterConfiguration extends GlobalConfiguration implements S
     // -------------------------------------------------------------------------
 
     private StandardCredentials lookupById(String id) {
-        if (StringUtils.isBlank(id)) return null;
+        if (Util.fixEmptyAndTrim(id) == null) return null;
         return CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentialsInItemGroup(
                         StandardCredentials.class, Jenkins.get(), ACL.SYSTEM2, Collections.emptyList()),

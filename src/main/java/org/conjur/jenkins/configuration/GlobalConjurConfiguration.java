@@ -1,12 +1,12 @@
 package org.conjur.jenkins.configuration;
 
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.AbstractItem;
 import hudson.model.ModelObject;
 import hudson.util.FormValidation;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
 import org.conjur.jenkins.jwtauth.impl.JwtToken;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -52,7 +52,7 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
      */
     public FormValidation doCheckAuthWebServiceId(@AncestorInPath AbstractItem anc,
                                                   @QueryParameter("authWebServiceId") String authWebServiceId) {
-        if (StringUtils.isEmpty(authWebServiceId) || StringUtils.isBlank(authWebServiceId)) {
+        if (Util.fixEmptyAndTrim(authWebServiceId) == null) {
             LOGGER.log(Level.FINEST, AUTH_WEB_SERVICE_ID_EMPTY.format());
             return FormValidation.error(AUTH_WEB_SERVICE_ID_EMPTY.format());
         } else {
