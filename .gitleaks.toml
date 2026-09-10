@@ -1,0 +1,33 @@
+title = "conjur-credentials-plugin gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = """
+Known-safe test/mock fixtures flagged by the Atlantis Gitleaks scanner.
+None of these are real credentials — they never authenticate against a
+real Conjur/Secrets Manager instance:
+  - s3cr3t-db-pass-2026 / ak_live_9f8e7d6c5b4a3210: canned entries in the
+    e2e-authn-cert mock Conjur server's MOCK_SECRETS table
+    (e2e-authn-cert/docker/conjur-mock.py), asserted against in
+    ConjurCertAuthenticatorE2ETest.
+  - the JWT below is the canonical public example token from jwt.io's
+    documentation ({"sub":"1234567890","name":"John Doe","iat":1516239022}),
+    used only as a Mockito thenReturn() value in ConjurAPITest.
+
+Verified clean with `gitleaks detect --source .` against the full history
+(993 commits) as of 2026-09-10 — 0 matches for any of the values below.
+Commit 6e5e1d58afb427ff96f3a80585c4da8388abcfa2 is pinned explicitly below
+since it's the sole commit that introduced these fixtures; older PR scan
+reports citing a different SHA for the same fixture strings predate this
+allowlist and are stale.
+"""
+commits = [
+  "6e5e1d58afb427ff96f3a80585c4da8388abcfa2",
+]
+regexes = [
+  '''s3cr3t-db-pass-2026''',
+  '''ak_live_9f8e7d6c5b4a3210''',
+  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ\.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c''',
+]

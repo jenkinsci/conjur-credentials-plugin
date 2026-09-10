@@ -323,8 +323,12 @@ public class ConjurAPITest {
         AbstractAuthenticator jwtAuth = ConjurAPI.getAuthenticatorByName("JWT");
         String jwtAuthSelected = jwtAuth.getName();
 
+        AbstractAuthenticator certAuth = ConjurAPI.getAuthenticatorByName("Certificate");
+        String certAuthSelected = certAuth.getName();
+
         assertEquals("APIKey", tokenAuthSelected);
         assertEquals("JWT", jwtAuthSelected);
+        assertEquals("Certificate", certAuthSelected);
     }
 
     @Test

@@ -22,6 +22,14 @@
             <c:select name="_.credentialID" onchange="validateJWTButton(this)"/>
         </f:entry>
     </div>
+    <div id="conjurCertFields" style="display: none;">
+        <f:entry title="${%Certificate Auth Service ID}" field="certAuthServiceId">
+            <f:textbox field="certAuthServiceId" name="certAuthServiceId"/>
+        </f:entry>
+        <f:entry title="${%Certificate Host ID}" field="certHostId">
+            <f:textbox field="certHostId" name="certHostId"/>
+        </f:entry>
+    </div>
     <div id="jwtValidateButton" style="display: none;">
         <f:validateButton
             title="${%JWT Claims}" progress="${%resolving...}"
@@ -45,13 +53,21 @@
             var conjurLocalTokenClaims  = document.getElementById('conjurLocalTokenClaims');
             conjurChoosenAuthenticator.style.display = "none";  // always set to invisible but use field to show/hide other fields
             var credentialSelect = document.getElementsByName('_.credentialID')[0];
+            var certFields = document.getElementById('conjurCertFields');
             if( globalAuthenticator.value === 'APIKey'){
-                conjurLocalTokenClaims.style.display = "none";
+                if(conjurLocalTokenClaims) conjurLocalTokenClaims.style.display = "none";
                 conjurLocalAPIKeyCredentials.style.display = "block";
+                if(certFields) certFields.style.display = "none";
             }
             else if( globalAuthenticator.value === 'JWT'){
-                conjurLocalTokenClaims.style.display = "block";
+                if(conjurLocalTokenClaims) conjurLocalTokenClaims.style.display = "block";
                 conjurLocalAPIKeyCredentials.style.display = "none";
+                if(certFields) certFields.style.display = "none";
+            }
+            else if( globalAuthenticator.value === 'Certificate'){
+                if(conjurLocalTokenClaims) conjurLocalTokenClaims.style.display = "none";
+                conjurLocalAPIKeyCredentials.style.display = "none";
+                if(certFields) certFields.style.display = "block";
             }
         }
         changeAuthenticationOption();

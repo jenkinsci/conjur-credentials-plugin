@@ -1,7 +1,6 @@
 
 package org.conjur.jenkins.conjursecrets;
 
-import ch.qos.logback.core.Context;
 import com.cloudbees.plugins.credentials.CredentialsDescriptor;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import hudson.model.Item;
@@ -37,9 +36,6 @@ public class ConjurSecretCredentialImplTest {
 
     @Mock
     private ModelObject mockStoreContext;
-
-    @Mock
-    private Context mockContext;
 
     @Mock
     private ConjurConfiguration mockConjurConfiguration;

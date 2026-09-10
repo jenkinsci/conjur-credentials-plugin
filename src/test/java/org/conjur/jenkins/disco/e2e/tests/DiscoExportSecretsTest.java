@@ -39,7 +39,7 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 "String secret text credential in a folder",
                 JenkinsCredentialType.STRING,
                 false,
-                MEDIUM_RISK_LEVEL);
+                MEDIUM_RISK_LEVEL, MEDIUM_RISK_LEVEL);
     }
 
     @Test
@@ -123,7 +123,7 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 "String secret text credential in a folder",
                 JenkinsCredentialType.STRING,
                 false,
-                MEDIUM_RISK_LEVEL);
+                MEDIUM_RISK_LEVEL, MEDIUM_RISK_LEVEL);
 
         jenkinsSteps.createFromXml(
                 ROOT_FOLDER_WITHOUT_CREDENTIALS_XML,
