@@ -105,24 +105,6 @@
 			<artifactId>lombok</artifactId>
 			<version>1.18.38</version>
 		</dependency>
-		<dependency>
-			<groupId>org.javassist</groupId>
-			<artifactId>javassist</artifactId>
-			<version>3.30.2-GA</version>
-		</dependency>
-		<dependency>
-			<groupId>ch.qos.logback</groupId>
-			<artifactId>logback-classic</artifactId>
-			<version>1.5.20</version>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.thoughtworks.xstream</groupId>
-			<artifactId>xstream</artifactId>
-		</dependency>
 
 		<!-- Test dependencies -->
 		<dependency>
@@ -189,6 +171,52 @@
 				<groupId>org.apache.commons</groupId>
 				<artifactId>commons-fileupload2-core</artifactId>
 				<version>2.0.0-M5</version>
+			</dependency>
+			<!-- CVE-2026-68494 / GHSA-r7wm-3cxj-wff9 (CWE-770, CVSS 8.7): jackson2-api
+			     pulls jackson-core 2.17.0, which is vulnerable to unbounded memory
+			     allocation when the async parser receives a chunked numeric token.
+			     Pin the jackson2 modules to the fixed version. Like jackson2-api itself,
+			     these jars are excluded from our .hpi and provided at runtime by the
+			     jackson2-api plugin installed on the Jenkins controller, so this pin
+			     only affects our build graph — it silences Snyk but does not change
+			     what jackson-core version actually loads at runtime. -->
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-core</artifactId>
+				<version>2.18.8</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-databind</artifactId>
+				<version>2.18.8</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-annotations</artifactId>
+				<version>2.18.8</version>
+			</dependency>
+			<!-- CVE-2026-58062 / SNYK-JAVA-ORGBOUNCYCASTLE-18519194 (CWE-295, CVSS 9.3)
+			     and CVE-2026-59650 / SNYK-JAVA-ORGBOUNCYCASTLE-18512810 (CWE-20, CVSS 9.3):
+			     bouncycastle-api (pulled in via the credentials plugin) bundles
+			     bcprov/bcpkix/bcutil-jdk18on 1.78.1. Pin to the fixed version for the
+			     same reason as the jackson2 pins above — these jars are also excluded
+			     from our .hpi and provided at runtime by the bouncycastle-api plugin,
+			     so this silences Snyk but does not change the runtime-loaded version;
+			     that requires bouncycastle-api itself to ship on a newer BC release. -->
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcprov-jdk18on</artifactId>
+				<version>1.85</version>
+			</dependency>
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcpkix-jdk18on</artifactId>
+				<version>1.85</version>
+			</dependency>
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcutil-jdk18on</artifactId>
+				<version>1.85</version>
 			</dependency>
 			<!-- Pin to highest version required across the transitive graph -->
 			<dependency>

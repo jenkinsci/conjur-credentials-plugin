@@ -41,19 +41,28 @@ function changeAuthenticationOption() {
     const listAuthenticator = document.getElementById('listAuthenticator');
     const optionText = listAuthenticator.options[listAuthenticator.selectedIndex].text;
     const conjurGlobalJWTSection = document.getElementById('conjurGlobalJWTSection');
+    const conjurGlobalCertSection = document.getElementById('conjurGlobalCertSection');
     const conjurLocalAPIKeyCredentials = document.getElementById('conjurLocalAPIKeyCredentials');
     const conjurLocalTokenClaims = document.getElementById('conjurLocalTokenClaims');
     const jwtBtn = document.getElementById('jwtValidateButton');
 
     if (optionText === 'APIKey') {
         conjurGlobalJWTSection.style.display = 'none';
+        conjurGlobalCertSection.style.display = 'none';
         conjurLocalAPIKeyCredentials.style.display = 'block';
         conjurLocalTokenClaims.style.display = 'none';
         jwtBtn.style.display = 'none';
     } else if (optionText === 'JWT') {
         conjurGlobalJWTSection.style.display = 'block';
+        conjurGlobalCertSection.style.display = 'none';
         conjurLocalAPIKeyCredentials.style.display = 'none';
         conjurLocalTokenClaims.style.display = 'block';
+        jwtBtn.style.display = 'none';
+    } else if (optionText === 'Certificate') {
+        conjurGlobalJWTSection.style.display = 'none';
+        conjurGlobalCertSection.style.display = 'block';
+        conjurLocalAPIKeyCredentials.style.display = 'none';
+        conjurLocalTokenClaims.style.display = 'none';
         jwtBtn.style.display = 'none';
     }
 }

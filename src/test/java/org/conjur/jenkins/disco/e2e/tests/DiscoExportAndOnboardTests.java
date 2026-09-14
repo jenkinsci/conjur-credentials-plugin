@@ -72,7 +72,7 @@ public class DiscoExportAndOnboardTests extends DiscoE2eTestBase {
         onboardPage.waitForSecretStatus("Created");
 
         var conjurAccount = onboardPage.getOnboardSecretConfiguration(CONJUR_ACCOUNT);
-        var applianceUrl = onboardPage.getOnboardSecretConfiguration(CONJUR_APPLIANCE_URL);
+        var applianceUrl = onboardPage.getOnboardSecretConfiguration(SECRETS_MANAGER_APPLIANCE_URL);
         var serviceId = onboardPage.getOnboardSecretConfiguration(SERVICE_ID);
         var secretPath = onboardPage.getSecretPath();
 

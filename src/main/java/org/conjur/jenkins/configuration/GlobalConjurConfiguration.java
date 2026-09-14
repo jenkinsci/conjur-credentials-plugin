@@ -35,6 +35,8 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
     private long keyLifetimeInMinutes = 60;
     private long tokenDurationInSeconds = 120;
     private String selectAuthenticator = "JWT";
+    private String certAuthServiceId = "";
+    private String certHostId = "";
     private Boolean enableIdentityFormatFieldsFromToken = false;
     private String identityFormatFieldsFromToken = "jenkins_full_name";
     private String selectIdentityFormatToken = "jenkins_full_name";
@@ -193,6 +195,26 @@ public class GlobalConjurConfiguration extends GlobalConfiguration implements Se
             return FormValidation.ok("JWT Token: \n" + token.claim.toString(4));
         }
         return FormValidation.ok("JWT Token: \nCannot obtain token");
+    }
+
+    public String getCertAuthServiceId() {
+        return certAuthServiceId;
+    }
+
+    @DataBoundSetter
+    public void setCertAuthServiceId(String certAuthServiceId) {
+        this.certAuthServiceId = certAuthServiceId;
+        save();
+    }
+
+    public String getCertHostId() {
+        return certHostId;
+    }
+
+    @DataBoundSetter
+    public void setCertHostId(String certHostId) {
+        this.certHostId = certHostId;
+        save();
     }
 
     public Boolean getEnableIdentityFormatFieldsFromToken() {

@@ -106,7 +106,7 @@ On every page that you can configure the plugin (System and Jenkins item configu
    | Select Secrets Manager Authentication Type | Select **JWT** |
    | Secrets Manager Account | The Secrets Manager account name, as provided by your Secrets Manager admin |
    | Secrets Manager Appliance URL | **Optional.** The Secrets Manager URL, as provided by your Secrets Manager admin.<br><br>If you specify the Secrets Manager URL on the System page, Jenkins sends a request to Secrets Manager when a job runs, even if the job does not need to retrieve secrets from Secrets Manager.<br><br>To set up the Conjur Secrets plugin so that it only runs for specific jobs, leave this field blank and add the Secrets Manager URL on the relevant job configuration pages (such as folder, pipeline, and freestyle configuration pages). For more information about scoping the plugin to specific Jenkins items, see [Jenkins secret inheritance](#jenkins-secret-inheritance). |
-   | Secrets Manager SSL Certificate | Only relevant for Secrets Manager Self-Hosted. This certificate authority (CA) certificate verifies the Secrets Manager connection.<br><br>Select a previously configured CA certificate or add a new one to secure the Secrets Manager connection.<br><br>To add a certificate in p12 or PEM format:<br><br>1. Retrieve the certificate from Secrets Manager using the OpenSSL Client tool. The following command retrieves the certificate and stores it on your local machine:<br>```bash<br>openssl s_client -showcerts -connect <CONJUR_FQDN>:443 < /dev/null 2> /dev/null \| sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > <file-name>.pem<br>```<br>For example:<br>```bash<br>openssl s_client -showcerts -connect myorg.example.com:443 < /dev/null 2> /dev/null \| sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > conjur.pem<br>```<br>2. To convert to p12 format:<br>```bash<br>openssl pkcs12 -export -nokeys -in <file-name>.pem -out <file-name>.p12<br>```<br>3. Click **Add** > **Jenkins**. From the **Kind** dropdown list, select **Certificate**.<br>   - **PEM:** Select **PEM encoded certificate and key**. In the **Certificates** textbox, click **Add** and paste the contents of the PEM file.<br>   - **p12:** Select **Upload PKCS#12 certificate and key** and select the p12 file.<br><br>You may need to use the `keytool` command to add the certificate to the Java trust store. For example:<br>```bash<br>keytool -importcert -v \<br>        -alias server-alias \<br>        -file server.cer \<br>        -keystore cacerts.jks \<br>        -storepass changeit<br>``` |
+   | Secrets Manager SSL Certificate | Only relevant for Secrets Manager Self-Hosted, or **required** if you use [Certificate Authentication (authn-cert)](#configure-certificate-authentication-authn-cert). For Self-Hosted JWT/API key authentication, this holds the certificate authority (CA) certificate that verifies the Secrets Manager connection. For Certificate Authentication, this must instead hold the client certificate and private key that Secrets Manager validates during the mTLS handshake — without it, the authn-cert authenticator has no certificate to present and authentication fails.<br><br>Select a previously configured certificate or add a new one to secure the Secrets Manager connection.<br><br>To add a certificate in p12 or PEM format:<br><br>1. Retrieve the certificate from Secrets Manager using the OpenSSL Client tool. The following command retrieves the certificate and stores it on your local machine:<br>```bash<br>openssl s_client -showcerts -connect <CONJUR_FQDN>:443 < /dev/null 2> /dev/null \| sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > <file-name>.pem<br>```<br>For example:<br>```bash<br>openssl s_client -showcerts -connect myorg.example.com:443 < /dev/null 2> /dev/null \| sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > conjur.pem<br>```<br>2. To convert to p12 format:<br>```bash<br>openssl pkcs12 -export -nokeys -in <file-name>.pem -out <file-name>.p12<br>```<br>3. Click **Add** > **Jenkins**. From the **Kind** dropdown list, select **Certificate**.<br>   - **PEM:** Select **PEM encoded certificate and key**. In the **Certificates** textbox, click **Add** and paste the contents of the PEM file.<br>   - **p12:** Select **Upload PKCS#12 certificate and key** and select the p12 file.<br><br>You may need to use the `keytool` command to add the certificate to the Java trust store. For example:<br>```bash<br>keytool -importcert -v \<br>        -alias server-alias \<br>        -file server.cer \<br>        -keystore cacerts.jks \<br>        -storepass changeit<br>``` |
 
 3. Under **Secrets Manager JWT Authentication**, provide the JWT authentication details:
 
@@ -348,7 +348,7 @@ If you are working with JWT authentication, follow the instructions under [Confi
    | Secrets Manager Account | The Secrets Manager account name, as provided by your Secrets Manager admin |
    | Secrets Manager Appliance URL | **Optional.** The Secrets Manager URL, as provided by your Secrets Manager admin.<br><br>If you specify the Secrets Manager URL on the System page, Jenkins sends a request to Secrets Manager when a job runs, even if the job does not need to retrieve secrets from Secrets Manager.<br><br>To set up the Conjur Secrets plugin so that it only runs for specific jobs, leave this field blank and add the Secrets Manager URL on the relevant job configuration pages. For more information, see [Jenkins secret inheritance](#jenkins-secret-inheritance). |
    | Secrets Manager APIKey Credential | The credential that you created in the previous step. |
-   | Secrets Manager SSL Certificate | Only relevant for Secrets Manager Self-Hosted. This certificate authority (CA) certificate verifies the Secrets Manager connection. See the SSL certificate instructions in [Step 2 of the JWT configuration](#step-2-jenkins-admin-configure-the-conjur-secrets-plugin) for details on adding a PEM or p12 certificate. |
+   | Secrets Manager SSL Certificate | Only relevant for Secrets Manager Self-Hosted, or **required** if you use [Certificate Authentication (authn-cert)](#configure-certificate-authentication-authn-cert) — see that section for what this field must contain in that case. This certificate authority (CA) certificate verifies the Secrets Manager connection. See the SSL certificate instructions in [Step 2 of the JWT configuration](#step-2-jenkins-admin-configure-the-conjur-secrets-plugin) for details on adding a PEM or p12 certificate. |
 
 ## Define Secrets Manager secret credentials in Jenkins
 
@@ -494,6 +494,108 @@ Jenkins supports different credential types. To automatically map Secrets Manage
 # mapped by default as secret credential
   - !variable local-secret
 ```
+
+## Configure Certificate Authentication (authn-cert)
+
+Certificate authentication uses mutual TLS (mTLS) to authenticate Jenkins to Secrets Manager. The Jenkins controller presents a client certificate, and Secrets Manager validates it against configured identity annotations.
+
+### Step 1: Gather information
+
+The following information is needed:
+
+- **Certificate Auth Service ID** — The authenticator service ID (e.g. `prod-jenkins`). The plugin constructs the path `authn-cert/<service-id>` automatically.
+- **Certificate Host ID** — The Conjur host identity for the Jenkins workload (e.g. `host/jenkins/controller`). This must match the identity annotations defined in Secrets Manager policy.
+- **Client certificate** — A TLS certificate configured on the Jenkins controller's HTTP client that Secrets Manager will validate.
+
+### Step 2: Configure the Conjur Credentials Plugin
+
+Navigate to `Manage Jenkins > System`, under **Conjur Appliance** select `Certificate` as the authenticator.
+
+Two additional fields appear:
+
+| Field | Description |
+|---|---|
+| Certificate Auth Service ID | The service ID portion of the authn-cert endpoint (e.g. `prod-jenkins`) |
+| Certificate Host ID | The Conjur host identity (e.g. `host/jenkins/controller`) |
+
+These fields support **per-folder configuration with inheritance**: you can set different values at the folder level, and nested folders/pipelines inherit from their parent. If a folder does not define its own values, it falls back to the global configuration.
+
+> **Required:** You must also set the **Secrets Manager SSL Certificate** field (in the **Secrets Manager Configuration** section of the same page) to a Jenkins Certificate credential containing the client certificate and private key from Step 1. This is the certificate the plugin's HTTP client presents during the mTLS handshake — Certificate Authentication cannot work without it, and the plugin does not validate at save time that it is set. See the **Secrets Manager SSL Certificate** row in [Step 2 of the JWT configuration](#step-2-jenkins-admin-configure-the-conjur-secrets-plugin) for how to add a PEM or p12 certificate as a Jenkins credential.
+
+### Step 3: Define Secrets Manager Authenticator
+
+Set up a certificate authenticator in Secrets Manager policy:
+
+```yaml
+- !policy
+  id: conjur/authn-cert/prod-jenkins
+  body:
+  - !webservice
+
+  - !variable ca-cert
+
+  - !group authenticatable
+
+  - !permit
+    role: !group authenticatable
+    privilege: [ read, authenticate ]
+    resource: !webservice
+```
+
+Load the policy and set the CA certificate used to validate client certificates:
+
+```bash
+conjur policy load -f authn-cert-jenkins.yml -b root
+conjur variable set -i conjur/authn-cert/prod-jenkins/ca-cert -v "$(cat ca-chain.pem)"
+```
+
+Enable the authenticator by [allow-listing](https://docs.cyberark.com/conjur-open-source/latest/en/content/operations/services/authentication-types.htm#Allowlis) `authn-cert/prod-jenkins`.
+
+### Step 4: Define the Host with Identity Annotations
+
+For **Secrets Manager SaaS/Edge**, identity is matched via certificate SAN or CN annotations:
+
+```yaml
+- !host
+  id: jenkins/controller
+  annotations:
+    authn-cert/prod-jenkins/san-uri: spiffe://example.com/jenkins
+    # Other annotation options:
+    # authn-cert/prod-jenkins/san-dns: jenkins.example.com
+    # authn-cert/prod-jenkins/san-ip: 10.0.1.50
+    # authn-cert/prod-jenkins/cn: jenkins-controller
+
+- !grant
+  role: !group conjur/authn-cert/prod-jenkins/authenticatable
+  member: !host jenkins/controller
+```
+
+For **Secrets Manager Self-Hosted (Enterprise)**, identity is typically matched by the certificate CN:
+
+```yaml
+- !host
+  id: jenkins/controller
+  annotations:
+    authn-cert/prod-jenkins/cn: jenkins-controller
+```
+
+### Step 5: Per-Folder Configuration (Optional)
+
+To use different certificate identities at different folder levels, configure the **Certificate Auth Service ID** and **Certificate Host ID** fields in the folder's Conjur configuration (folder > Configure > Conjur Appliance).
+
+Inheritance rules:
+- If a folder defines `certAuthServiceId` and `certHostId`, those values are used for credentials in that folder and its children.
+- If a folder leaves these fields blank, it inherits from its parent folder or global configuration.
+- Global configuration is always the final fallback.
+
+### Authentication Flow
+
+1. Jenkins plugin constructs the URL: `POST {applianceUrl}/authn-cert/{serviceId}/{account}/{urlEncodedHostId}/authenticate`
+2. The HTTP client presents the configured client certificate via mTLS.
+3. Secrets Manager validates the certificate against the host's identity annotations.
+4. On success, Secrets Manager returns an access token used for subsequent secret retrieval.
+
+> **Note:** No API key or JWT is used. The mTLS handshake itself proves identity. The `apiKey` field is explicitly set to `null` when certificate authentication is active.
 
 ## Idira Secrets and Machine Identities Discovery Configuration
 

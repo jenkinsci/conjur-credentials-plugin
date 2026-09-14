@@ -130,6 +130,30 @@ public final class SecretsApiSteps implements AutoCloseable {
         return fetchSecretRisksBySecretId(secretId).riskLevelsForFirstSecret();
     }
 
+    /**
+     * Polls until the risk levels for {@code secretId} match {@code expectedLevels}.
+     * DisCo computes risk findings asynchronously after the secret record is stored,
+     * so a single-shot read may observe an empty or partial set. Uses the same
+     * deadline and interval as the other {@code waitFor*} methods.
+     * Returns the last observed levels so the caller's assertion produces a clear diff.
+     */
+    public List<String> waitForRiskLevels(String secretId, String... expectedLevels) throws Exception {
+        ensureAuthenticated();
+        var expected = List.of(expectedLevels);
+        LOG.info("Waiting for DisCo risk levels for secret id: " + secretId + ", expected=" + expected);
+
+        var deadline = System.currentTimeMillis() + DiscoE2eConfig.GRAPHQL_WAIT_TIMEOUT_MS;
+        List<String> observed = List.of();
+        while (System.currentTimeMillis() <= deadline) {
+            observed = fetchRiskLevelsBySecretId(secretId);
+            if (observed.size() == expected.size() && observed.containsAll(expected)) {
+                return observed;
+            }
+            Thread.sleep(DiscoE2eConfig.GRAPHQL_WAIT_INTERVAL_MS);
+        }
+        return observed;
+    }
+
     public int countSecretsByName(GraphQLResponse response, String secretName) {
         return response.secretNameCount(secretName);
     }

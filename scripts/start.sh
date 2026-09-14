@@ -158,7 +158,7 @@ function deploy_conjur_enterprise {
     # Authenticate the CLI container
     docker exec "$(cli_cid)" /bin/sh -c "
       if [ ! -e /home/cli/conjur-server.pem ]; then
-        echo y | conjur init -u ${CONJUR_APPLIANCE_URL} -a ${CONJUR_ACCOUNT} --force --self-signed
+        echo y | conjur init --env self-hosted -u ${CONJUR_APPLIANCE_URL} -a ${CONJUR_ACCOUNT} --force --self-signed
       fi
       conjur login -i admin -p MySecretP@ss1
     "

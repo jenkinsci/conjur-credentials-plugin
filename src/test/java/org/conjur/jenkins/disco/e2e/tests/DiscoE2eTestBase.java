@@ -59,7 +59,7 @@ public abstract class DiscoE2eTestBase extends PlaywrightTestBase {
         assertEquals(Boolean.toString(expectedManagedByCyberArk), secret.managedByCyberArk());
         assertFalse(secret.id().isBlank());
 
-        var actualRiskLevels = secretsApiSteps.fetchRiskLevelsBySecretId(secret.id());
+        var actualRiskLevels = secretsApiSteps.waitForRiskLevels(secret.id(), expectedRiskLevels);
         assertThat(actualRiskLevels).containsExactlyInAnyOrder(expectedRiskLevels);
     }
 }

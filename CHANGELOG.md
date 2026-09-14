@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)an
 
 Please use documentation outlined in the GitHub Readme for this version.  Official CyberArk documentation pages will be updated to reflect these changes once available
 
+## [Unreleased]
+
+### Added
+- Certificate authentication (`authn-cert`): mTLS-based authentication support for the Conjur/Secrets Manager `authn-cert` service, wired into the existing authenticator strategy alongside API key and JWT
+- Per-folder `certAuthServiceId` and `certHostId` configuration with inheritance from the global configuration, matching the JWT authenticator's folder granularity
+- Docker-based E2E test harness (`e2e-authn-cert/`) with mTLS proxy and Conjur mock backend, plus unit, IT, and E2E test coverage for the new authenticator
+
+### Changed
+- DisCo E2E tests updated for two DisCo platform behavior changes that were failing CI: folder-scoped credentials now report 2 `MEDIUM` risk entries instead of 1, and risk levels are computed asynchronously after the secret record appears — assertions now poll for the expected risk levels instead of reading them once.
+
 ## [3.1.2] - 2026-07-28
 
 ### Added

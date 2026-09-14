@@ -16,6 +16,7 @@ import okhttp3.ResponseBody;
 import org.apache.commons.lang.StringUtils;
 import org.conjur.jenkins.authenticator.AbstractAuthenticator;
 import org.conjur.jenkins.authenticator.ConjurAPIKeyAuthenticator;
+import org.conjur.jenkins.authenticator.ConjurCertAuthenticator;
 import org.conjur.jenkins.authenticator.ConjurJWTAuthenticator;
 import org.conjur.jenkins.configuration.*;
 import org.conjur.jenkins.conjursecrets.*;
@@ -102,6 +103,8 @@ public class ConjurAPI {
                 chosenAuthenticator = new ConjurJWTAuthenticator();
             } else if (name.equalsIgnoreCase("APIKey")) {
                 chosenAuthenticator = new ConjurAPIKeyAuthenticator();
+            } else if (name.equalsIgnoreCase("Certificate")) {
+                chosenAuthenticator = new ConjurCertAuthenticator();
             }
         }
         return chosenAuthenticator;

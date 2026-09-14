@@ -52,6 +52,8 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
     private String certificateCredentialID;
     private CertificateCredentials certificateCredentials;
     private String ownerFullName;
+    private String certAuthServiceId;
+    private String certHostId;
 
     public ConjurConfiguration() {
     }
@@ -277,6 +279,24 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
         this.ownerFullName = ownerFullName;
     }
 
+    public String getCertAuthServiceId() {
+        return certAuthServiceId;
+    }
+
+    @DataBoundSetter
+    public void setCertAuthServiceId(String certAuthServiceId) {
+        this.certAuthServiceId = certAuthServiceId;
+    }
+
+    public String getCertHostId() {
+        return certHostId;
+    }
+
+    @DataBoundSetter
+    public void setCertHostId(String certHostId) {
+        this.certHostId = certHostId;
+    }
+
     /**
      * @param item            Jenkins item
      * @param credentialsId   id of credentials
@@ -334,6 +354,8 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
         this.certificateCredentialID = config.getCertificateCredentialID();
         this.applianceURL = config.getApplianceURL();
         this.credentialIDContext = config.getCredentialIDContext();
+        this.certAuthServiceId = config.getCertAuthServiceId();
+        this.certHostId = config.getCertHostId();
     }
 
     /**
@@ -365,6 +387,12 @@ public class ConjurConfiguration extends AbstractDescribableImpl<ConjurConfigura
         }
         if (StringUtils.isBlank(result.getApplianceURL())) {
             result.setApplianceURL(parent.getApplianceURL());
+        }
+        if (StringUtils.isBlank(result.getCertAuthServiceId())) {
+            result.setCertAuthServiceId(parent.getCertAuthServiceId());
+        }
+        if (StringUtils.isBlank(result.getCertHostId())) {
+            result.setCertHostId(parent.getCertHostId());
         }
         return result;
     }
