@@ -206,10 +206,6 @@ public final class GraphQLResponse {
             return stringField(raw, "type");
         }
 
-        public String managedByCyberArk() {
-            return stringField(raw, "managedByCyberArk");
-        }
-
         public boolean hasName(String expectedName) {
             return expectedName.equals(name());
         }

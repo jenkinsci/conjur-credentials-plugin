@@ -16,7 +16,6 @@ public final class SecretsQueries {
             + "      description\n"
             + "      id\n"
             + "      location\n"
-            + "      managedByCyberArk\n"
             + "      name\n"
             + "      originId\n"
             + "      originLastRetrieved\n"

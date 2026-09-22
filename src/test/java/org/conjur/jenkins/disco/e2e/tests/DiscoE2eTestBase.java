@@ -46,7 +46,6 @@ public abstract class DiscoE2eTestBase extends PlaywrightTestBase {
             String expectedPath,
             String expectedDescription,
             JenkinsCredentialType expectedType,
-            boolean expectedManagedByCyberArk,
             String... expectedRiskLevels) throws Exception {
 
         assertEquals(1, secretsApiSteps.countSecretsByName(response, expectedSecretName));
@@ -56,7 +55,6 @@ public abstract class DiscoE2eTestBase extends PlaywrightTestBase {
         assertTrue(secret.containsPath(expectedPath));
         assertEquals(expectedDescription, secret.description());
         assertEquals(expectedType.type(), secret.type());
-        assertEquals(Boolean.toString(expectedManagedByCyberArk), secret.managedByCyberArk());
         assertFalse(secret.id().isBlank());
 
         var actualRiskLevels = secretsApiSteps.waitForRiskLevels(secret.id(), expectedRiskLevels);

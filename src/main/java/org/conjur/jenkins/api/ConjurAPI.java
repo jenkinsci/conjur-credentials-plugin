@@ -4,7 +4,6 @@ import com.cloudbees.hudson.plugins.folder.AbstractFolder;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.*;
 import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
@@ -147,7 +146,6 @@ public class ConjurAPI {
      * Unauthorized
      * @throws IOException in case of error connecting to Conjur Server
      */
-    @SuppressFBWarnings
     public static byte[] getAuthorizationToken(ConjurAuthnInfo conjurAuthn,
                                                ModelObject context) throws IOException {
         setAuthenticator();
@@ -203,7 +201,6 @@ public class ConjurAPI {
      * @return the secrets for the specified variableName
      * @throws IOException
      */
-    @SuppressFBWarnings
     public static byte[] getConjurSecret(OkHttpClient client, ConjurConfiguration configuration, byte[] authToken,
                                          String variableId) throws IOException {
         LOGGER.log(Level.FINEST, String.format("getConjurSecret: variable name %s", variableId));

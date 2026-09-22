@@ -38,7 +38,6 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 buildExpectedSecretPath(jenkinsFolderName, jenkinsCredentialId),
                 "String secret text credential in a folder",
                 JenkinsCredentialType.STRING,
-                false,
                 MEDIUM_RISK_LEVEL, MEDIUM_RISK_LEVEL);
     }
 
@@ -68,7 +67,6 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 buildExpectedGlobalSecretPath(jenkinsCredentialId),
                 jenkinsCredentialDescriptionValue,
                 JenkinsCredentialType.STRING,
-                false,
                 MEDIUM_RISK_LEVEL);
     }
 
@@ -94,8 +92,7 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 jenkinsCredentialId,
                 buildExpectedGlobalSecretPath(jenkinsCredentialId),
                 "Global Conjur secret credential",
-                JenkinsCredentialType.CONJUR_SECRET,
-                true);
+                JenkinsCredentialType.CONJUR_SECRET);
     }
 
     @Test
@@ -122,7 +119,6 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 buildExpectedSecretPath(jenkinsFolderName, jenkinsCredentialId),
                 "String secret text credential in a folder",
                 JenkinsCredentialType.STRING,
-                false,
                 MEDIUM_RISK_LEVEL, MEDIUM_RISK_LEVEL);
 
         jenkinsSteps.createFromXml(
@@ -166,7 +162,6 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 buildExpectedGlobalSecretPath(jenkinsCredentialId),
                 initialDescriptionValue,
                 JenkinsCredentialType.STRING,
-                false,
                 MEDIUM_RISK_LEVEL);
 
         // Update the same Jenkins credential. The ID must stay the same because Jenkins rejects
@@ -193,7 +188,6 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 buildExpectedGlobalSecretPath(jenkinsCredentialId),
                 updatedDescription,
                 JenkinsCredentialType.STRING,
-                false,
                 MEDIUM_RISK_LEVEL);
     }
 
@@ -222,7 +216,6 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 buildExpectedGlobalSecretPath(jenkinsCredentialId),
                 jenkinsCredentialDescriptionValue,
                 JenkinsCredentialType.STRING,
-                false,
                 MEDIUM_RISK_LEVEL);
 
         jenkinsSteps.runJenkinsGroovy(discoExportGroovyScript);
@@ -233,7 +226,6 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 buildExpectedGlobalSecretPath(jenkinsCredentialId),
                 jenkinsCredentialDescriptionValue,
                 JenkinsCredentialType.STRING,
-                false,
                 MEDIUM_RISK_LEVEL);
     }
 
@@ -304,7 +296,6 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 buildExpectedSecretPath(rootFolderName, rootCredentialId),
                 rootCredentialDescription,
                 JenkinsCredentialType.STRING,
-                false,
                 MEDIUM_RISK_LEVEL);
 
         var teamAlphaResponse = secretsApiSteps.waitForSecret(teamAlphaCredentialId);
@@ -314,7 +305,6 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 buildExpectedSecretPath(teamAlphaFolderPath, teamAlphaCredentialId),
                 teamAlphaCredentialDescription,
                 JenkinsCredentialType.STRING,
-                false,
                 MEDIUM_RISK_LEVEL);
 
         var auditResponse = secretsApiSteps.waitForSecret(auditCredentialId);
@@ -324,7 +314,6 @@ public class DiscoExportSecretsTest extends DiscoE2eTestBase {
                 buildExpectedSecretPath(auditFolderPath, auditCredentialId),
                 auditCredentialDescription,
                 JenkinsCredentialType.STRING,
-                false,
                 MEDIUM_RISK_LEVEL);
     }
 }
