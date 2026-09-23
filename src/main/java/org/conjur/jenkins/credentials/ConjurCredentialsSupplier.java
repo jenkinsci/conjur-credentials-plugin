@@ -2,7 +2,6 @@ package org.conjur.jenkins.credentials;
 
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.ModelObject;
 import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.api.ConjurAPI;
@@ -60,8 +59,7 @@ public class ConjurCredentialsSupplier implements Supplier<Collection<StandardCr
 	 * 
 	 * @return collection of StandardCredential
 	 */
-	@SuppressFBWarnings
-    @Override
+	@Override
     public Collection<StandardCredentials> get()
     {
         if (getContext() == null)

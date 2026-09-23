@@ -1,7 +1,8 @@
 package org.conjur.jenkins.jwtauth;
 
 import org.junit.Test;
-import org.springframework.web.HttpRequestMethodNotSupportedException;
+
+import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
@@ -34,11 +35,11 @@ public class JwtAuthenticationServiceTest {
 
 
     @Test
-    public void testGetJwkSet() throws HttpRequestMethodNotSupportedException {
+    public void testGetJwkSet() throws IOException {
         JwtAuthenticationService authService = new JwtAuthenticationService() {
 
             @Override
-            public String getJwkSet() throws HttpRequestMethodNotSupportedException {
+            public String getJwkSet() {
                 return "Mocked JWK Set";
             }
 

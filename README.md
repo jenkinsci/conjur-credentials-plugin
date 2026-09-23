@@ -47,7 +47,7 @@ Install the Conjur Secrets plugin from:
 - **Jenkins's Plugins page** (**Manage Jenkins** > **Plugins** > **Available plugins**) — requires an administrator account.
 - **[Jenkins Plugins Index](https://plugins.jenkins.io/conjur-credentials/)** website — search for the Conjur Secrets plugin and install the relevant release (from the **Releases** tab).
 
-The minimum supported version of the Jenkins plugin is 2.462.3.
+The minimum supported version of the Jenkins plugin is 2.516.3.
 
 Restart Jenkins.
 
