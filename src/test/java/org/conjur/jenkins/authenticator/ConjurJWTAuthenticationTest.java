@@ -79,7 +79,9 @@ class ConjurJWTAuthenticatorTest {
                 .encodeToString(responseMessage.getBytes(StandardCharsets.UTF_8));
 
         try (MockedStatic<ConjurAPIUtils> utilsStatic = mockStatic(ConjurAPIUtils.class);
-             MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class)) {
+             MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class);
+             MockedStatic<JwtToken> jwtStatic = mockStatic(JwtToken.class)) {
+            jwtStatic.when(() -> JwtToken.getToken(any(), any())).thenReturn("dummy-jwt-token");
             utilsStatic.when(() -> ConjurAPIUtils.getHttpClient(any()))
                     .thenReturn(mockHttpClient);
 
@@ -92,6 +94,7 @@ class ConjurJWTAuthenticatorTest {
             ExtensionList<GlobalConfiguration> extensionList = mock(ExtensionList.class);
             when(extensionList.get(GlobalConjurConfiguration.class)).thenReturn(mockGlobalConjurConfiguration);
             globalConfigStatic.when(GlobalConfiguration::all).thenReturn(extensionList);
+            when(mockGlobalConjurConfiguration.getAuthWebServiceId()).thenReturn("test");
 
             byte[] result = authenticator.getAuthorizationToken(conjurAuthn, mockContext);
 
@@ -106,7 +109,11 @@ class ConjurJWTAuthenticatorTest {
 
     @Test
     void testGetAuthorizationTokenUnauthorizedResponse() throws IOException {
-        try (MockedStatic<ConjurAPIUtils> utilsStatic = mockStatic(ConjurAPIUtils.class)) {
+        try (MockedStatic<ConjurAPIUtils> utilsStatic = mockStatic(ConjurAPIUtils.class);
+             MockedStatic<GlobalConfiguration> gcStatic = mockStatic(GlobalConfiguration.class);
+             MockedStatic<JwtToken> jwtStatic = mockStatic(JwtToken.class)) {
+            gcStatic.when(GlobalConfiguration::all).thenReturn(mock(ExtensionList.class));
+            jwtStatic.when(() -> JwtToken.getToken(any(), any())).thenReturn("dummy-jwt-token");
             utilsStatic.when(() -> ConjurAPIUtils.getHttpClient(any()))
                     .thenReturn(mockHttpClient);
 
@@ -126,7 +133,11 @@ class ConjurJWTAuthenticatorTest {
 
     @Test
     void testGetAuthorizationTokenOtherErrorResponse() throws IOException {
-        try (MockedStatic<ConjurAPIUtils> utilsStatic = mockStatic(ConjurAPIUtils.class)) {
+        try (MockedStatic<ConjurAPIUtils> utilsStatic = mockStatic(ConjurAPIUtils.class);
+             MockedStatic<GlobalConfiguration> gcStatic = mockStatic(GlobalConfiguration.class);
+             MockedStatic<JwtToken> jwtStatic = mockStatic(JwtToken.class)) {
+            gcStatic.when(GlobalConfiguration::all).thenReturn(mock(ExtensionList.class));
+            jwtStatic.when(() -> JwtToken.getToken(any(), any())).thenReturn("dummy-jwt-token");
             utilsStatic.when(() -> ConjurAPIUtils.getHttpClient(any()))
                     .thenReturn(mockHttpClient);
 
@@ -146,11 +157,21 @@ class ConjurJWTAuthenticatorTest {
 
     @Test
     void testGetAuthorizationTokenNullRequest() throws IOException {
-        conjurAuthn.setApiKey(null);
+        // fillAuthnInfo now always overwrites apiKey with the signed JWT, so setting apiKey=null
+        // before the call no longer produces a null result. The null-result path is now reached
+        // when authnPath is null after fillAuthnInfo — which happens when getAuthWebServiceId()
+        // returns null. With apiKey set but authnPath=null, the request is not built → null returned.
+        try (MockedStatic<GlobalConfiguration> gcStatic = mockStatic(GlobalConfiguration.class);
+             MockedStatic<JwtToken> jwtStatic = mockStatic(JwtToken.class)) {
+            ExtensionList<GlobalConfiguration> el = mock(ExtensionList.class);
+            when(el.get(GlobalConjurConfiguration.class)).thenReturn(mockGlobalConjurConfiguration);
+            gcStatic.when(GlobalConfiguration::all).thenReturn(el);
+            when(mockGlobalConjurConfiguration.getAuthWebServiceId()).thenReturn(null);
+            jwtStatic.when(() -> JwtToken.getToken(any(), any())).thenReturn("dummy-jwt-token");
 
-        byte[] result = authenticator.getAuthorizationToken(conjurAuthn, mockContext);
-
-        assertNull(result);
+            byte[] result = authenticator.getAuthorizationToken(conjurAuthn, mockContext);
+            assertNull(result);
+        }
     }
 
     @Test
@@ -177,6 +198,16 @@ class ConjurJWTAuthenticatorTest {
             String apiKeyString = new String(conjurAuthn.getApiKey(), StandardCharsets.US_ASCII);
             assertTrue(apiKeyString.startsWith("jwt="));
         }
+    }
+
+    /**
+     * Concern 6: JWT authenticator must report itself as cacheable so ConjurAPI enters the
+     * cache path. This is the opt-in that enables deduplication across concurrent builds.
+     */
+    @Test
+    void testJwtAuthenticatorIsCacheable() {
+        assertTrue(authenticator.isCacheable(),
+                "ConjurJWTAuthenticator must return true from isCacheable() to enable token caching");
     }
 }
 

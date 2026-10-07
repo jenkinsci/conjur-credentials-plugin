@@ -5,6 +5,21 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)an
 
 Please use documentation outlined in the GitHub Readme for this version.  Official CyberArk documentation pages will be updated to reflect these changes once available
 
+## [3.1.4] - 2026-10-07
+
+### Fixed
+- Concurrent JWT builds no longer exhaust Conjur's JWKS refresh budget after key rotation (`CONJ00035E`). Parallel builds sharing the same Conjur host identity now make exactly one authentication call via an in-flight deduplication cache, preventing the thundering herd that triggered rate-limit failures.
+- Cross-job token isolation: cache key construction now correctly encodes the full Conjur identity so that different jobs cannot receive each other's access tokens.
+
+### Added
+- JWT access-token cache: tokens are shared across concurrent builds resolving to the same Conjur host identity. Cache lifetime is derived from the token's own `exp` claim minus a 30-second clock-skew buffer.
+- `isCacheable()` on `AbstractAuthenticator` (defaults to `false`): new authenticator implementations must explicitly opt in to token caching.
+
+### Changed
+- `authenticator` field in `ConjurAPI` is now `volatile` for correct publication across threads.
+- DisCo E2E tests: risk-level assertions now poll until DisCo finishes its async risk computation, eliminating intermittent failures caused by reading risks the instant the secret record appears.
+
+
 ## [3.1.3] - 2026-09-25
 
 ### Added
@@ -227,6 +242,8 @@ We strongly recommend utilizing the default values recommended for fields that w
 ### Added
 - Added Support for SSH Private Key
 
+[3.1.4]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.1.3...v3.1.4
+[3.1.3]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.1.2...v3.1.3
 [3.1.2]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.1.1...v3.1.2
 [3.1.1]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.0.9...v3.1.0

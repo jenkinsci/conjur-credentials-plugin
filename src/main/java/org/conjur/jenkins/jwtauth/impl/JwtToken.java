@@ -99,6 +99,7 @@ public class JwtToken {
      * @param pluginAction
      * @param context
      * @return JWTToken
+     * @see #computeSubClaim — must mirror the claim-building logic in this method
      */
     public synchronized static JwtToken getUnsignedToken(String pluginAction, Object context, GlobalConjurConfiguration globalConfig) {
         if (context == null) {
@@ -138,7 +139,7 @@ public class JwtToken {
         if (contextObject instanceof Run) {
             Run<?, ?> run = (Run<?, ?>) contextObject;
 
-            jwtToken.claim.put("jenkins_build_number", run.getNumber());
+            jwtToken.claim.put("jenkins_build_number", String.valueOf(run.getNumber()));
             contextObject = run.getParent();
         }
 
@@ -248,17 +249,38 @@ public class JwtToken {
     public static String computeSubClaim(Object context, GlobalConjurConfiguration globalConfig) {
         if (context == null || globalConfig == null) return "";
         ModelObject contextObject = (ModelObject) context;
+        Integer buildNumber = null;
         if (contextObject instanceof Run) {
-            contextObject = ((Run<?, ?>) contextObject).getParent();
+            Run<?, ?> run = (Run<?, ?>) contextObject;
+            buildNumber = run.getNumber(); // mirror getUnsignedToken line 141
+            contextObject = run.getParent();
         }
-        if (contextObject instanceof Hudson) {
+        if (contextObject instanceof Jenkins) {
             return "GlobalCredentials";
         }
         if (!(contextObject instanceof AbstractItem)) return "";
 
         AbstractItem item = (AbstractItem) contextObject;
-        // Build the same intermediate claims used for sub resolution
+        // SYNC: claim-building below must mirror getUnsignedToken exactly — any new claim added
+        // there that participates in the sub template must also be added here, or the cache key
+        // will diverge from the actual JWT identity.
+        // Deterministic base claims are mirrored so identity formats that reference them produce a
+        // correct cache key. Non-deterministic claims (jti, iat, exp, nbf) are intentionally omitted:
+        // they differ between this call and actual signing, and no valid Conjur host identity can
+        // reference them (the sub would change every second).
         JwtToken probe = new JwtToken();
+        probe.claim.put("aud", globalConfig.getJwtAudience());
+        if (Jenkins.getInstanceOrNull() != null) {   // getRootUrl and User.get require a live Jenkins
+            probe.claim.put("iss", ConjurAPIUtils.getJenkinsIssuer());
+            @SuppressWarnings("deprecation")
+            Authentication auth = Jenkins.getAuthentication();
+            User u = User.get(auth.getName(), false, Collections.emptyMap());
+            probe.claim.put("name", u != null ? u.getFullName() : "");
+        }
+        if (buildNumber != null) {
+            probe.claim.put("jenkins_build_number", String.valueOf(buildNumber));
+        }
+        probe.claim.put("jenkins_pronoun", item.getPronoun());
         probe.claim.put("jenkins_full_name", item.getFullName());
         probe.claim.put("jenkins_name", item.getName());
         probe.claim.put("jenkins_task_noun", item.getTaskNoun());
@@ -274,6 +296,13 @@ public class JwtToken {
             probe.claim.put("jenkins_parent_full_name", parentItem.getFullName());
             probe.claim.put("jenkins_parent_name", parentItem.getName());
             probe.claim.put("jenkins_parent_task_noun", parentItem.getTaskNoun());
+            if (parentItem instanceof ItemGroup) {
+                probe.claim.put("jenkins_parent_url_child_prefix",
+                        ((ItemGroup<?>) parentItem).getUrlChildPrefix());
+            }
+            if (parentItem instanceof Job) {
+                probe.claim.put("jenkins_parent_pronoun", ((Job<?, ?>) parentItem).getPronoun());
+            }
         }
 
         boolean isEnabled = globalConfig.getEnableIdentityFormatFieldsFromToken();

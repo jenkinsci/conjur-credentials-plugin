@@ -16,7 +16,9 @@ import jenkins.model.Jenkins;
 import okhttp3.*;
 import org.conjur.jenkins.authenticator.AbstractAuthenticator;
 import org.conjur.jenkins.authenticator.ConjurAPIKeyAuthenticator;
+import org.conjur.jenkins.authenticator.ConjurJWTAuthenticator;
 import org.conjur.jenkins.configuration.*;
+import org.conjur.jenkins.conjursecrets.ConjurSecretCredentials;
 import org.conjur.jenkins.CjplCode;
 import org.conjur.jenkins.exceptions.AuthenticationConjurException;
 import org.conjur.jenkins.exceptions.InvalidConjurSecretException;
@@ -31,7 +33,9 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.*;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -65,6 +69,13 @@ public class ConjurAPITest {
     private Job mockJob;
     private DescribableList mockDescribableList;
     private TestLogHandler handler;
+
+    /**
+     * Incremented once per test in {@code setUp} so that {@code mockAuthnInfo.getApplianceUrl()}
+     * returns a unique value each time, giving every cache-relevant test a unique cache key
+     * without requiring the static token cache to be cleared between tests.
+     */
+    private static final AtomicInteger TEST_COUNTER = new AtomicInteger();
 
     @Mock
     private GlobalConjurConfiguration globalConfig;
@@ -110,6 +121,11 @@ public class ConjurAPITest {
         handler = new TestLogHandler();
         LOGGER.addHandler(handler);
         LOGGER.setLevel(Level.FINEST);
+
+        // Give mockAuthnInfo a test-unique appliance URL so each test gets a different cache key.
+        // getApplianceUrl() is part of the cache key; a unique URL means no cross-test cache hits.
+        when(mockAuthnInfo.getApplianceUrl())
+                .thenReturn("https://conjur-test-" + TEST_COUNTER.incrementAndGet() + ":8443");
     }
 
     @After
@@ -256,9 +272,12 @@ public class ConjurAPITest {
             globalConfigStatic.when(GlobalConfiguration::all).thenReturn(mockExtension);
 
             byte[] expectedToken = "defaultToken".getBytes();
+            // getAuthorizationToken zeroes whatever the authenticator handed it, so the
+            // authenticator must return its own array rather than the assertion's.
+            byte[] authenticatorToken = "defaultToken".getBytes();
 
             ConjurAPIKeyAuthenticator spyAuth = spy(new ConjurAPIKeyAuthenticator());
-            doReturn(expectedToken).when(spyAuth).getAuthorizationToken(mockAuthnInfo, mockContext);
+            doReturn(authenticatorToken).when(spyAuth).getAuthorizationToken(mockAuthnInfo, mockContext);
 
             Field authField = ConjurAPI.class.getDeclaredField("authenticator");
 
@@ -282,9 +301,10 @@ public class ConjurAPITest {
             globalConfigStatic.when(GlobalConfiguration::all).thenReturn(mockExtension);
 
             byte[] expectedToken = "defaultToken".getBytes();
+            byte[] authenticatorToken = "defaultToken".getBytes();
 
             ConjurAPIKeyAuthenticator spyAuth = spy(new ConjurAPIKeyAuthenticator());
-            doReturn(expectedToken).when(spyAuth).getAuthorizationToken(mockAuthnInfo, mockContext);
+            doReturn(authenticatorToken).when(spyAuth).getAuthorizationToken(mockAuthnInfo, mockContext);
 
             Field authField = ConjurAPI.class.getDeclaredField("authenticator");
 
@@ -309,6 +329,182 @@ public class ConjurAPITest {
             RuntimeException thrown = assertThrows(RuntimeException.class, () -> ConjurAPI.getAuthorizationToken(mockAuthnInfo, mockContext));
 
             assertEquals("Test runtime exception", thrown.getMessage());
+        }
+    }
+
+    /** Mirrors what Conjur returns and what the authenticators then Base64-encode. */
+    private static byte[] buildConjurToken(long expEpochSeconds) {
+        String claims = "{\"sub\":\"host/frontend\",\"iat\":1693000000,\"exp\":" + expEpochSeconds + "}";
+        String jws = "{\"protected\":\"aGVhZGVy\",\"payload\":\""
+                + Base64.getUrlEncoder().encodeToString(claims.getBytes(StandardCharsets.UTF_8))
+                + "\",\"signature\":\"c2ln\"}";
+        return Base64.getEncoder().withoutPadding()
+                .encodeToString(jws.getBytes(StandardCharsets.UTF_8))
+                .getBytes(StandardCharsets.US_ASCII);
+    }
+
+    private static void installAuthenticator(AbstractAuthenticator auth) throws Exception {
+        Field authField = ConjurAPI.class.getDeclaredField("authenticator");
+        authField.setAccessible(true);
+        authField.set(null, auth);
+    }
+
+    /** Stubs global config to select JWT auth (cache-eligible path). */
+    private MockedStatic<GlobalConfiguration> mockJWTGlobalConfig() {
+        MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class);
+        when(globalConfig.getSelectAuthenticator()).thenReturn("JWT");
+        ExtensionList<GlobalConfiguration> mockExtension = mock(ExtensionList.class);
+        when(mockExtension.get(GlobalConjurConfiguration.class)).thenReturn(globalConfig);
+        globalConfigStatic.when(GlobalConfiguration::all).thenReturn(mockExtension);
+        return globalConfigStatic;
+    }
+
+    /** Stubs global config to select API Key auth (cache-bypass path). */
+    private MockedStatic<GlobalConfiguration> mockApiKeyGlobalConfig() {
+        MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class);
+        when(globalConfig.getSelectAuthenticator()).thenReturn("APIKey");
+        ExtensionList<GlobalConfiguration> mockExtension = mock(ExtensionList.class);
+        when(mockExtension.get(GlobalConjurConfiguration.class)).thenReturn(globalConfig);
+        globalConfigStatic.when(GlobalConfiguration::all).thenReturn(mockExtension);
+        return globalConfigStatic;
+    }
+
+    private static ConjurAuthnInfo authnInfoFor(String login) {
+        ConjurAuthnInfo authn = new ConjurAuthnInfo();
+        authn.setApplianceUrl("https://conjur:8443");
+        authn.setAccount("myAccount");
+        authn.setLogin(login);
+        return authn;
+    }
+
+    //
+    // A fan-out of builds sharing one Conjur identity must authenticate only once.
+    //
+    @Test
+    public void testSecondCallForSameIdentityIsServedFromCache() throws Exception {
+        try (MockedStatic<GlobalConfiguration> ignored = mockJWTGlobalConfig()) {
+            byte[] conjurToken = buildConjurToken(Instant.now().getEpochSecond() + 480);
+            byte[] expected = conjurToken.clone();
+
+            ConjurJWTAuthenticator spyAuth = spy(new ConjurJWTAuthenticator());
+            doReturn(conjurToken).when(spyAuth).getAuthorizationToken(mockAuthnInfo, mockContext);
+            installAuthenticator(spyAuth);
+
+            byte[] first = ConjurAPI.getAuthorizationToken(mockAuthnInfo, mockContext);
+            byte[] second = ConjurAPI.getAuthorizationToken(mockAuthnInfo, mockContext);
+
+            assertArrayEquals(expected, first);
+            assertArrayEquals(expected, second);
+            verify(spyAuth, times(1)).getAuthorizationToken(mockAuthnInfo, mockContext);
+        }
+    }
+
+    //
+    // A misconfigured authenticator returns null; callers saw null before the cache existed too.
+    //
+    @Test
+    public void testNullTokenIsReturnedAsNullAndNotCached() throws Exception {
+        try (MockedStatic<GlobalConfiguration> ignored = mockJWTGlobalConfig()) {
+            ConjurJWTAuthenticator spyAuth = spy(new ConjurJWTAuthenticator());
+            doReturn(null).when(spyAuth).getAuthorizationToken(mockAuthnInfo, mockContext);
+            installAuthenticator(spyAuth);
+
+            assertNull(ConjurAPI.getAuthorizationToken(mockAuthnInfo, mockContext));
+            // Call again — if null was wrongly cached, spy would not be called a second time
+            ConjurAPI.getAuthorizationToken(mockAuthnInfo, mockContext);
+            verify(spyAuth, times(2)).getAuthorizationToken(mockAuthnInfo, mockContext);
+        }
+    }
+
+    //
+    // API Key auth must bypass the cache entirely — it was not the affected path.
+    //
+    @Test
+    public void testAPIKeyAuthBypassesCache() throws Exception {
+        try (MockedStatic<GlobalConfiguration> ignored = mockApiKeyGlobalConfig()) {
+            byte[] conjurToken = buildConjurToken(Instant.now().getEpochSecond() + 480);
+            ConjurAPIKeyAuthenticator spyAuth = spy(new ConjurAPIKeyAuthenticator());
+            doReturn(conjurToken).when(spyAuth).getAuthorizationToken(mockAuthnInfo, mockContext);
+            installAuthenticator(spyAuth);
+
+            ConjurAPI.getAuthorizationToken(mockAuthnInfo, mockContext);
+            ConjurAPI.getAuthorizationToken(mockAuthnInfo, mockContext);
+
+            // If the cache were populated, the second call would be a hit and the spy called only once.
+            verify(spyAuth, times(2)).getAuthorizationToken(mockAuthnInfo, mockContext);
+        }
+    }
+
+    //
+    // A rejected token must be replaced, not just retried, or every other build replays the dead one.
+    //
+    @Test
+    public void testReauthenticateAfterUnauthorizedReplacesTheStaleEntry() throws Exception {
+        try (MockedStatic<GlobalConfiguration> ignored = mockJWTGlobalConfig();
+             MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class, CALLS_REAL_METHODS);
+             MockedStatic<ConjurAPIUtils> apiUtils = mockStatic(ConjurAPIUtils.class)) {
+
+            ConjurAuthnInfo authn = authnInfoFor("host/frontend");
+            ConjurJWTAuthenticator spyAuth = spy(new ConjurJWTAuthenticator());
+            // First call: initial load; second call (re-auth after 401): fresh replacement token
+            doReturn(buildConjurToken(Instant.now().getEpochSecond() + 480),
+                     buildConjurToken(Instant.now().getEpochSecond() + 480))
+                    .when(spyAuth).getAuthorizationToken(authn, mockContext);
+            installAuthenticator(spyAuth);
+
+            // Populate the cache with the initial token (spy called once)
+            ConjurAPI.getAuthorizationToken(authn, mockContext);
+
+            // Stub the sub-calls that getSecretFromConjur needs so it doesn't hit Jenkins.get()
+            conjurApiStatic.when(() -> ConjurAPI.getConfigurationFromContext(any())).thenReturn(null);
+            conjurApiStatic.when(() -> ConjurAPI.getConjurAuthnInfo(any(), any())).thenReturn(authn);
+            apiUtils.when(() -> ConjurAPIUtils.getHttpClient(any())).thenReturn(mockClient);
+            // First getConjurSecret call → 401; second (after re-auth) → succeeds
+            conjurApiStatic.when(() -> ConjurAPI.getConjurSecret(any(), any(), any(), any()))
+                    .thenThrow(new IOException("[401 - Unauthorized]"))
+                    .thenReturn("secret".getBytes(StandardCharsets.US_ASCII));
+
+            // 401 triggers reauthenticateAfterUnauthorized (runs real code):
+            //   evicts the stale entry, loads a fresh token (spy called twice total)
+            ConjurAPI.getSecretFromConjur(mockContext, mockContext, "db/password");
+
+            // Fresh token is now in the cache — next getAuthorizationToken must be a cache hit
+            // (spy must NOT be called a third time)
+            ConjurAPI.getAuthorizationToken(authn, mockContext);
+            verify(spyAuth, times(2)).getAuthorizationToken(authn, mockContext);
+        }
+    }
+
+    //
+    // Security property: two Jenkins contexts that resolve to different Conjur identities must
+    // not share a cache entry. A collision would let one host use another host's token.
+    //
+    @Test
+    public void testBuildCacheKeyDifferentiatesDistinctJenkinsIdentities() throws Exception {
+        try (MockedStatic<GlobalConfiguration> ignored = mockJWTGlobalConfig()) {
+            when(globalConfig.getEnableIdentityFormatFieldsFromToken()).thenReturn(true);
+            when(globalConfig.getSelectIdentityFormatToken()).thenReturn("jenkins_full_name");
+
+            AbstractFolder<?> folderA = mock(AbstractFolder.class);
+            when(folderA.getFullName()).thenReturn("team-a/deploy");
+            AbstractFolder<?> folderB = mock(AbstractFolder.class);
+            when(folderB.getFullName()).thenReturn("team-b/deploy");
+
+            ConjurAuthnInfo authn = authnInfoFor("host/connector");
+            ConjurJWTAuthenticator spyAuth = spy(new ConjurJWTAuthenticator());
+            doReturn(buildConjurToken(Instant.now().getEpochSecond() + 480))
+                    .when(spyAuth).getAuthorizationToken(authn, (ModelObject) folderA);
+            doReturn(buildConjurToken(Instant.now().getEpochSecond() + 480))
+                    .when(spyAuth).getAuthorizationToken(authn, (ModelObject) folderB);
+            installAuthenticator(spyAuth);
+
+            ConjurAPI.getAuthorizationToken(authn, folderA);
+            ConjurAPI.getAuthorizationToken(authn, folderB);
+
+            // If both contexts mapped to the same cache key the second call would be a cache hit
+            // and the authenticator would not be called for folderB — cross-identity token sharing.
+            verify(spyAuth, times(1)).getAuthorizationToken(authn, (ModelObject) folderA);
+            verify(spyAuth, times(1)).getAuthorizationToken(authn, (ModelObject) folderB);
         }
     }
 
@@ -685,14 +881,10 @@ public class ConjurAPITest {
         var secretBytes = expected.getBytes(StandardCharsets.UTF_8);
         var authToken = "auth-token".getBytes();
 
-        try (MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class);
+        try (MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class, CALLS_REAL_METHODS);
              MockedStatic<ConjurAPIUtils> apiUtilsStatic = mockStatic(ConjurAPIUtils.class)) {
 
-            // Allow real method for the method under test
-            conjurApiStatic.when(() -> ConjurAPI.getSecretFromConjur(context, context, variableId))
-                    .thenCallRealMethod();
-
-            // Mock the internal calls that would need Jenkins
+            // Stub only the external dependencies — everything else runs real (CALLS_REAL_METHODS).
             conjurApiStatic.when(() -> ConjurAPI.getConfigurationFromContext(context))
                     .thenReturn(mockConfiguration);
             conjurApiStatic.when(() -> ConjurAPI.getConjurAuthnInfo(mockConfiguration, context))
@@ -704,7 +896,6 @@ public class ConjurAPITest {
             conjurApiStatic.when(() -> ConjurAPI.getConjurSecret(eq(mockClient), eq(mockConfiguration), any(byte[].class), eq(variableId)))
                     .thenReturn(secretBytes);
 
-            // Runs real getSecretFromConjur, but with mocked dependencies
             var actual = ConjurAPI.getSecretFromConjur(context, context, variableId);
 
             // Assert
@@ -727,13 +918,10 @@ public class ConjurAPITest {
         var secretBytes = expected.getBytes(StandardCharsets.UTF_8);
         var authToken = "auth-token".getBytes();
 
-        try (MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class);
+        try (MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class, CALLS_REAL_METHODS);
              MockedStatic<ConjurAPIUtils> apiUtilsStatic = mockStatic(ConjurAPIUtils.class)) {
 
-            // Allow real method for the method under test
-            conjurApiStatic.when(() -> ConjurAPI.getSecretFromConjur(context, null, variableId))
-                    .thenCallRealMethod();
-
+            // Stub only the external dependencies — everything else runs real (CALLS_REAL_METHODS).
             conjurApiStatic.when(() -> ConjurAPI.getConfigurationFromContext(context))
                     .thenReturn(mockConfiguration);
             conjurApiStatic.when(() -> ConjurAPI.getConjurAuthnInfo(mockConfiguration, context))
@@ -801,6 +989,276 @@ public class ConjurAPITest {
 
             assertThrows(InvalidConjurSecretException.class,
                     () -> ConjurAPI.getSecretFromConjur(context, null, variableId));
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // New tests: globalConfig null bypass, authToken zeroing
+    // -------------------------------------------------------------------------
+
+    /**
+     * Concern 3: when GlobalConjurConfiguration is absent, buildCacheKey returns null and the
+     * cache must be bypassed entirely. The authenticator IS still called, but no entry is stored —
+     * preventing all identities from collapsing to the same empty-string key.
+     */
+    @Test
+    public void testGetAuthorizationTokenBypassesCacheWhenGlobalConfigIsNull() throws Exception {
+        try (MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class)) {
+            // GlobalConfiguration is absent on every call. setAuthenticator() leaves the
+            // already-installed JWT spy in place (globalConfig is null, so the authenticator
+            // is not replaced). isCacheable() returns true, but buildCacheKey() returns null
+            // because globalConfig is null — triggering the cache-bypass path on every call.
+            ExtensionList<GlobalConfiguration> mockExtension = mock(ExtensionList.class);
+            when(mockExtension.get(GlobalConjurConfiguration.class)).thenReturn(null);
+            globalConfigStatic.when(GlobalConfiguration::all).thenReturn(mockExtension);
+
+            ConjurJWTAuthenticator spyAuth = spy(new ConjurJWTAuthenticator());
+            installAuthenticator(spyAuth);
+
+            byte[] conjurToken = buildConjurToken(Instant.now().getEpochSecond() + 480);
+            doReturn(conjurToken).when(spyAuth).getAuthorizationToken(mockAuthnInfo, mockContext);
+
+            byte[] result = ConjurAPI.getAuthorizationToken(mockAuthnInfo, mockContext);
+            ConjurAPI.getAuthorizationToken(mockAuthnInfo, mockContext);
+
+            assertArrayEquals("token must still be returned to the caller", conjurToken, result);
+            // Cache is bypassed on every call — the spy fires twice, not once.
+            verify(spyAuth, times(2)).getAuthorizationToken(mockAuthnInfo, mockContext);
+        }
+    }
+
+    /**
+     * Concern 5: authToken bytes must be zeroed even when the retry getConjurSecret call throws.
+     * This guards against token data lingering in heap after a failed retry.
+     *
+     * <p>Uses {@code CALLS_REAL_METHODS} as the default answer for the ConjurAPI static mock so
+     * that the private helpers {@code isUnauthorized} and {@code reauthenticateAfterUnauthorized}
+     * execute their real logic. {@code getAuthorizationToken} is explicitly stubbed to return a
+     * known initial token; the spy captures the re-auth token that {@code reauthenticateAfterUnauthorized}
+     * fetches via {@code tokenCache.getOrLoad}.
+     */
+    @Test
+    public void testGetAuthorizationTokenZerosAuthTokenWhenRetryGetConjurSecretThrows()
+            throws Exception {
+        try (MockedStatic<GlobalConfiguration> ignored = mockJWTGlobalConfig();
+             MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class, CALLS_REAL_METHODS);
+             MockedStatic<ConjurAPIUtils> apiUtils = mockStatic(ConjurAPIUtils.class)) {
+
+            List<byte[]> capturedTokens = new ArrayList<>();
+
+            // Initial token: created explicitly and injected via stub so getAuthorizationToken
+            // does not execute its real cache path (which would require the JWT signing key).
+            byte[] initialToken = buildConjurToken(Instant.now().getEpochSecond() + 480);
+            capturedTokens.add(initialToken);
+            conjurApiStatic.when(() -> ConjurAPI.getAuthorizationToken(any(), any())).thenReturn(initialToken);
+
+            // Re-auth token: reauthenticateAfterUnauthorized runs real (CALLS_REAL_METHODS) and
+            // calls tokenCache.getOrLoad, which invokes the authenticator — captured here.
+            ConjurJWTAuthenticator spyAuth = spy(new ConjurJWTAuthenticator());
+            doAnswer(inv -> {
+                byte[] t = buildConjurToken(Instant.now().getEpochSecond() + 480);
+                capturedTokens.add(t);
+                return t;
+            }).when(spyAuth).getAuthorizationToken(any(), any());
+            installAuthenticator(spyAuth);
+
+            conjurApiStatic.when(() -> ConjurAPI.getConfigurationFromContext(any())).thenReturn(null);
+            conjurApiStatic.when(() -> ConjurAPI.getConjurAuthnInfo(any(), any())).thenReturn(mockAuthnInfo);
+            apiUtils.when(() -> ConjurAPIUtils.getHttpClient(any())).thenReturn(mockClient);
+            // First call → [401] triggers re-auth; second call (retry) → [503] exercises the finally block.
+            conjurApiStatic.when(() -> ConjurAPI.getConjurSecret(any(), any(), any(), any()))
+                    .thenThrow(new IOException("[401 - Unauthorized]"))
+                    .thenThrow(new IOException("[503 - Service Unavailable]"));
+
+            try {
+                ConjurAPI.getSecretFromConjur(mockContext, mockContext, "db/password");
+            } catch (Exception ignored2) {
+                // Expected: getSecretFromConjur wraps the 503 IOException in InvalidConjurSecretException.
+            }
+
+            // capturedTokens[0] = initialToken (zeroed at the [401] handler before re-auth).
+            // capturedTokens[1] = re-auth token (zeroed in the finally block when retry throws).
+            assertEquals("must capture both the initial and the re-auth token", 2, capturedTokens.size());
+            for (byte[] token : capturedTokens) {
+                assertArrayEquals(
+                        "Concern 5: authToken must be zeroed in finally even when retry throws",
+                        new byte[token.length], token);
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // JWT signing deferred to cache misses
+    // -------------------------------------------------------------------------
+
+    /**
+     * getConjurAuthnInfo must not populate apiKey when JWT auth is active.
+     * JWT signing must happen inside the getOrLoad loader, not before the cache is checked.
+     */
+    @Test
+    public void testGetConjurAuthnInfoDoesNotSignJwt() throws Exception {
+        try (MockedStatic<GlobalConfiguration> ignored = mockJWTGlobalConfig();
+             MockedStatic<JwtToken> jwtTokenMock = mockStatic(JwtToken.class)) {
+
+            ConjurConfiguration config = new ConjurConfiguration("https://conjur:8443", "myaccount");
+            ConjurAuthnInfo authnInfo = ConjurAPI.getConjurAuthnInfo(config, mockContext);
+
+            assertNull("apiKey must be null — JWT signing must not happen before cache lookup",
+                    authnInfo.getApiKey());
+            jwtTokenMock.verify(() -> JwtToken.getToken(any(), any()), never());
+        }
+    }
+
+    /**
+     * JWT signing must occur exactly once per cache miss. A second call for the same identity
+     * must be served from cache without triggering another RSA sign.
+     */
+    @Test
+    public void testJwtIsOnlySignedOnCacheMissNotOnCacheHit() throws Exception {
+        // Null out the static authenticator so any spy left by a previous test is discarded.
+        installAuthenticator(null);
+
+        try (MockedStatic<GlobalConfiguration> gc = mockJWTGlobalConfig();
+             MockedStatic<JwtToken> jwtTokenMock = mockStatic(JwtToken.class);
+             MockedStatic<ConjurAPIUtils> apiUtils = mockStatic(ConjurAPIUtils.class)) {
+
+            jwtTokenMock.when(() -> JwtToken.getToken(any(), any())).thenReturn("signed.jwt.token");
+            jwtTokenMock.when(() -> JwtToken.computeSubClaim(any(), any())).thenCallRealMethod();
+
+            when(globalConfig.getAuthWebServiceId()).thenReturn("authn-jwt/prod");
+            apiUtils.when(() -> ConjurAPIUtils.getHttpClient(any())).thenReturn(mockClient);
+            when(mockClient.newCall(any(Request.class))).thenReturn(mockCall);
+            when(mockCall.execute()).thenReturn(mockResponse);
+            when(mockResponse.code()).thenReturn(200);
+            when(mockResponse.body()).thenReturn(mockBody);
+            when(mockBody.string()).thenReturn("fake-conjur-token");
+
+            ConjurAuthnInfo authn = authnInfoFor("host/jwt-signing-test");
+            authn.setApplianceUrl("https://conjur-signing-test:8443");
+            authn.setAuthnPath("authn-jwt/prod"); // mirrors what fillBaseAuthnInfo sets in production
+
+            ConjurAPI.getAuthorizationToken(authn, mockContext);  // cache miss — signs once
+            ConjurAPI.getAuthorizationToken(authn, mockContext);  // cache hit — must not re-sign
+
+            jwtTokenMock.verify(() -> JwtToken.getToken(any(), any()), times(1));
+        }
+    }
+
+    /**
+     * getCredentialsForContext must return a non-null collection when the
+     * Conjur resource endpoint returns an empty variable list.
+     */
+    @Test
+    public void testGetCredentialsForContext_returnsEmptyCollectionNotNull() throws Exception {
+        try (MockedStatic<GlobalConfiguration> gc = mockJWTGlobalConfig();
+             MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class, CALLS_REAL_METHODS);
+             MockedStatic<ConjurAPIUtils> apiUtils = mockStatic(ConjurAPIUtils.class)) {
+
+            conjurApiStatic.when(() -> ConjurAPI.getConfigurationFromContext(any())).thenReturn(mockConfiguration);
+            conjurApiStatic.when(() -> ConjurAPI.getConjurAuthnInfo(any(), any())).thenReturn(mockAuthnInfo);
+            apiUtils.when(() -> ConjurAPIUtils.getHttpClient(any())).thenReturn(mockClient);
+
+            ConjurJWTAuthenticator spyAuth = spy(new ConjurJWTAuthenticator());
+            doReturn(buildConjurToken(Instant.now().getEpochSecond() + 480))
+                    .when(spyAuth).getAuthorizationToken(any(), any());
+            installAuthenticator(spyAuth);
+
+            when(mockClient.newCall(any(Request.class))).thenReturn(mockCall);
+            when(mockCall.execute()).thenReturn(mockResponse);
+            when(mockResponse.code()).thenReturn(200);
+            when(mockResponse.body()).thenReturn(mockBody);
+            when(mockBody.string()).thenReturn("[]");
+
+            Collection<?> result = ConjurAPI.getCredentialsForContext(Object.class, mockContext);
+
+            assertNotNull("getCredentialsForContext must return a collection, not null", result);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // getSecretFromConjurWithInheritance retry and escalation behaviour
+    // -------------------------------------------------------------------------
+
+    /**
+     * When the cached token is stale, fetchSecretWithRetry evicts and re-authenticates at the
+     * same level. The inheritance loop must not walk up to the parent context.
+     * Modelled after testReauthenticateAfterUnauthorizedReplacesTheStaleEntry.
+     */
+    @Test
+    public void testGetSecretFromConjurWithInheritance_retriesLocally_onStaleCachedToken() throws Exception {
+        String variableId = "test/password";
+        String secretValue = "s3cr3t";
+
+        try (MockedStatic<GlobalConfiguration> gc = mockJWTGlobalConfig();
+             MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class, CALLS_REAL_METHODS);
+             MockedStatic<ConjurAPIUtils> apiUtils = mockStatic(ConjurAPIUtils.class)) {
+
+            ConjurAuthnInfo authn = authnInfoFor("host/retry-test");
+            ConjurJWTAuthenticator spyAuth = spy(new ConjurJWTAuthenticator());
+            doReturn(buildConjurToken(Instant.now().getEpochSecond() + 480),
+                     buildConjurToken(Instant.now().getEpochSecond() + 480))
+                    .when(spyAuth).getAuthorizationToken(any(), any());
+            installAuthenticator(spyAuth);
+
+            conjurApiStatic.when(() -> ConjurAPI.getConfigurationFromContext(any())).thenReturn(mockConfiguration);
+            conjurApiStatic.when(() -> ConjurAPI.getConjurAuthnInfo(any(), any())).thenReturn(authn);
+            conjurApiStatic.when(() -> ConjurAPI.isInheritanceOn(any())).thenReturn(false);
+            apiUtils.when(() -> ConjurAPIUtils.getHttpClient(any())).thenReturn(mockClient);
+
+            byte[] secretBytes = secretValue.getBytes(StandardCharsets.UTF_8);
+            IOException unauthorized = new IOException(
+                    CjplCode.CONJUR_SECRET_FETCH_ERROR.format(401, "Unauthorized", variableId));
+            conjurApiStatic.when(() -> ConjurAPI.getConjurSecret(any(), any(), any(), eq(variableId)))
+                    .thenThrow(unauthorized)
+                    .thenReturn(secretBytes);
+
+            ConjurSecretCredentials mockCredentials = mock(ConjurSecretCredentials.class);
+            Secret result = ConjurAPI.getSecretFromConjurWithInheritance(mockContext, mockCredentials, variableId);
+
+            assertNotNull("retry must recover and return the secret", result);
+            assertEquals(secretValue, result.getPlainText());
+        }
+    }
+
+    /**
+     * When both the initial fetch and the retry return 401, the 401 is genuine access-denied.
+     * The fix must re-wrap it as AuthenticationConjurException so the inheritance loop escalates,
+     * ultimately producing InvalidConjurSecretException when there is no parent context.
+     */
+    @Test
+    public void testGetSecretFromConjurWithInheritance_escalatesToParent_onGenuineAccessDenied() throws Exception {
+        String variableId = "test/password";
+
+        try (MockedStatic<GlobalConfiguration> gc = mockJWTGlobalConfig();
+             MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class, CALLS_REAL_METHODS);
+             MockedStatic<ConjurAPIUtils> apiUtils = mockStatic(ConjurAPIUtils.class);
+             MockedStatic<Jenkins> jenkinsMock = mockStatic(Jenkins.class)) {
+
+            // Jenkins.get() is called when inheritance is off and context is not yet Jenkins.
+            // Return a mock Jenkins instance — the loop-exit guard checks instanceof Jenkins,
+            // so the second iteration terminates with InvalidConjurSecretException.
+            jenkinsMock.when(Jenkins::get).thenReturn(mock(Jenkins.class));
+
+            ConjurAuthnInfo authn = authnInfoFor("host/escalation-test");
+            ConjurJWTAuthenticator spyAuth = spy(new ConjurJWTAuthenticator());
+            doReturn(buildConjurToken(Instant.now().getEpochSecond() + 480),
+                     buildConjurToken(Instant.now().getEpochSecond() + 480))
+                    .when(spyAuth).getAuthorizationToken(any(), any());
+            installAuthenticator(spyAuth);
+
+            conjurApiStatic.when(() -> ConjurAPI.getConfigurationFromContext(any())).thenReturn(mockConfiguration);
+            conjurApiStatic.when(() -> ConjurAPI.getConjurAuthnInfo(any(), any())).thenReturn(authn);
+            conjurApiStatic.when(() -> ConjurAPI.isInheritanceOn(any())).thenReturn(false);
+            apiUtils.when(() -> ConjurAPIUtils.getHttpClient(any())).thenReturn(mockClient);
+
+            // Both calls throw 401 — genuine access-denied, no recovery
+            IOException unauthorized = new IOException(
+                    CjplCode.CONJUR_SECRET_FETCH_ERROR.format(401, "Unauthorized", variableId));
+            conjurApiStatic.when(() -> ConjurAPI.getConjurSecret(any(), any(), any(), eq(variableId)))
+                    .thenThrow(unauthorized);
+
+            assertThrows(InvalidConjurSecretException.class,
+                    () -> ConjurAPI.getSecretFromConjurWithInheritance(mockContext, null, variableId));
         }
     }
 
