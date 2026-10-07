@@ -32,6 +32,16 @@ public class ConjurJWTAuthenticator extends AbstractAuthenticator {
         return "JWT";
     }
 
+    /**
+     * JWT tokens are safe to cache and share across concurrent builds that resolve to the same
+     * Conjur host identity. Caching eliminates redundant authentication calls and prevents
+     * exhausting Conjur's JWKS refresh budget after key rotation.
+     */
+    @Override
+    public boolean isCacheable() {
+        return true;
+    }
+
 
     /**
      * @param conjurAuthn ConjurAuthnInfo with information used to authenticate
@@ -42,6 +52,10 @@ public class ConjurJWTAuthenticator extends AbstractAuthenticator {
     @Override
     @SuppressWarnings("deprecation")
     public byte[] getAuthorizationToken(ConjurAuthnInfo conjurAuthn, ModelObject context) throws IOException {
+        // Sign the JWT here (deferred from getConjurAuthnInfo). fillBaseAuthnInfo only set
+        // authnPath and login; apiKey is absent until signing happens now, on a cache miss.
+        fillAuthnInfo(conjurAuthn, context);
+
         byte[] resultingToken = null;
 
         LOGGER.log(Level.FINEST, String.format("Authenticating with Conjur (JWT) conjurAuthn.authnPath %s conjurAuthn.account %s conjurAuthn.applianceUrl %s",
@@ -84,6 +98,22 @@ public class ConjurJWTAuthenticator extends AbstractAuthenticator {
     }
 
     /**
+     * Fills only the structural fields needed to identify the authn-jwt service.
+     * Does not sign a JWT — signing is deferred to the cache-miss loader.
+     *
+     * <p>Uses the {@code globalConfig} already resolved by the caller ({@code getConjurAuthnInfo})
+     * so that no additional {@code GlobalConfiguration.all().get()} call is needed here.
+     */
+    @Override
+    public void fillBaseAuthnInfo(ConjurAuthnInfo conjurAuthn, ModelObject context,
+                                  GlobalConjurConfiguration globalConfig) {
+        conjurAuthn.setLogin(null);
+        if (globalConfig != null) {
+            conjurAuthn.setAuthnPath(globalConfig.getAuthWebServiceId());
+        }
+    }
+
+    /**
      * Fill authninfo structure
      *
      * @param conjurAuthn authentication configuration class
@@ -94,6 +124,11 @@ public class ConjurJWTAuthenticator extends AbstractAuthenticator {
         GlobalConjurConfiguration globalConfig = GlobalConfiguration.all().get(GlobalConjurConfiguration.class);
 
         String jwtToken = JwtToken.getToken(context, globalConfig);
+        if (jwtToken == null) {
+            LOGGER.log(Level.SEVERE, JWT_HTTP_CALL_FAILED.format());
+            conjurAuthn.setApiKey(null);
+            return;
+        }
 
         conjurAuthn.setLogin(null);
         if (globalConfig != null) {

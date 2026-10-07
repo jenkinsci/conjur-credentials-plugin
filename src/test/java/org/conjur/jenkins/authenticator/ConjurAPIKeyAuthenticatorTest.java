@@ -323,4 +323,14 @@ public class ConjurAPIKeyAuthenticatorTest {
         }
     }
 
+    /**
+     * Concern 6: API Key authenticator must report itself as NOT cacheable, preserving the
+     * existing behaviour where each build authenticates independently.
+     */
+    @Test
+    public void testApiKeyAuthenticatorIsNotCacheable() {
+        assertFalse(authenticator.isCacheable(),
+                "ConjurAPIKeyAuthenticator must return false from isCacheable() — API Key tokens must not be cached");
+    }
+
 }
