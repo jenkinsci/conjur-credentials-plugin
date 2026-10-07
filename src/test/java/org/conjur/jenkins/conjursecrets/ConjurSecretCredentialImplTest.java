@@ -257,6 +257,29 @@ public class ConjurSecretCredentialImplTest {
     }
 
     @Test
+    public void testSetVariablePath() {
+        ConjurSecretCredentialsImpl cred = new ConjurSecretCredentialsImpl(
+                CredentialsScope.GLOBAL, "id", "initial-path", "desc");
+        cred.setVariablePath("new/conjur/path");
+        assertEquals("new/conjur/path", cred.getVariableId());
+    }
+
+    @Test
+    public void testGetVariablePath() {
+        ConjurSecretCredentialsImpl cred = new ConjurSecretCredentialsImpl(
+                CredentialsScope.GLOBAL, "id", "team/app/secret", "desc");
+        assertEquals("team/app/secret", cred.getVariablePath());
+    }
+
+    @Test
+    public void testVariablePathAndVariableIdAreAliases() {
+        ConjurSecretCredentialsImpl cred = new ConjurSecretCredentialsImpl(
+                CredentialsScope.GLOBAL, "id", "initial", "desc");
+        cred.setVariablePath("path/from/casc");
+        assertEquals(cred.getVariableId(), cred.getVariablePath());
+    }
+
+    @Test
     public void testSnapshotReturnsNewInstance() {
         ConjurSecretCredentialsImpl mockCred = mock(ConjurSecretCredentialsImpl.class);
         when(mockCred.getSecret()).thenReturn(Secret.fromString("secret"));

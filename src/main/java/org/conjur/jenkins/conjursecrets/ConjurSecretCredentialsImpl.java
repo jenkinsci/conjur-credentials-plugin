@@ -81,6 +81,19 @@ public class ConjurSecretCredentialsImpl extends BaseStandardCredentials impleme
 	}
 
 	/**
+	 * JCasC alias for {@link #setVariableId(String)}.
+	 * Allows {@code variablePath} as the attribute name in JCasC YAML in addition to {@code variableId}.
+	 */
+	@DataBoundSetter
+	public void setVariablePath(String variablePath) {
+		this.variableId = variablePath;
+	}
+
+	public String getVariablePath() {
+		return this.variableId;
+	}
+
+	/**
 	 * Set context to which Credential will be bind
 	 * @param context ModelObject
 	 */
