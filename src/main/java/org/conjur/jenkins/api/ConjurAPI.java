@@ -1,8 +1,13 @@
 package org.conjur.jenkins.api;
 
 import com.cloudbees.hudson.plugins.folder.AbstractFolder;
+import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.CredentialsStore;
+import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.domains.Domain;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.*;
 import hudson.util.Secret;
@@ -37,6 +42,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -420,11 +426,6 @@ public class ConjurAPI {
                     .get(FolderConjurConfiguration.class);
 
             if (folderProperty != null) {
-                // stop inheritance
-                if (folderProperty.getConjurConfiguration() != null && !folderProperty.getInheritFromParent()) {
-                    return resultingConfig;
-                }
-
                 if (resultingConfig != null) {
                     resultingConfig = resultingConfig.mergeWithParent(folderProperty.getConjurConfiguration());
                 } else {
@@ -432,6 +433,15 @@ public class ConjurAPI {
                     if (resultingConfig.getCredentialID() != null) {
                         resultingConfig.setCredentialIDContext(g);
                     }
+                }
+
+                // stop inheritance: the current folder's own configuration has already
+                // been merged in above, so it is not lost when we stop climbing here.
+                // This only stops the walk through intermediate ancestor FOLDERS -- global
+                // is still consulted once below, for any field this folder left blank
+                // (url, account, credentialID -- all fields fall back the same way).
+                if (folderProperty.getConjurConfiguration() != null && !folderProperty.getInheritFromParent()) {
+                    break;
                 }
             }
         }
@@ -836,6 +846,46 @@ public class ConjurAPI {
     }
 
     /**
+     * Finds the {@link CredentialsStore} that actually owns the given credential (matched by
+     * id) and returns its context, e.g. the folder the credential is stored in. Used as a
+     * durable fallback when no context was set and there is no HTTP request to infer it from
+     * (a build thread running SCM checkout, the {@code git} step, or {@code usernamePassword()}
+     * -- none of which call {@code setContext} the way the plugin's own bindings do).
+     *
+     * @param credentials the credential whose owning store should be found
+     * @return the context of the store that owns the credential, or {@code null} if none does
+     */
+    static ModelObject resolveOwningContext(ConjurSecretCredentials credentials) {
+        if (credentials == null || credentials.getId() == null) {
+            return null;
+        }
+        String id = credentials.getId();
+
+        List<ModelObject> scopesToCheck = new ArrayList<>();
+        scopesToCheck.add(Jenkins.get());
+        scopesToCheck.addAll(Jenkins.get().getAllItems(AbstractFolder.class));
+
+        for (ModelObject scope : scopesToCheck) {
+            for (CredentialsStore store : CredentialsProvider.lookupStores(scope)) {
+                if (store.getContext() != scope) {
+                    continue; // skip inherited stores, we only want the owning store
+                }
+                try {
+                    for (Credentials c : store.getCredentials(Domain.global())) {
+                        if (c instanceof IdCredentials && id.equals(((IdCredentials) c).getId())) {
+                            return store.getContext();
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.log(Level.FINEST, String.format("Failed scanning store at %s for credential %s: %s",
+                            scope, id, e));
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * Get secret from Conjur with using inheritance
      *
      * @param context     main context to which credential is assigned
@@ -854,15 +904,21 @@ public class ConjurAPI {
             StaplerRequest currentRequest = Stapler.getCurrentRequest();
             if (currentRequest != null) {
                 context = currentRequest.findAncestorObject(ModelObject.class);
+            } else {
+                // No HTTP request present -- this is a build thread (SCM checkout, the git
+                // step, usernamePassword()/withCredentials, ...) that never called setContext.
+                // Resolve the folder/global context from whichever CredentialsStore actually
+                // owns this credential, instead of failing with a null JWT context.
+                context = resolveOwningContext(credentials);
+            }
 
-                if (context == null) {
-                    LOGGER.log(Level.FINEST, "No context available for current request");
-                    context = Jenkins.get();
-                }
+            if (context == null) {
+                LOGGER.log(Level.FINEST, "No context available for current request");
+                context = Jenkins.get();
+            }
 
-                if (context != null) {
-                    contextName = context.getDisplayName();
-                }
+            if (context != null) {
+                contextName = context.getDisplayName();
             }
         }
 

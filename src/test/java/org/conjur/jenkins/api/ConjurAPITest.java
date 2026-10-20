@@ -2,7 +2,11 @@
 package org.conjur.jenkins.api;
 
 import com.cloudbees.hudson.plugins.folder.AbstractFolder;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsStore;
+import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.domains.Domain;
 import com.google.inject.internal.asm.$ClassTooLargeException;
 import hudson.ExtensionList;
 import hudson.model.Hudson;
@@ -27,6 +31,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.kohsuke.stapler.Stapler;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -636,11 +641,102 @@ public class ConjurAPITest {
         when(folderConjurConfigMock.getConjurConfiguration()).thenReturn(folderConjurConfiguration);
         when(folderConjurConfigMock.getInheritFromParent()).thenReturn(false);
 
-        ConjurConfiguration result = ConjurAPI.getConjurConfig(folderMock);
+        try (MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class)) {
+            globalConfigStatic.when(GlobalConfiguration::all).thenReturn(mock(ExtensionList.class));
+            when(GlobalConfiguration.all().get(GlobalConjurConfiguration.class)).thenReturn(globalConjurConfigMock);
+            when(globalConjurConfigMock.getConjurConfiguration()).thenReturn(globalConjurConfiguration);
+            when(globalConjurConfigMock.getSelectAuthenticator()).thenReturn("APIKey");
 
-        // Should stop at folder level and not merge global
-        assertNull(result);
+            when(folderConjurConfiguration.mergeWithParent(globalConjurConfiguration))
+                    .thenReturn(folderConjurConfiguration);
+            when(folderConjurConfiguration.getAccount()).thenReturn("cucumber");
+            when(folderConjurConfiguration.getApplianceURL()).thenReturn("http://conjur");
+            when(folderConjurConfiguration.getCredentialID()).thenReturn("credId");
+
+            ConjurConfiguration result = ConjurAPI.getConjurConfig(folderMock);
+
+            // Must not climb to a parent FOLDER, but must still fall back to global once
+            // for any field this folder itself left blank -- url, account and credentialID
+            // are all merged with global the same way, exactly like the inheriting path.
+            assertSame(folderConjurConfiguration, result);
+            verify(folderConjurConfiguration).mergeWithParent(globalConjurConfiguration);
+        }
     }
+
+    @Test
+    public void testNonInheritingFolderFallsBackToGlobalForBlankFieldsOnly() {
+        // Real (non-mock) ConjurConfiguration objects so mergeWithParent's actual
+        // blank-field-only fallback logic runs for real, field by field.
+        ConjurConfiguration ownConfig = new ConjurConfiguration();
+        ownConfig.setCredentialID("own-cred");
+        ownConfig.setInheritFromParent(false);
+        // applianceURL / account intentionally left blank on this folder's own config.
+
+        ConjurConfiguration globalValues = new ConjurConfiguration("https://global-conjur", "global-account");
+        globalValues.setCredentialID("global-cred");
+
+        when(folderMock.getProperties()).thenReturn(mock(DescribableList.class));
+        when(folderMock.getProperties().get(FolderConjurConfiguration.class)).thenReturn(folderConjurConfigMock);
+        when(folderConjurConfigMock.getConjurConfiguration()).thenReturn(ownConfig);
+        when(folderConjurConfigMock.getInheritFromParent()).thenReturn(false);
+
+        try (MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class)) {
+            globalConfigStatic.when(GlobalConfiguration::all).thenReturn(mock(ExtensionList.class));
+            when(GlobalConfiguration.all().get(GlobalConjurConfiguration.class)).thenReturn(globalConjurConfigMock);
+            when(globalConjurConfigMock.getConjurConfiguration()).thenReturn(globalValues);
+            when(globalConjurConfigMock.getSelectAuthenticator()).thenReturn("APIKey");
+
+            ConjurConfiguration result = ConjurAPI.getConjurConfig(folderMock);
+
+            assertEquals("blank url falls back to global even past a non-inheriting folder",
+                    "https://global-conjur", result.getApplianceURL());
+            assertEquals("blank account falls back to global even past a non-inheriting folder",
+                    "global-account", result.getAccount());
+            assertEquals("own, non-blank credentialID is kept -- global never overwrites it",
+                    "own-cred", result.getCredentialID());
+        }
+    }
+
+    @Test
+    public void testNonInheritingFolderWithBlankCredentialIdFallsBackToGlobalToo() {
+        // credentialID (apikey) must fall back exactly like url/account -- no special-casing.
+        ConjurConfiguration ownConfig = new ConjurConfiguration("https://own-conjur", "own-account");
+        ownConfig.setInheritFromParent(false);
+        // credentialID intentionally left blank on this folder's own config.
+
+        ConjurConfiguration globalValues = new ConjurConfiguration("https://global-conjur", "global-account");
+        globalValues.setCredentialID("global-cred");
+
+        when(folderMock.getProperties()).thenReturn(mock(DescribableList.class));
+        when(folderMock.getProperties().get(FolderConjurConfiguration.class)).thenReturn(folderConjurConfigMock);
+        when(folderConjurConfigMock.getConjurConfiguration()).thenReturn(ownConfig);
+        when(folderConjurConfigMock.getInheritFromParent()).thenReturn(false);
+
+        try (MockedStatic<GlobalConfiguration> globalConfigStatic = mockStatic(GlobalConfiguration.class)) {
+            globalConfigStatic.when(GlobalConfiguration::all).thenReturn(mock(ExtensionList.class));
+            when(GlobalConfiguration.all().get(GlobalConjurConfiguration.class)).thenReturn(globalConjurConfigMock);
+            when(globalConjurConfigMock.getConjurConfiguration()).thenReturn(globalValues);
+            when(globalConjurConfigMock.getSelectAuthenticator()).thenReturn("APIKey");
+
+            ConjurConfiguration result = ConjurAPI.getConjurConfig(folderMock);
+
+            assertEquals("https://own-conjur", result.getApplianceURL());
+            assertEquals("own-account", result.getAccount());
+            assertEquals("blank credentialID falls back to global, same as url/account",
+                    "global-cred", result.getCredentialID());
+        }
+    }
+
+    // NOTE: a 2-levels-deep version of this (unconfigured child folder climbing past itself to a
+    // non-inheriting grandparent folder) is deliberately not expressed here as a Mockito test:
+    // mocking AbstractFolder#getParent() to return another AbstractFolder mock is unreliable in
+    // this codebase's Mockito/JDK combination, because jenkins-core's AbstractItem carries a
+    // synthetic covariant-return bridge for getParent() (returning Jenkins) alongside the real
+    // Item#getParent() (returning ItemGroup), and Mockito's return-type validation resolves the
+    // stub against the wrong one of the two regardless of which typed reference is used to set it
+    // up. Production code is unaffected (it compiles to the unambiguous ItemGroup-returning
+    // descriptor) -- confirmed by javap on ConjurAPI.class. The 2-level case is instead covered
+    // by an end-to-end test against a real Jenkins/Conjur instance.
 
     @Test
     public void testUsesGlobalConfigurationWhenNoFolderConfig() {
@@ -1259,6 +1355,90 @@ public class ConjurAPITest {
 
             assertThrows(InvalidConjurSecretException.class,
                     () -> ConjurAPI.getSecretFromConjurWithInheritance(mockContext, null, variableId));
+        }
+    }
+
+    @Test
+    public void testResolveOwningContextFindsStoreThatOwnsCredential() {
+        IdCredentials matchingCred = mock(IdCredentials.class);
+        when(matchingCred.getId()).thenReturn("my-cred-id");
+
+        ConjurSecretCredentials target = mock(ConjurSecretCredentials.class);
+        when(target.getId()).thenReturn("my-cred-id");
+
+        CredentialsStore folderStore = mock(CredentialsStore.class);
+        when(folderStore.getContext()).thenReturn(folderMock);
+        doReturn(Collections.singletonList(matchingCred)).when(folderStore).getCredentials(Domain.global());
+
+        try (MockedStatic<Jenkins> jenkinsStatic = mockStatic(Jenkins.class);
+             MockedStatic<CredentialsProvider> providerStatic = mockStatic(CredentialsProvider.class)) {
+
+            Jenkins jenkinsInstance = mock(Jenkins.class);
+            jenkinsStatic.when(Jenkins::get).thenReturn(jenkinsInstance);
+            doReturn(Collections.singletonList(folderMock)).when(jenkinsInstance).getAllItems(AbstractFolder.class);
+
+            providerStatic.when(() -> CredentialsProvider.lookupStores(jenkinsInstance))
+                    .thenReturn(Collections.emptyList());
+            providerStatic.when(() -> CredentialsProvider.lookupStores(folderMock))
+                    .thenReturn(Collections.singletonList(folderStore));
+
+            ModelObject result = ConjurAPI.resolveOwningContext(target);
+
+            assertEquals(folderMock, result);
+        }
+    }
+
+    @Test
+    public void testResolveOwningContextReturnsNullWhenNoStoreOwnsCredential() {
+        ConjurSecretCredentials target = mock(ConjurSecretCredentials.class);
+        when(target.getId()).thenReturn("missing-id");
+
+        try (MockedStatic<Jenkins> jenkinsStatic = mockStatic(Jenkins.class);
+             MockedStatic<CredentialsProvider> providerStatic = mockStatic(CredentialsProvider.class)) {
+
+            Jenkins jenkinsInstance = mock(Jenkins.class);
+            jenkinsStatic.when(Jenkins::get).thenReturn(jenkinsInstance);
+            doReturn(Collections.emptyList()).when(jenkinsInstance).getAllItems(AbstractFolder.class);
+            providerStatic.when(() -> CredentialsProvider.lookupStores(jenkinsInstance))
+                    .thenReturn(Collections.emptyList());
+
+            ModelObject result = ConjurAPI.resolveOwningContext(target);
+
+            assertNull(result);
+        }
+    }
+
+    @Test
+    public void testGetSecretFromConjurWithInheritanceResolvesContextFromOwningStoreOnBuildThread() {
+        var variableId = "test/password";
+        ConjurSecretCredentials credential = mock(ConjurSecretCredentials.class);
+
+        var secretBytes = "secretValue".getBytes(StandardCharsets.UTF_8);
+        var authToken = "auth-token".getBytes();
+
+        try (MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class);
+             MockedStatic<ConjurAPIUtils> apiUtilsStatic = mockStatic(ConjurAPIUtils.class);
+             MockedStatic<Stapler> staplerStatic = mockStatic(Stapler.class)) {
+
+            conjurApiStatic.when(() -> ConjurAPI.getSecretFromConjurWithInheritance(null, credential, variableId))
+                    .thenCallRealMethod();
+
+            // No Stapler request -- simulates a build thread (SCM checkout, git step, usernamePassword())
+            staplerStatic.when(Stapler::getCurrentRequest).thenReturn(null);
+            conjurApiStatic.when(() -> ConjurAPI.resolveOwningContext(credential)).thenReturn(folderMock);
+
+            conjurApiStatic.when(() -> ConjurAPI.getConfigurationFromContext(folderMock)).thenReturn(mockConfiguration);
+            conjurApiStatic.when(() -> ConjurAPI.getConjurAuthnInfo(mockConfiguration, folderMock)).thenReturn(mockAuthnInfo);
+            conjurApiStatic.when(() -> ConjurAPI.getAuthorizationToken(mockAuthnInfo, folderMock)).thenReturn(authToken);
+            apiUtilsStatic.when(() -> ConjurAPIUtils.getHttpClient(mockConfiguration)).thenReturn(mockClient);
+            conjurApiStatic.when(() -> ConjurAPI.getConjurSecret(eq(mockClient), eq(mockConfiguration), any(byte[].class), eq(variableId)))
+                    .thenReturn(secretBytes);
+
+            Secret result = ConjurAPI.getSecretFromConjurWithInheritance(null, credential, variableId);
+
+            assertNotNull(result);
+            assertEquals("secretValue", result.getPlainText());
+            verify(credential).setContext(folderMock);
         }
     }
 
