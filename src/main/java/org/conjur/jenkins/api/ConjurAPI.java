@@ -854,15 +854,18 @@ public class ConjurAPI {
             StaplerRequest currentRequest = Stapler.getCurrentRequest();
             if (currentRequest != null) {
                 context = currentRequest.findAncestorObject(ModelObject.class);
+            }
 
-                if (context == null) {
-                    LOGGER.log(Level.FINEST, "No context available for current request");
-                    context = Jenkins.get();
-                }
+            // Stapler.getCurrentRequest() is null on non-HTTP threads (e.g. build executors), so this
+            // fallback must not be nested inside the currentRequest != null check above, or a persisted
+            // credential resolved off an HTTP thread is left with a null context (see issue #48).
+            if (context == null) {
+                LOGGER.log(Level.FINEST, "No context available for current request");
+                context = Jenkins.get();
+            }
 
-                if (context != null) {
-                    contextName = context.getDisplayName();
-                }
+            if (context != null) {
+                contextName = context.getDisplayName();
             }
         }
 

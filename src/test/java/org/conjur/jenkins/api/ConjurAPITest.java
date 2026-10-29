@@ -27,9 +27,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.kohsuke.stapler.Stapler;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.quality.Strictness;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -1259,6 +1261,57 @@ public class ConjurAPITest {
 
             assertThrows(InvalidConjurSecretException.class,
                     () -> ConjurAPI.getSecretFromConjurWithInheritance(mockContext, null, variableId));
+        }
+    }
+
+    // issue #48: on a build executor thread Stapler.getCurrentRequest() is null, so the
+    // Jenkins.get() fallback must not be nested inside that check or the context stays null.
+    @Test
+    public void testGetSecretFromConjurWithInheritanceResolvesJenkinsContextOffHttpThread() {
+        var variableId = "test/password";
+        var expected = "secretValue";
+        var secretBytes = expected.getBytes(StandardCharsets.UTF_8);
+        var authToken = "auth-token".getBytes();
+
+        ConjurSecretCredentials mockCredentials = mock(ConjurSecretCredentials.class);
+        Jenkins mockJenkinsInstance = mock(Jenkins.class);
+
+        try (MockedStatic<Stapler> staplerStatic = mockStatic(Stapler.class);
+             MockedStatic<Jenkins> jenkinsStatic = mockStatic(Jenkins.class);
+             MockedStatic<ConjurAPI> conjurApiStatic = mockStatic(ConjurAPI.class,
+                     withSettings().strictness(Strictness.LENIENT));
+             MockedStatic<ConjurAPIUtils> apiUtilsStatic = mockStatic(ConjurAPIUtils.class)) {
+
+            // simulate a build executor thread: no active HTTP request
+            staplerStatic.when(Stapler::getCurrentRequest).thenReturn(null);
+            jenkinsStatic.when(Jenkins::get).thenReturn(mockJenkinsInstance);
+            when(mockJenkinsInstance.getDisplayName()).thenReturn("Jenkins");
+
+            // inheritance is on by default; with a null context the failed first attempt
+            // would then log context.getDisplayName() and throw an NPE
+            conjurApiStatic.when(() -> ConjurAPI.isInheritanceOn(any())).thenReturn(true);
+
+            conjurApiStatic.when(() ->
+                            ConjurAPI.getSecretFromConjurWithInheritance(null, mockCredentials, variableId))
+                    .thenCallRealMethod();
+
+            conjurApiStatic.when(() -> ConjurAPI.getConfigurationFromContext(mockJenkinsInstance))
+                    .thenReturn(mockConfiguration);
+            conjurApiStatic.when(() -> ConjurAPI.getConjurAuthnInfo(mockConfiguration, mockJenkinsInstance))
+                    .thenReturn(mockAuthnInfo);
+            conjurApiStatic.when(() -> ConjurAPI.getAuthorizationToken(mockAuthnInfo, mockJenkinsInstance))
+                    .thenReturn(authToken);
+            apiUtilsStatic.when(() -> ConjurAPIUtils.getHttpClient(mockConfiguration))
+                    .thenReturn(mockClient);
+            conjurApiStatic.when(() -> ConjurAPI.getConjurSecret(mockClient, mockConfiguration, authToken, variableId))
+                    .thenReturn(secretBytes);
+
+            var actual = ConjurAPI.getSecretFromConjurWithInheritance(null, mockCredentials, variableId);
+
+            assertNotNull(actual);
+            assertEquals(expected, actual.getPlainText());
+            // the fix: context resolves to Jenkins.get() even with no Stapler request, not null
+            verify(mockCredentials).setContext(mockJenkinsInstance);
         }
     }
 
