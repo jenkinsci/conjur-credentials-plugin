@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)an
 
 Please use documentation outlined in the GitHub Readme for this version.  Official CyberArk documentation pages will be updated to reflect these changes once available
 
+## [3.1.6] - 2026-11-13
+
+### Changed
+- Maven dependencies are now resolved through internal Artifactory mirrors during CI builds.
+
 ## [3.1.5] - 2026-10-08
 
 ### Fixed

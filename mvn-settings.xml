@@ -1,0 +1,16 @@
+<settings>
+  <servers>
+    <server>
+      <id>artifactory-central</id>
+      <username>${env.ARTIFACTORY_USERNAME}</username>
+      <password>${env.ARTIFACTORY_PASSWORD}</password>
+    </server>
+  </servers>
+  <mirrors>
+    <mirror>
+      <id>artifactory-central</id>
+      <mirrorOf>central</mirrorOf>
+      <url>https://${env.ARTIFACTORY_HOST}/artifactory/mavencentral-remote</url>
+    </mirror>
+  </mirrors>
+</settings>
