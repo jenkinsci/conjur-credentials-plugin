@@ -7,17 +7,8 @@ set -euo pipefail
 ensure_tool jdk openjdk-21-jdk
 ensure_mvn
 
-# Support both local executor (ARTIFACTORY_*) and InfraPool (INFRAPOOL_ARTIFACTORY_*)
-: "${ARTIFACTORY_HOST:=${INFRAPOOL_ARTIFACTORY_HOST:-}}"
-: "${ARTIFACTORY_USERNAME:=${INFRAPOOL_ARTIFACTORY_USERNAME:-}}"
-: "${ARTIFACTORY_PASSWORD:=${INFRAPOOL_ARTIFACTORY_PASSWORD:-}}"
-
-repo_root="$(git rev-parse --show-toplevel)"
-mvn_settings="${repo_root}/mvn-settings.xml"
-if [[ -z "${ARTIFACTORY_HOST:-}" ]]; then
-  mvn_settings="${repo_root}/mvn-settings.xml.dist"
-fi
+select_mvn_settings
 
 set -x
 
-mvn --batch-mode --settings "${mvn_settings}" compile
+mvn --batch-mode --settings "${MVN_SETTINGS}" compile

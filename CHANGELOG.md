@@ -8,7 +8,7 @@ Please use documentation outlined in the GitHub Readme for this version.  Offici
 ## [3.1.6] - 2026-11-13
 
 ### Changed
-- Maven dependencies are now resolved through internal Artifactory mirrors during CI builds.
+- Internal builds now resolve Maven dependencies through the internal Artifactory (`mvn-settings.xml`). External contributors can build without credentials using the public `mvn-settings.xml.dist`.
 
 ## [3.1.5] - 2026-10-08
 
@@ -252,6 +252,7 @@ We strongly recommend utilizing the default values recommended for fields that w
 ### Added
 - Added Support for SSH Private Key
 
+[3.1.6]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.1.5...v3.1.6
 [3.1.4]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.1.3...v3.1.4
 [3.1.3]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.1.2...v3.1.3
 [3.1.2]: https://github.com/jenkinsci/conjur-credentials-plugin/compare/v3.1.1...v3.1.2

@@ -1,8 +1,7 @@
 <settings>
 <!--
-    Public fallback for external contributors — fetches directly from Maven Central.
-    Usage: mvn --settings mvn-settings.xml.dist <goal>
-    No Artifactory credentials needed.
+    Public fallback for external contributors: Maven Central and repo.jenkins-ci.org,
+    no Artifactory credentials needed. Usage: mvn -s mvn-settings.xml.dist [goal]
   -->
   <profiles>
     <profile>
@@ -15,11 +14,25 @@
             <enabled>true</enabled>
           </releases>
         </repository>
+        <repository>
+          <id>repo.jenkins-ci.org</id>
+          <url>https://repo.jenkins-ci.org/public/</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+        </repository>
       </repositories>
       <pluginRepositories>
         <pluginRepository>
           <id>central</id>
           <url>https://repo1.maven.org/maven2</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+        </pluginRepository>
+        <pluginRepository>
+          <id>repo.jenkins-ci.org</id>
+          <url>https://repo.jenkins-ci.org/public/</url>
           <releases>
             <enabled>true</enabled>
           </releases>

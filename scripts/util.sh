@@ -156,6 +156,23 @@ function ensure_mvn(){
 
 }
 
+# Sets MVN_SETTINGS to the Artifactory mirror config when credentials are present,
+# otherwise to the public fallback. InfraPool only forwards INFRAPOOL_* variables;
+# Maven reads ${env.ARTIFACTORY_*} from its own environment, so they are exported.
+# Agents export ARTIFACTORY_HOST machine-wide, so credentials decide, not the host.
+function select_mvn_settings(){
+  export ARTIFACTORY_HOST="${ARTIFACTORY_HOST:-${INFRAPOOL_ARTIFACTORY_HOST:-}}"
+  export ARTIFACTORY_USERNAME="${ARTIFACTORY_USERNAME:-${INFRAPOOL_ARTIFACTORY_USERNAME:-}}"
+  export ARTIFACTORY_PASSWORD="${ARTIFACTORY_PASSWORD:-${INFRAPOOL_ARTIFACTORY_PASSWORD:-}}"
+
+  if [[ -n "${ARTIFACTORY_HOST}" && -n "${ARTIFACTORY_USERNAME}" && -n "${ARTIFACTORY_PASSWORD}" ]]; then
+    MVN_SETTINGS="$(project_dir)/mvn-settings.xml"
+  else
+    MVN_SETTINGS="$(project_dir)/mvn-settings.xml.dist"
+  fi
+  echo "Maven settings: ${MVN_SETTINGS##*/}"
+}
+
 function ensure_xmlstarlet(){
   ensure_tool xmlstarlet xmlstarlet
 }
