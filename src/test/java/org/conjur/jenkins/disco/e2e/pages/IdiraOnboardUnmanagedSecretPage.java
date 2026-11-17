@@ -12,7 +12,7 @@ public class IdiraOnboardUnmanagedSecretPage extends BasePage {
     private static final String WORKLOAD_STATUS = "//div[@data-testid='workload-resource-status']//span[text()='%s']";
     private static final String SECRET_STATUS = "//div[@data-testid='secrets-resource-status']//span[text()='%s']";
     private static final String SERVICE_INFO_XPATH = "//span[text()='%s']/following-sibling::code";
-    private static final String SECRET_PATH = "//div[contains(text(),'Secrets Manager credential ID')]//span[contains(text(),'data/static')]";
+    private static final String SECRET_PATH = "//div[contains(text(),'<credentialId>')]//div";
 
     public IdiraOnboardUnmanagedSecretPage(Page page) {
         super(page);
