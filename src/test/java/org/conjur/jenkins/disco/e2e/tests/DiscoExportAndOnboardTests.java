@@ -27,10 +27,6 @@ public class DiscoExportAndOnboardTests extends DiscoE2eTestBase {
     @DisplayName("Creates a global Jenkins secret, validates the DisCo export, onboards it in the UI" +
             "and verifies the exported secret in a Jenkins Pipeline")
     public void shouldExportAndOnboardSecret() throws Exception {
-        // Optional: scrapes the DisCo onboarding UI, which changes without notice. Opt in with DISCO_E2E_UI_ONBOARDING=true.
-        Assume.assumeTrue("Skipping DisCo UI onboarding test unless DISCO_E2E_UI_ONBOARDING=true",
-                config.isUiOnboardingEnabled());
-
         var jenkinsCredentialId = "disco-e2e-secret-text-secret-" + config.runId();
         var jenkinsCredentialExpectedSecretValue = "disco-e2e-global-secret-text-value-" + config.runId();
         var jenkinsCredentialDescriptionValue = "disco-e2e-initial-description-value-" + config.runId();
