@@ -22,17 +22,19 @@ if (params.MODE == "PROMOTE") {
 
         target_version = targetVersion
 
-        // Build plugin with target version
-        infrapool.agentSh "VERSION=\"${targetVersion}\" scripts/update-version.sh"
-        infrapool.agentSh('scripts/compile.sh')
-        infrapool.agentSh('scripts/build.sh')
+        artifactoryAuth.withCreds(infrapool, 'reader') {
+            // Build plugin with target version
+            infrapool.agentSh "VERSION=\"${targetVersion}\" scripts/update-version.sh"
+            infrapool.agentSh('scripts/compile.sh')
+            infrapool.agentSh('scripts/build.sh')
 
-        // Copy built plugin to assetDirectory, so it will be attached to the Github Release
-        infrapool.agentSh("sudo cp target/*.hpi \"${assetDirectory}\"")
+            // Copy built plugin to assetDirectory, so it will be attached to the Github Release
+            infrapool.agentSh("sudo cp target/*.hpi \"${assetDirectory}\"")
 
-        // Do upstream release. This pushes plugin to jenkinsci project maven
-        // and the plugin index.
-        infrapool.agentSh('scripts/promote.sh')
+            // Do upstream release. This pushes plugin to jenkinsci project maven
+            // and the plugin index.
+            infrapool.agentSh('scripts/promote.sh')
+        }
 
     }
 
@@ -116,7 +118,9 @@ pipeline {
         stage('Compile') {
             steps {
                 script {
-                    infrapool.agentSh 'scripts/compile.sh'
+                    artifactoryAuth.withCreds(infrapool, 'reader') {
+                        infrapool.agentSh 'scripts/compile.sh'
+                    }
                 }
             }
         }
@@ -124,7 +128,9 @@ pipeline {
         stage('Package') {
             steps {
                 script {
-                    infrapool.agentSh 'scripts/build.sh'
+                    artifactoryAuth.withCreds(infrapool, 'reader') {
+                        infrapool.agentSh 'scripts/build.sh'
+                    }
                 }
             }
             post {
@@ -150,7 +156,9 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    infrapool.agentSh 'scripts/test.sh'
+                    artifactoryAuth.withCreds(infrapool, 'reader') {
+                        infrapool.agentSh 'scripts/test.sh'
+                    }
                     // Stash Surefire reports
                     infrapool.agentStash name: 'surefire-reports', includes: 'target/surefire-reports/*.xml'
                 }

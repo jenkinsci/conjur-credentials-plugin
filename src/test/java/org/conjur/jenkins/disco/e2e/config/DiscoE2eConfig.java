@@ -101,6 +101,10 @@ public final class DiscoE2eConfig {
         return "true".equalsIgnoreCase(getConfig("DISCO_GRAPHQL_RUN"));
     }
 
+    public boolean isUiOnboardingEnabled() {
+        return "true".equalsIgnoreCase(getConfig("DISCO_E2E_UI_ONBOARDING"));
+    }
+
     public boolean isJenkinsCliAuthConfigured() {
         return !getConfig("JENKINS_CLI_AUTH").isBlank();
     }

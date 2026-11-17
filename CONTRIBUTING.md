@@ -7,8 +7,14 @@ To build the plugin from source, Maven is required. Build it like this:
 ```bash
 git clone https://github.com/jenkinsci/conjur-credentials-plugin
 cd conjur-credentials-plugin
-mvn clean install
+
+# External contributors — fetches directly from Maven Central, no credentials needed:
+mvn --settings mvn-settings.xml.dist clean install
 ```
+
+**Internal developers:** `mvn-settings.xml` mirrors dependencies through internal Artifactory.
+Set `ARTIFACTORY_HOST`, `ARTIFACTORY_USERNAME` and `ARTIFACTORY_PASSWORD`, then run
+`mvn --settings mvn-settings.xml clean install`.
 
 ## Installing from Binaries
 

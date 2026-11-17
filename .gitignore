@@ -28,4 +28,5 @@ conf/tls/nginx.*
 *.jar
 logs/
 maven_cache/
+scripts/bitbucket/
 .idea
